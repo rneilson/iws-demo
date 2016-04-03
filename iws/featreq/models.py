@@ -1,6 +1,7 @@
-import uuid
+import datetime, json, uuid
 from collections import OrderedDict
 from django.db import models
+
 
 # UUID v4 validation
 def validuuid(uid, version=4):
@@ -25,6 +26,11 @@ def validuuid(uid, version=4):
 
         return retuid
 
+# Datetime string conversion
+# Uses same format as Django internal, except without subsecond resolution
+DATEFORMAT = '%Y-%m-%d %H:%M:%S'
+
+
 # Product areas
 AREA_CHOICES = (
     ('PO', 'Policies'),
@@ -33,8 +39,9 @@ AREA_CHOICES = (
     ('RE', 'Reports'),
     ('', 'Select area')
 )
-AREA_TEXT = { v:k for k,v in AREA_CHOICES if k }
-AREA_SHORT = { k:v for k,v in AREA_CHOICES if k }
+AREA_BY_TEXT = { v:k for k,v in AREA_CHOICES if k }
+AREA_BY_SHORT = { k:v for k,v in AREA_CHOICES if k }
+
 
 # Feature request manager
 class FeatReqManager(models.Manager):
@@ -48,11 +55,11 @@ class FeatReqManager(models.Manager):
             raise ValueError('Description field required')
         if not user:
             raise ValueError('User field required')
-        if prodarea not in AREA_TEXT and prodarea not in AREA_SHORT:
+        if prodarea not in AREA_BY_TEXT and prodarea not in AREA_BY_SHORT:
             raise ValueError('Invalid product area: {0}'.format(prodarea))
 
         # Gather args
-        prod_area = prodarea if prodarea in AREA_SHORT else AREA_TEXT[prodarea]
+        prod_area = prodarea if prodarea in AREA_BY_SHORT else AREA_BY_TEXT[prodarea]
         newargs = {
             'title': title,
             'desc': desc,
@@ -61,11 +68,17 @@ class FeatReqManager(models.Manager):
             'user_cr': user,
             'user_up': user
         }
+
         # Check if uuid supplied, validate, and pass as arg
         if id:
             uid = validuuid(id)
             if uid:
                 newargs['id'] = uid
+
+        # Get datetime (will override auto) and shave off subseconds
+        dt = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+        newargs['date_cr'] = dt
+        newargs['date_up'] = dt
 
         # Create new instance, validate fields, and save
         fr = FeatureReq(**newargs)
@@ -86,6 +99,9 @@ class FeatureReq(models.Model):
 
     # Fields
     # TODO: add help_text for some/all?
+
+    # Fields to serialize, in order
+    fieldlist = ('id', 'title', 'desc', 'ref_url', 'prod_area', 'date_cr', 'user_cr', 'date_up', 'user_up')
 
     # UUIDv4 for long-term sanity
     id = models.UUIDField('Request ID', primary_key=True, default=uuid.uuid4, editable=False)
@@ -118,15 +134,34 @@ class FeatureReq(models.Model):
     @staticmethod
     def getprodareas():
         '''List allowed product areas'''
-        return AREA_TEXT
+        return AREA_BY_TEXT
 
     @staticmethod
     def strtoid(idstr):
-        '''Convert feature id to string'''
+        '''Convert string to feature id'''
         return uuid.UUID(idstr)
 
     def __str__(self):
         return str(self.title)
+
+    def jsondict(self):
+        '''Returns JSON-compatible dict of model values.
+        Uses OrderedDict to ensure values in model-specified order.
+        '''
+        # Can't do naive for loop due to req'd conversions
+        fieldvals = [
+            str(self.id),
+            self.title,
+            self.desc,
+            self.ref_url,
+            AREA_BY_SHORT[self.prod_area],
+            self.date_cr.strftime(DATEFORMAT),
+            self.user_cr,
+            self.date_up.strftime(DATEFORMAT),
+            self.user_up
+        ]
+        # Zip with fieldlist, and return OrderedDict
+        return OrderedDict(zip(self.fieldlist, fieldvals))
 
 
 # Client manager
