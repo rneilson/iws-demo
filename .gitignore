@@ -1,6 +1,10 @@
 # Databases
 *.sqlite3
+*.sqlite3.bak*
 
 # Python compiled
 *.pyo
 *.pyc
+
+# Secrets
+secretkey.txt
