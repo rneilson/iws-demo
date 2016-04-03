@@ -2,6 +2,78 @@ import uuid
 from collections import OrderedDict
 from django.db import models
 
+# UUID v4 validation
+def validuuid(uid, version=4):
+    '''Ensures given uid argument is a valid UUID (default version 4)
+    Returns UUID instance if valid, None if not.
+    Can be a UUID instance, or any type which uuid.UUID() accepts as input.
+    '''
+
+    if isinstance(uid, uuid.UUID):
+        # Easiest case, uid is already UUID
+        # (UUID constructor chokes on UUID instances,
+        # so we have to explicitly check)
+        return uid
+    else:
+        # Attempt conversion, return if successful
+        try:
+            # Insist on version
+            retuid = uuid.UUID(uid, version=version)
+        except ValueError as e:
+            # Invalid, return None instead of raising exception
+            retuid = None
+
+        return retuid
+
+# Product areas
+AREA_CHOICES = (
+    ('PO', 'Policies'),
+    ('BI', 'Billing'),
+    ('CL', 'Claims'),
+    ('RE', 'Reports'),
+    ('', 'Select area')
+)
+AREA_TEXT = { v:k for k,v in AREA_CHOICES if k }
+AREA_SHORT = { k:v for k,v in AREA_CHOICES if k }
+
+# Feature request manager
+class FeatReqManager(models.Manager):
+    """Model manager for FeatureReq"""
+
+    def newrequest(self, user, title, desc, ref_url='', prod_area='Policies', id=None):
+        # Check for required fields
+        if not title:
+            raise ValueError('Title field required')
+        if not desc:
+            raise ValueError('Description field required')
+        if not user:
+            raise ValueError('User field required')
+        if prodarea not in AREA_TEXT and prodarea not in AREA_SHORT:
+            raise ValueError('Invalid product area: {0}'.format(prodarea))
+
+        # Gather args
+        prod_area = prodarea if prodarea in AREA_SHORT else AREA_TEXT[prodarea]
+        newargs = {
+            'title': title,
+            'desc': desc,
+            'ref_url': refurl,
+            'prod_area': prod_area,
+            'user_cr': user,
+            'user_up': user
+        }
+        # Check if uuid supplied, validate, and pass as arg
+        if id:
+            uid = validuuid(id)
+            if uid:
+                newargs['id'] = uid
+
+        # Create new instance, validate fields, and save
+        fr = FeatureReq(**newargs)
+        fr.full_clean()
+        fr.save()
+        return fr
+
+
 # Feature request details
 class FeatureReq(models.Model):
     """Feature request details"""
@@ -11,19 +83,6 @@ class FeatureReq(models.Model):
         verbose_name_plural = 'requests'
         db_table = 'featreqs'
         # ordering = ['date_cr']
-
-    # Product areas
-    POLICIES = 'PO'
-    BILLING = 'BI'
-    CLAIMS = 'CL'
-    REPORTS = 'RE'
-    AREA_CHOICES = (
-        (POLICIES, 'Policies'),
-        (BILLING, 'Billing'),
-        (CLAIMS, 'Claims'),
-        (REPORTS, 'Reports'),
-        ('', 'Select area')
-    )
 
     # Fields
     # TODO: add help_text for some/all?
@@ -46,19 +105,57 @@ class FeatureReq(models.Model):
     date_up = models.DateTimeField('Updated at', auto_now=True)
 
     # User relations
-    # Stores username as string, to keep the joins down
+    # Stores username as string instead of foreign key
+    # This means deleted users don't affect db integrity (and keeps joins down)
 
     # Username of request creator
     user_cr = models.CharField('Created by', max_length=30, blank=False, editable=False)
     # Username of latest updater
     user_up = models.CharField('Updated by', max_length=30, blank=False, editable=False)
 
+    objects = FeatReqManager()
+
+    @staticmethod
+    def getprodareas():
+        '''List allowed product areas'''
+        return AREA_TEXT
+
     @staticmethod
     def strtoid(idstr):
+        '''Convert feature id to string'''
         return uuid.UUID(idstr)
 
     def __str__(self):
         return str(self.title)
+
+
+# Client manager
+class ClientManager(models.Manager):
+    """Model manager for ClientInfo"""
+
+    def newclient(self, name, con_name='', con_mail='', id=None):
+        # Check arguments
+        if not name:
+            raise ValueError('Name field required')
+
+        # Gather args
+        newargs = {
+            'name': name,
+            'con_name': con_name,
+            'con_mail': con_mail
+        }
+
+        # Check if id supplied and valid
+        if id:
+            uid = validuuid(id)
+            if uid:
+                newargs['id'] = uid
+
+        # Create instance, validate fields, and save
+        cl = ClientInfo(**newargs)
+        cl.full_clean()
+        cl.save()
+        return cl
 
 
 # Client details
@@ -82,6 +179,8 @@ class ClientInfo(models.Model):
     # Open/closed request lists
     openreqs = models.ManyToManyField(FeatureReq, related_name='open_clients', through='OpenReq')
     closedreqs = models.ManyToManyField(FeatureReq, related_name='closed_clients', through='ClosedReq')
+
+    objects = ClientManager()
 
     @staticmethod
     def strtoid(idstr):
