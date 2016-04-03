@@ -7,8 +7,8 @@ class FeatureReq(models.Model):
     """Feature request details"""
 
     class Meta:
-        verbose_name = 'Feature request'
-        verbose_name_plural = 'Feature requests'
+        verbose_name = 'request'
+        verbose_name_plural = 'requests'
         db_table = 'featreqs'
         # ordering = ['date_cr']
 
@@ -29,7 +29,7 @@ class FeatureReq(models.Model):
     # TODO: add help_text for some/all?
 
     # UUIDv4 for long-term sanity
-    id = models.UUIDField('Feature ID', primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField('Request ID', primary_key=True, default=uuid.uuid4, editable=False)
     # Title, summary, subject line, whatever you want to call it
     title = models.CharField('Summary', max_length=128)
     # Full description
@@ -66,8 +66,8 @@ class ClientInfo(models.Model):
     """Client information"""
 
     class Meta:
-        verbose_name = 'Client'
-        verbose_name_plural = 'Clients'
+        verbose_name = 'client'
+        verbose_name_plural = 'clients'
         db_table = 'clients'
         # ordering = ['name']
 
@@ -102,14 +102,16 @@ class OpenReq(models.Model):
     """Open requests"""
 
     class Meta:
+        verbose_name = 'open request'
+        verbose_name_plural = 'open requests'
         db_table = 'openreqs'
         unique_together = ['req', 'client']
         # ordering = ['priority', 'clientid']
 
     # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, related_name='open_reqs')
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='open_reqs')
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, related_name='open_reqs')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='open_reqs')
     # Client's priority (must be unique or null)
     priority = models.SmallIntegerField('Priority', unique=True, blank=True, null=True, default=None)
     # Target date (not strictly required)
@@ -128,6 +130,8 @@ class ClosedReq(models.Model):
     """Closed requests"""
 
     class Meta:
+        verbose_name = 'closed request'
+        verbose_name_plural = 'closed requests'
         db_table = 'closedreqs'
         unique_together = ['req', 'client']
         # ordering = ['closed_at']
@@ -143,9 +147,9 @@ class ClosedReq(models.Model):
     )
 
     # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, related_name='closed_reqs')
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closed_reqs')
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, related_name='closed_reqs')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closed_reqs')
     # Priority and target date at the point of closing (not unique, can be blank)
     priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
     date_tgt = models.DateField('Target date', blank=True, null=True, default=None)
