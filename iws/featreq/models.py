@@ -58,7 +58,7 @@ class FeatureReq(models.Model):
         return uuid.UUID(idstr)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.title)
 
 
 # Client details
@@ -88,7 +88,7 @@ class ClientInfo(models.Model):
         return uuid.UUID(idstr)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.name)
 
 
 ## Request relations
@@ -118,6 +118,9 @@ class OpenReq(models.Model):
     opened_at = models.DateTimeField('Opened at', auto_now_add=True, db_index=True)
     # Opened by user (stored as username string instead of foreign key (for archival purposes))
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
+
+    def __str__(self):
+        return str(self.client) + ": " + str(self.req)
 
 
 # Closed requests
@@ -155,5 +158,8 @@ class ClosedReq(models.Model):
     # Closed status
     status = models.CharField('Closed as', max_length=1, default=COMPLETE, choices=STATUS_CHOICES)
     reason = models.CharField('Details', max_length=128, blank=True, default='')
+
+    def __str__(self):
+        return str(self.client) + ": " + str(self.req)
 
 
