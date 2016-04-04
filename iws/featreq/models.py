@@ -269,8 +269,8 @@ class ClientInfo(models.Model):
     date_add = models.DateTimeField('Date added', default=approxnow, editable=False, blank=True)
 
     # Open/closed request lists
-    openreqs = models.ManyToManyField(FeatureReq, related_name='open_clients', through='OpenReq')
-    closedreqs = models.ManyToManyField(FeatureReq, related_name='closed_clients', through='ClosedReq')
+    openreqs = models.ManyToManyField(FeatureReq, related_name='openclients', through='OpenReq')
+    closedreqs = models.ManyToManyField(FeatureReq, related_name='closedclients', through='ClosedReq')
 
     objects = ClientManager()
 
@@ -324,41 +324,50 @@ class OpenReqManager(models.Manager):
         if not user:
             raise ValueError('User field required')
 
-        # Check if request is already FeatureReq instance, fetch if not
-        if isinstance(request, FeatureReq):
-            rq = request
-        else:
-            # Can raise ObjectDoesNotExist exception - we'll let it pass upwards
-            rq = FeatureReq.objects.get(id=request)
+        # Get current datetime, shave off subseconds
+        dnow = approxnow()
 
-        # Check if client is already ClientInfo instance, fetch if not
+        # Gather args
+        # date_tgt defaults to None (possibly overridden in later section)
+        newargs = {
+            'opened_at': dnow,
+            'opened_by': user
+        }
+
+        # Check if client is already ClientInfo instance, use as id if not
         if isinstance(client, ClientInfo):
-            cl = client
+            newargs['client'] = client
+        elif isinstance(client, uuid.UUID):
+            newargs['client_id'] = str(client)
+        elif isinstance(client, str):
+            uid = validuuid(client)
+            if uid:
+                newargs['client_id'] = uid
+            else:
+                raise ValueError('Invalid client_id: {0}'.format(client))
         else:
-            # Can raise ObjectDoesNotExist exception - we'll let it pass upwards
-            cl = ClientInfo.objects.get(id=client)
+            raise TypeError('Invalid client_id type: {0}'.format(type(client)))
+
+        # Check if request is already FeatureReq instance, use as id if not
+        if isinstance(request, FeatureReq):
+            newargs['req'] = request
+        elif isinstance(request, uuid.UUID):
+            newargs['req_id'] = str(request)
+        elif isinstance(request, str):
+            uid = validuuid(request)
+            if uid:
+                newargs['req_id'] = uid
+            else:
+                raise ValueError('Invalid req_id: {0}'.format(request))
+        else:
+            raise TypeError('Invalid req_id type: {0}'.format(type(request)))
 
         # Check priority (TypeError during int coercion will pass uncaught)
         if priority is not None:
             pr = int(priority)
             if pr <= 0 or pr > 32767:
                 raise ValueError('Invalid priority: {0}'.format(pr))
-        else:
-            pr = None
-
-        # Get current datetime, shave off subseconds
-        dnow = approxnow()
-
-        # Gather args
-        # date_tgt defaults to None (possibly overridden in next section)
-        newargs = {
-            'req': rq,
-            'client': cl,
-            'priority': pr,
-            'date_tgt': None,
-            'opened_at': dnow,
-            'opened_by': user
-        }
+            newargs['priority'] = pr
 
         # Check date_tgt if given
         if date_tgt:
@@ -381,10 +390,10 @@ class OpenReq(models.Model):
         unique_together = ['req', 'client']
         # ordering = ['priority', 'clientid']
 
-    # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='open_reqs')
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='open_reqs')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='openlist')
+    # Feature request in question
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='openlist')
     # Client's priority (must be unique or null)
     priority = models.SmallIntegerField('Priority', unique=True, blank=True, null=True, default=None)
     # Target date (not strictly required)
@@ -421,10 +430,10 @@ class ClosedReq(models.Model):
         (DEFERRED, 'Deferred')
     )
 
-    # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closed_reqs')
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closed_reqs')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closedlist')
+    # Feature request in question
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closedlist')
     # Priority and target date at the point of closing (not unique, can be blank)
     priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
     date_tgt = models.DateField('Target date', blank=True, null=True, default=None)
