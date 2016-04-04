@@ -4,6 +4,11 @@ from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 
 
+# TODO: give each class a dict of callables for JSON prep
+# TODO: refactor jsondict() to use callables and decouple from classes
+# TODO: allow jsondict() to include only specified fields
+
+
 # UUID v4 validation
 def validuuid(uid, version=4):
     '''Ensures given uid argument is a valid UUID (default version 4)
@@ -35,6 +40,12 @@ DATEONLYFMT = '%Y-%m-%d'
 def approxnow():
     '''Returns present datetime without microseconds'''
     return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+
+def approxnowfmt():
+    '''Returns present datetime without microseconds as string,
+    formatted as '%Y-%m-%d %H:%M:%S'
+    '''
+    return approxnow().strftime(DATETIMEFMT)
 
 def checkdatetgt(date_tgt):
     '''Checks if date_tgt is in the future.
@@ -458,7 +469,7 @@ class ClosedReq(models.Model):
     req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closedlist')
     # Priority and target date at the point of closing (not unique, can be blank)
     priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
-    date_tgt = models.DateField('Target date', blank=True, null=True, default=None)
+    date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
     # Open details (taken from open request)
     opened_at = models.DateTimeField('Opened at', blank=False, editable=False)
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
