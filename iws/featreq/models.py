@@ -166,9 +166,10 @@ class FeatureReq(models.Model):
     # (Defined as choices instead of on separate table to keep model simpler)
     prod_area = models.CharField('Product area', max_length=2, blank=False, choices=AREA_CHOICES)
     # Date/time first created (indexed)
-    date_cr = models.DateTimeField('Created at', auto_now_add=True, db_index=True)
+    date_cr = models.DateTimeField('Created at', default=approxnow, editable=False, blank=True, db_index=True)
     # Date/time last updated
-    date_up = models.DateTimeField('Updated at', auto_now=True)
+    # TODO: change back to auto_now=True, or let the view(s) force it?
+    date_up = models.DateTimeField('Updated at', default=approxnow, editable=False, blank=True)
 
     # User relations
     # Stores username as string instead of foreign key
@@ -265,7 +266,7 @@ class ClientInfo(models.Model):
     name = models.CharField('Client name', max_length=64, db_index=True)
     con_name = models.CharField('Contact name', max_length=64, blank=True, default='')
     con_mail = models.EmailField('Contact email', blank=True, default='')
-    date_add = models.DateTimeField('Date added', auto_now_add=True)
+    date_add = models.DateTimeField('Date added', default=approxnow, editable=False, blank=True)
 
     # Open/closed request lists
     openreqs = models.ManyToManyField(FeatureReq, related_name='open_clients', through='OpenReq')
@@ -389,7 +390,7 @@ class OpenReq(models.Model):
     # Target date (not strictly required)
     date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
     # Open date/time
-    opened_at = models.DateTimeField('Opened at', auto_now_add=True, db_index=True)
+    opened_at = models.DateTimeField('Opened at', default=approxnow, editable=False, blank=True, db_index=True)
     # Opened by user (stored as username string instead of foreign key (for archival purposes))
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
 
@@ -431,7 +432,7 @@ class ClosedReq(models.Model):
     opened_at = models.DateTimeField('Opened at', blank=False, editable=False)
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
     # Closed by user (stored as username string instead of foreign key (for archival purposes))
-    closed_at = models.DateTimeField('Closed at', auto_now_add=True, db_index=True)
+    closed_at = models.DateTimeField('Closed at', default=approxnow, editable=False, blank=True, db_index=True)
     closed_by = models.CharField('Closed by', max_length=30, blank=False, editable=False)
     # Closed status
     status = models.CharField('Closed as', max_length=1, default=COMPLETE, choices=STATUS_CHOICES)
