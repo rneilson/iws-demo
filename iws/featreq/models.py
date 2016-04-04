@@ -81,7 +81,7 @@ def checkdatetgt(date_tgt):
 
 
 
-# Product areas
+# Product area types
 AREA_CHOICES = (
     ('PO', 'Policies'),
     ('BI', 'Billing'),
@@ -390,6 +390,8 @@ class OpenReq(models.Model):
         unique_together = ['req', 'client']
         # ordering = ['priority', 'clientid']
 
+    fieldlist = ('client_id', 'req_id', 'priority', 'date_tgt', 'opened_at', 'opened_by')
+
     # Client attached
     client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='openlist')
     # Feature request in question
@@ -408,6 +410,33 @@ class OpenReq(models.Model):
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
 
+    def jsondict(self):
+        '''Returns JSON-compatible dict of model values.
+        Uses OrderedDict to ensure values in model-specified order.
+        '''
+        # Can't do naive for loop due to req'd conversions
+        dtgt = self.date_tgt.strftime(DATETIMEFMT) if self.date_tgt else None
+        fieldvals = [
+            str(self.client_id),
+            str(self.req_id),
+            self.priority,
+            dtgt,
+            self.opened_at.strftime(DATETIMEFMT),
+            self.opened_by
+        ]
+        # Zip with fieldlist, and return OrderedDict
+        return OrderedDict(zip(self.fieldlist, fieldvals))
+
+
+# Closed status types
+STATUS_CHOICES = (
+    ('C', 'Complete'),
+    ('R', 'Rejected'),
+    ('D', 'Deferred')
+)
+
+STATUS_BY_SHORT = { k:v for k,v in STATUS_CHOICES if k }
+STATUS_BY_TEXT = { v:k for k,v in STATUS_CHOICES if k }
 
 # Closed requests
 class ClosedReq(models.Model):
@@ -420,15 +449,8 @@ class ClosedReq(models.Model):
         unique_together = ['req', 'client']
         # ordering = ['closed_at']
 
-    COMPLETE = 'C'
-    REJECTED = 'R'
-    DEFERRED = 'D'
-
-    STATUS_CHOICES = (
-        (COMPLETE, 'Complete'),
-        (REJECTED, 'Rejected'),
-        (DEFERRED, 'Deferred')
-    )
+    fieldlist = ('client_id', 'req_id', 'priority', 'date_tgt', 'opened_at', 'opened_by', 
+        'closed_at', 'closed_by', 'status', 'reason')
 
     # Client attached
     client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closedlist')
@@ -444,10 +466,30 @@ class ClosedReq(models.Model):
     closed_at = models.DateTimeField('Closed at', default=approxnow, editable=False, blank=True, db_index=True)
     closed_by = models.CharField('Closed by', max_length=30, blank=False, editable=False)
     # Closed status
-    status = models.CharField('Closed as', max_length=1, default=COMPLETE, choices=STATUS_CHOICES)
+    status = models.CharField('Closed as', max_length=1, default='C', choices=STATUS_CHOICES)
     reason = models.CharField('Details', max_length=128, blank=True, default='')
 
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
 
+    def jsondict(self):
+        '''Returns JSON-compatible dict of model values.
+        Uses OrderedDict to ensure values in model-specified order.
+        '''
+        # Can't do naive for loop due to req'd conversions
+        dtgt = self.date_tgt.strftime(DATETIMEFMT) if self.date_tgt else None
+        fieldvals = [
+            str(self.client_id),
+            str(self.req_id),
+            self.priority,
+            dtgt,
+            self.opened_at.strftime(DATETIMEFMT),
+            self.opened_by,
+            self.closed_at.strftime(DATETIMEFMT),
+            self.closed_by,
+            STATUS_BY_SHORT[self.status],
+            self.reason
+        ]
+        # Zip with fieldlist, and return OrderedDict
+        return OrderedDict(zip(self.fieldlist, fieldvals))
 
