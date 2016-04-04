@@ -2,18 +2,18 @@ import datetime, json
 from collections import OrderedDict
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq, approxnow
+from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq, approxnow, qset_vals_tojsonlist
 
 def index(request):
     return HttpResponse('Uh, hi?\n')
 
 def reqindex(request):
-    # TODO: add filter options
+    # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all featreqs
-    frlist = [ fr.jsondict() for fr in FeatureReq.objects.all() ]
+    # (Only get fields id and title)
+    frlist = qset_vals_tojsonlist(FeatureReq.objects, 'id', 'title')
     # Construct response
-    respdict = OrderedDict()
-    respdict['req-list'] = frlist
+    respdict = OrderedDict([('req-count', len(frlist)), ('req-list', frlist)])
     #return JsonResponse(respdict, json_dumps_params={'indent':1})
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
 
@@ -24,12 +24,12 @@ def reqbyid(request, req_id):
     return HttpResponse(json.dumps(fr.jsondict(), indent=1)+'\n', content_type='application/json')
 
 def clientindex(request):
-    # TODO: add filter options
+    # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all clients
-    cllist = [ cl.jsondict() for cl in ClientInfo.objects.all() ]
+    # (Only get fields id and name)
+    cllist = qset_vals_tojsonlist(ClientInfo.objects, 'id', 'name')
     # Construct response
-    respdict = OrderedDict()
-    respdict['client-list'] = cllist
+    respdict = OrderedDict([('client-count', len(cllist)), ('client-list', cllist)])
     #return JsonResponse(respdict, json_dumps_params={'indent':1})
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
 
@@ -40,9 +40,9 @@ def clientbyid(request, client_id):
     return HttpResponse(json.dumps(cl.jsondict(), indent=1)+'\n', content_type='application/json')
 
 def openindex(request):
-    # TODO: add filter options
+    # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all open reqs
-    oreqlist = [ oreq.jsondict() for oreq in OpenReq.objects.all() ]
+    oreqlist = qset_vals_tojsonlist(OpenReq.objects, 'client_id', 'req_id', 'priority', 'opened_at')
     # Construct response
     respdict = OrderedDict()
     respdict['open-req-list'] = oreqlist
@@ -50,9 +50,9 @@ def openindex(request):
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
 
 def closedindex(request):
-    # TODO: add filter options
+    # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all closed reqs
-    creqlist = [ creq.jsondict() for creq in ClosedReq.objects.all() ]
+    creqlist = qset_vals_tojsonlist(OpenReq.objects, 'client_id', 'req_id', 'priority', 'closed_at')
     # Construct response
     respdict = OrderedDict()
     respdict['closed-req-list'] = creqlist

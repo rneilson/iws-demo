@@ -102,7 +102,7 @@ def checkdatetgt(date_tgt):
         return None
 
 # JSON-compatible OrderedDict creation
-def tojsondict(model, *args):
+def tojsondict(model, *fields):
     '''Returns JSON-compatible dict of model values.
     Uses OrderedDict to ensure values in model-specified order.
     '''
@@ -110,9 +110,9 @@ def tojsondict(model, *args):
     retvals = OrderedDict()
 
     # Check if we're only doing certain fields
-    if len(args) > 0:
+    if len(fields) > 0:
         # Iterate only over selected fields (assuming given order)
-        for fname in args:
+        for fname in fields:
             fval = getattr(model, fname)
             fcall = model.fields[fname]
             if fcall is not None:
@@ -130,13 +130,41 @@ def tojsondict(model, *args):
 
     return retvals
 
+def qset_vals_tojsonlist(qset, *fields):
+    '''Takes a QuerySet qset and an optional list of fields to
+    convert to a JSON-compatible list of OrderedDicts. Avoids
+    overhead of model instantiation by using values_list() as
+    an intermediate reprsentation.
+
+    Base model class of qset must have the fields attribute as
+    an OrderedDict of field names and callables for JSON 
+    compatibility.
+    '''
+    # Get fields dict
+    fielddict = qset.model.fields
+    # Use field list if provided, otherwise get from fielddict
+    # (as we want to ensure field order) and make tuple of 
+    # matching callables (instead of repeated dict lookups)
+    if fields:
+        fcalls = tuple(fielddict[k] for k in fields)
+    else:
+        fields = tuple(fielddict)
+        fcalls = tuple(fielddict.values())
+    # BIG LIST COMPREHENSION ONE-LINER
+    # (For each values_list() item, we make an OrderedDict of the 
+    # field name and the field value, using the callable translator
+    # if it exists)
+    return [ OrderedDict([ (fn, fc(fv)) if fc is not None else (fn, fv) 
+        for fn, fc, fv in zip(fields, fcalls, fvals)]) 
+            for fvals in qset.values_list(*fields) ]
+
 # Product area types
 AREA_CHOICES = (
+    ('', 'Select area'),
     ('PO', 'Policies'),
     ('BI', 'Billing'),
     ('CL', 'Claims'),
     ('RE', 'Reports'),
-    ('', 'Select area')
 )
 AREA_BY_TEXT = { v:k for k,v in AREA_CHOICES if k }
 AREA_BY_SHORT = { k:v for k,v in AREA_CHOICES if k }
@@ -151,6 +179,7 @@ def prodareas():
 
 # Closed status types
 STATUS_CHOICES = (
+    ('', 'Select status'),
     ('C', 'Complete'),
     ('R', 'Rejected'),
     ('D', 'Deferred')
@@ -468,9 +497,6 @@ class ClosedReq(models.Model):
         db_table = 'closedreqs'
         unique_together = ['req', 'client']
         # ordering = ['closed_at']
-
-    fieldlist = ('client_id', 'req_id', 'priority', 'date_tgt', 'opened_at', 'opened_by', 
-        'closed_at', 'closed_by', 'status', 'reason')
 
     # Client attached
     client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closedlist')
