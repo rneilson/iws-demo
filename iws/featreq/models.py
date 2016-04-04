@@ -36,6 +36,50 @@ def approxnow():
     '''Returns present datetime without microseconds'''
     return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
+def checkdatetgt(date_tgt):
+    '''Checks if date_tgt is in the future.
+
+    Returns datetime object if date_tgt is given and valid, or None if 
+    date_tgt is None (or any other value evaluating to False).
+
+    date_tgt can be a specific datetime object, a timedelta object, or 
+    a datetime string in the format '%Y-%m-%d %H:%M:%S' or '%Y-%m-%d'.
+    Invalid datetimes will raise ValueError. Types other than the above
+    will raise TypeError.
+    '''
+    # Get current datetime, shave off subseconds
+    dnow = approxnow()
+
+    # We handle by type (ugly-ish, yes) because there isn't really
+    # another good, clean way to do it
+    if date_tgt:
+        if isinstance(date_tgt, datetime.datetime):
+            # Ensure target in future
+            if date_tgt < dnow:
+                raise ValueError('Target date {0} earlier than present'.format(date_tgt.strftime(DATETIMEFMT)))
+            else:
+                return date_tgt
+        elif isinstance(date_tgt, datetime.timedelta):
+            # Add to current datetime
+            return dnow + date_tgt
+        elif isinstance(date_tgt, str):
+            # Create datetime from string and make UTC
+            # First try full date/time
+            try:
+                dt = datetime.datetime.strptime(date_tgt, DATETIMEFMT).replace(tzinfo=datetime.timezone.utc)
+            except ValueError:
+                # Next try short date-only format
+                try:
+                    dt = datetime.datetime.strptime(date_tgt, DATEONLYFMT).replace(tzinfo=datetime.timezone.utc)
+                except ValueError:
+                    raise ValueError('Invalid date string: {0}'.format(date_tgt))
+            return dt
+        else:
+            raise TypeError('Invalid date_tgt type: {0}'.format(type(date_tgt)))
+    else:
+        return None
+
+
 
 # Product areas
 AREA_CHOICES = (
@@ -316,34 +360,8 @@ class OpenReqManager(models.Manager):
         }
 
         # Check date_tgt if given
-        # We handle by type (ugly-ish, yes) because there isn't really
-        # another good, clean way to do it
         if date_tgt:
-            if isinstance(date_tgt, datetime.datetime):
-                # Ensure target in future
-                if date_tgt < dnow:
-                    raise ValueError('Target date {0} earlier than present'.format(date_tgt.strftime(DATETIMEFMT)))
-                else:
-                    dtgt = date_tgt
-            elif isinstance(date_tgt, datetime.timedelta):
-                # Add to current datetime
-                dtgt = dnow + date_tgt
-            elif isinstance(date_tgt, str):
-                # Create datetime from string and make UTC
-                # First try full date/time
-                try:
-                    dtgt = datetime.datetime.strptime(date_tgt, DATETIMEFMT).replace(tzinfo=datetime.timezone.utc)
-                except ValueError:
-                    # Next try short date-only format
-                    try:
-                        dtgt = datetime.datetime.strptime(date_tgt, DATEONLYFMT).replace(tzinfo=datetime.timezone.utc)
-                    except ValueError:
-                        raise ValueError('Invalid date string: {0}'.format(date_tgt))
-            else:
-                raise TypeError('Invalid date_tgt type: {0}'.format(type(date_tgt)))
-
-            # Cleared the hurdles, add to args
-            newargs['date_tgt'] = dtgt
+            newargs['date_tgt'] = checkdatetgt(date_tgt)
 
         # Create instance, validate fields, and save
         oreq = OpenReq(**newargs)
