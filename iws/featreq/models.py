@@ -1,6 +1,7 @@
 import datetime, json, uuid
 from collections import OrderedDict
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 
 
 # UUID v4 validation
@@ -28,7 +29,12 @@ def validuuid(uid, version=4):
 
 # Datetime string conversion
 # Uses same format as Django internal, except without subsecond resolution
-DATEFORMAT = '%Y-%m-%d %H:%M:%S'
+DATETIMEFMT = '%Y-%m-%d %H:%M:%S'
+DATEONLYFMT = '%Y-%m-%d'
+
+def approxnow():
+    '''Returns present datetime without microseconds'''
+    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
 
 # Product areas
@@ -48,13 +54,14 @@ class FeatReqManager(models.Manager):
     """Model manager for FeatureReq"""
 
     def newrequest(self, user, title, desc, ref_url='', prod_area='Policies', id=None):
+        '''Create new request'''
         # Check for required fields
+        if not user:
+            raise ValueError('User field required')
         if not title:
             raise ValueError('Title field required')
         if not desc:
             raise ValueError('Description field required')
-        if not user:
-            raise ValueError('User field required')
         if prodarea not in AREA_BY_TEXT and prodarea not in AREA_BY_SHORT:
             raise ValueError('Invalid product area: {0}'.format(prodarea))
 
@@ -76,7 +83,7 @@ class FeatReqManager(models.Manager):
                 newargs['id'] = uid
 
         # Get datetime (will override auto) and shave off subseconds
-        dt = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+        dt = approxnow()
         newargs['date_cr'] = dt
         newargs['date_up'] = dt
 
@@ -85,7 +92,6 @@ class FeatReqManager(models.Manager):
         fr.full_clean()
         fr.save()
         return fr
-
 
 # Feature request details
 class FeatureReq(models.Model):
@@ -155,9 +161,9 @@ class FeatureReq(models.Model):
             self.desc,
             self.ref_url,
             AREA_BY_SHORT[self.prod_area],
-            self.date_cr.strftime(DATEFORMAT),
+            self.date_cr.strftime(DATETIMEFMT),
             self.user_cr,
-            self.date_up.strftime(DATEFORMAT),
+            self.date_up.strftime(DATETIMEFMT),
             self.user_up
         ]
         # Zip with fieldlist, and return OrderedDict
@@ -169,6 +175,7 @@ class ClientManager(models.Manager):
     """Model manager for ClientInfo"""
 
     def newclient(self, name, con_name='', con_mail='', id=None):
+        '''Create new client'''
         # Check arguments
         if not name:
             raise ValueError('Name field required')
@@ -186,12 +193,14 @@ class ClientManager(models.Manager):
             if uid:
                 newargs['id'] = uid
 
+        # Get datetime (without microseconds)
+        newargs['date_add'] = approxnow()
+
         # Create instance, validate fields, and save
         cl = ClientInfo(**newargs)
         cl.full_clean()
         cl.save()
         return cl
-
 
 # Client details
 class ClientInfo(models.Model):
@@ -202,6 +211,9 @@ class ClientInfo(models.Model):
         verbose_name_plural = 'clients'
         db_table = 'clients'
         # ordering = ['name']
+
+    # Fields to serialize, in order
+    fieldlist = ('id', 'name', 'con_name', 'con_mail', 'date_add')
 
     # UUIDv4 for long-term sanity
     id = models.UUIDField('Client ID', primary_key=True, default=uuid.uuid4, editable=False)
@@ -224,12 +236,120 @@ class ClientInfo(models.Model):
     def __str__(self):
         return str(self.name)
 
+    def jsondict(self):
+        '''Returns JSON-compatible dict of model values.
+        Uses OrderedDict to ensure values in model-specified order.
+        '''
+        # Can't do naive for loop due to req'd conversions
+        fieldvals = [
+            str(self.id),
+            self.name,
+            self.con_name,
+            self.con_mail,
+            self.date_add.strftime(DATETIMEFMT),
+        ]
+        # Zip with fieldlist, and return OrderedDict
+        return OrderedDict(zip(self.fieldlist, fieldvals))
+
 
 ## Request relations
 # Normally we'd use an abstract base class here, and subclass for open/closed,
 # but Django doesn't let us (easily) override constraints on inherited fields
 # (in this case, we'd like a uniqueness constraint on priority while open, but
 # remove it when closing), so instead we repeat ourselves (sadly).
+
+# Open request manager
+class OpenReqManager(models.Manager):
+    """Model manager for OpenReq"""
+
+    def attachreq(self, user, request, client, priority=None, date_tgt=None):
+        '''Attach feature request to client.
+
+        Both request and client must already exist, and can either be given 
+        directly as instance or fetched by id.
+        Any ObjectDoesNotExist exceptions will be allowed to pass uncaught.
+
+        priority must be None (default) or integer in range 1 < x < 32767 (inclusive).
+
+        date_tgt can be a specific datetime object, a timedelta object, or 
+        a datetime string in the format '%Y-%m-%d %H:%M:%S'. Invalid datetimes
+        will raise ValueError.
+        '''
+        # Ensure username supplied
+        if not user:
+            raise ValueError('User field required')
+
+        # Check if request is already FeatureReq instance, fetch if not
+        if isinstance(request, FeatureReq):
+            rq = request
+        else:
+            # Can raise ObjectDoesNotExist exception - we'll let it pass upwards
+            rq = FeatureReq.objects.get(id=request)
+
+        # Check if client is already ClientInfo instance, fetch if not
+        if isinstance(client, ClientInfo):
+            cl = client
+        else:
+            # Can raise ObjectDoesNotExist exception - we'll let it pass upwards
+            cl = ClientInfo.objects.get(id=client)
+
+        # Check priority (TypeError during int coercion will pass uncaught)
+        if priority is not None:
+            pr = int(priority)
+            if pr <= 0 or pr > 32767:
+                raise ValueError('Invalid priority: {0}'.format(pr))
+        else:
+            pr = None
+
+        # Get current datetime, shave off subseconds
+        dnow = approxnow()
+
+        # Gather args
+        # date_tgt defaults to None (possibly overridden in next section)
+        newargs = {
+            'req': rq,
+            'client': cl,
+            'priority': pr,
+            'date_tgt': None,
+            'opened_at': dnow,
+            'opened_by': user
+        }
+
+        # Check date_tgt if given
+        # We handle by type (ugly-ish, yes) because there isn't really
+        # another good, clean way to do it
+        if date_tgt:
+            if isinstance(date_tgt, datetime.datetime):
+                # Ensure target in future
+                if date_tgt < dnow:
+                    raise ValueError('Target date {0} earlier than present'.format(date_tgt.strftime(DATETIMEFMT)))
+                else:
+                    dtgt = date_tgt
+            elif isinstance(date_tgt, datetime.timedelta):
+                # Add to current datetime
+                dtgt = dnow + date_tgt
+            elif isinstance(date_tgt, str):
+                # Create datetime from string and make UTC
+                # First try full date/time
+                try:
+                    dtgt = datetime.datetime.strptime(date_tgt, DATETIMEFMT).replace(tzinfo=datetime.timezone.utc)
+                except ValueError:
+                    # Next try short date-only format
+                    try:
+                        dtgt = datetime.datetime.strptime(date_tgt, DATEONLYFMT).replace(tzinfo=datetime.timezone.utc)
+                    except ValueError:
+                        raise ValueError('Invalid date string: {0}'.format(date_tgt))
+            else:
+                raise TypeError('Invalid date_tgt type: {0}'.format(type(date_tgt)))
+
+            # Cleared the hurdles, add to args
+            newargs['date_tgt'] = dtgt
+
+        # Create instance, validate fields, and save
+        oreq = OpenReq(**newargs)
+        oreq.full_clean()
+        oreq.save()
+        return oreq
 
 # Open requests
 class OpenReq(models.Model):
@@ -249,11 +369,13 @@ class OpenReq(models.Model):
     # Client's priority (must be unique or null)
     priority = models.SmallIntegerField('Priority', unique=True, blank=True, null=True, default=None)
     # Target date (not strictly required)
-    date_tgt = models.DateField('Target date', blank=True, null=True, default=None)
+    date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
     # Open date/time
     opened_at = models.DateTimeField('Opened at', auto_now_add=True, db_index=True)
     # Opened by user (stored as username string instead of foreign key (for archival purposes))
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
+
+    objects = OpenReqManager()
 
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
