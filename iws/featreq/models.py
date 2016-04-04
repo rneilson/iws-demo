@@ -4,10 +4,7 @@ from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 
 
-# TODO: give each class a dict of callables for JSON prep
-# TODO: refactor jsondict() to use callables and decouple from classes
-# TODO: allow jsondict() to include only specified fields
-
+## Module-level functions
 
 # UUID v4 validation
 def validuuid(uid, version=4):
@@ -32,6 +29,10 @@ def validuuid(uid, version=4):
 
         return retuid
 
+def strtoid(idstr):
+    '''Convert string to feature id'''
+    return uuid.UUID(idstr)
+
 # Datetime string conversion
 # Uses same format as Django internal, except without subsecond resolution
 DATETIMEFMT = '%Y-%m-%d %H:%M:%S'
@@ -46,6 +47,16 @@ def approxnowfmt():
     formatted as '%Y-%m-%d %H:%M:%S'
     '''
     return approxnow().strftime(DATETIMEFMT)
+
+def approxdatefmt(date_val):
+    '''Returns date_val without microseconds as string,
+    formatted as '%Y-%m-%d %H:%M:%S'.
+    Returns None if date_val is not a datetime instance.
+    '''
+    if isinstance(date_val, datetime.datetime):
+        return date_val.strftime(DATETIMEFMT)
+    else:
+        return None
 
 def checkdatetgt(date_tgt):
     '''Checks if date_tgt is in the future.
@@ -90,7 +101,34 @@ def checkdatetgt(date_tgt):
     else:
         return None
 
+# JSON-compatible OrderedDict creation
+def tojsondict(model, *args):
+    '''Returns JSON-compatible dict of model values.
+    Uses OrderedDict to ensure values in model-specified order.
+    '''
+    # New version
+    retvals = OrderedDict()
 
+    # Check if we're only doing certain fields
+    if len(args) > 0:
+        # Iterate only over selected fields (assuming given order)
+        for fname in args:
+            fval = getattr(model, fname)
+            fcall = model.fields[fname]
+            if fcall is not None:
+                retvals[fname] = fcall(fval)
+            else:
+                retvals[fname] = fval
+    else:
+        # Iterate over all fields
+        for fname, fcall in model.fields.items():
+            fval = getattr(model, fname)
+            if fcall is not None:
+                retvals[fname] = fcall(fval)
+            else:
+                retvals[fname] = fval
+
+    return retvals
 
 # Product area types
 AREA_CHOICES = (
@@ -103,6 +141,29 @@ AREA_CHOICES = (
 AREA_BY_TEXT = { v:k for k,v in AREA_CHOICES if k }
 AREA_BY_SHORT = { k:v for k,v in AREA_CHOICES if k }
 
+def areabyshort(prod_area):
+    '''Get full name of short product area identifier'''
+    return AREA_BY_SHORT[prod_area]
+
+def prodareas():
+    '''List allowed product areas'''
+    return AREA_BY_TEXT
+
+# Closed status types
+STATUS_CHOICES = (
+    ('C', 'Complete'),
+    ('R', 'Rejected'),
+    ('D', 'Deferred')
+)
+STATUS_BY_SHORT = { k:v for k,v in STATUS_CHOICES if k }
+STATUS_BY_TEXT = { v:k for k,v in STATUS_CHOICES if k }
+
+def statusbyshort(status):
+    '''Get full name of short closed status identifier'''
+    return STATUS_BY_SHORT[status]
+
+
+## Model and manager classes
 
 # Feature request manager
 class FeatReqManager(models.Manager):
@@ -161,9 +222,6 @@ class FeatureReq(models.Model):
     # Fields
     # TODO: add help_text for some/all?
 
-    # Fields to serialize, in order
-    fieldlist = ('id', 'title', 'desc', 'ref_url', 'prod_area', 'date_cr', 'user_cr', 'date_up', 'user_up')
-
     # UUIDv4 for long-term sanity
     id = models.UUIDField('Request ID', primary_key=True, default=uuid.uuid4, editable=False)
     # Title, summary, subject line, whatever you want to call it
@@ -193,37 +251,18 @@ class FeatureReq(models.Model):
 
     objects = FeatReqManager()
 
-    @staticmethod
-    def getprodareas():
-        '''List allowed product areas'''
-        return AREA_BY_TEXT
-
-    @staticmethod
-    def strtoid(idstr):
-        '''Convert string to feature id'''
-        return uuid.UUID(idstr)
-
     def __str__(self):
         return str(self.title)
 
-    def jsondict(self):
-        '''Returns JSON-compatible dict of model values.
-        Uses OrderedDict to ensure values in model-specified order.
-        '''
-        # Can't do naive for loop due to req'd conversions
-        fieldvals = [
-            str(self.id),
-            self.title,
-            self.desc,
-            self.ref_url,
-            AREA_BY_SHORT[self.prod_area],
-            self.date_cr.strftime(DATETIMEFMT),
-            self.user_cr,
-            self.date_up.strftime(DATETIMEFMT),
-            self.user_up
-        ]
-        # Zip with fieldlist, and return OrderedDict
-        return OrderedDict(zip(self.fieldlist, fieldvals))
+    # Fields to serialize, in order, with callable JSON translators if required
+    # fieldlist = ('id', 'title', 'desc', 'ref_url', 'prod_area', 'date_cr', 'user_cr', 'date_up', 'user_up')
+    fields = OrderedDict([
+        ('id', str), ('title', None), ('desc', None), ('ref_url', None), ('prod_area', areabyshort),
+        ('date_cr', approxdatefmt), ('user_cr', None), ('date_up', approxdatefmt), ('user_up', None)
+    ])
+
+    # Will call tojsondict() with self
+    jsondict = tojsondict
 
 
 # Client manager
@@ -268,9 +307,6 @@ class ClientInfo(models.Model):
         db_table = 'clients'
         # ordering = ['name']
 
-    # Fields to serialize, in order
-    fieldlist = ('id', 'name', 'con_name', 'con_mail', 'date_add')
-
     # UUIDv4 for long-term sanity
     id = models.UUIDField('Client ID', primary_key=True, default=uuid.uuid4, editable=False)
     # Basic details
@@ -292,20 +328,14 @@ class ClientInfo(models.Model):
     def __str__(self):
         return str(self.name)
 
-    def jsondict(self):
-        '''Returns JSON-compatible dict of model values.
-        Uses OrderedDict to ensure values in model-specified order.
-        '''
-        # Can't do naive for loop due to req'd conversions
-        fieldvals = [
-            str(self.id),
-            self.name,
-            self.con_name,
-            self.con_mail,
-            self.date_add.strftime(DATETIMEFMT),
-        ]
-        # Zip with fieldlist, and return OrderedDict
-        return OrderedDict(zip(self.fieldlist, fieldvals))
+    # Fields to serialize, in order, with callable JSON translators if required
+    # fieldlist = ('id', 'name', 'con_name', 'con_mail', 'date_add')
+    fields = OrderedDict([
+        ('id', str), ('name', None), ('con_name', None), ('con_mail', None), ('date_add', approxdatefmt)
+    ])
+
+    # Will call tojsondict() with self
+    jsondict = tojsondict
 
 
 ## Request relations
@@ -401,8 +431,6 @@ class OpenReq(models.Model):
         unique_together = ['req', 'client']
         # ordering = ['priority', 'clientid']
 
-    fieldlist = ('client_id', 'req_id', 'priority', 'date_tgt', 'opened_at', 'opened_by')
-
     # Client attached
     client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='openlist')
     # Feature request in question
@@ -421,33 +449,14 @@ class OpenReq(models.Model):
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
 
-    def jsondict(self):
-        '''Returns JSON-compatible dict of model values.
-        Uses OrderedDict to ensure values in model-specified order.
-        '''
-        # Can't do naive for loop due to req'd conversions
-        dtgt = self.date_tgt.strftime(DATETIMEFMT) if self.date_tgt else None
-        fieldvals = [
-            str(self.client_id),
-            str(self.req_id),
-            self.priority,
-            dtgt,
-            self.opened_at.strftime(DATETIMEFMT),
-            self.opened_by
-        ]
-        # Zip with fieldlist, and return OrderedDict
-        return OrderedDict(zip(self.fieldlist, fieldvals))
+    fields = OrderedDict([
+        ('client_id', str), ('req_id', str), ('priority', None),
+        ('date_tgt', approxdatefmt), ('opened_at', approxdatefmt), ('opened_by', None)
+    ])
 
+    # Will call tojsondict() with self
+    jsondict = tojsondict
 
-# Closed status types
-STATUS_CHOICES = (
-    ('C', 'Complete'),
-    ('R', 'Rejected'),
-    ('D', 'Deferred')
-)
-
-STATUS_BY_SHORT = { k:v for k,v in STATUS_CHOICES if k }
-STATUS_BY_TEXT = { v:k for k,v in STATUS_CHOICES if k }
 
 # Closed requests
 class ClosedReq(models.Model):
@@ -483,24 +492,13 @@ class ClosedReq(models.Model):
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
 
-    def jsondict(self):
-        '''Returns JSON-compatible dict of model values.
-        Uses OrderedDict to ensure values in model-specified order.
-        '''
-        # Can't do naive for loop due to req'd conversions
-        dtgt = self.date_tgt.strftime(DATETIMEFMT) if self.date_tgt else None
-        fieldvals = [
-            str(self.client_id),
-            str(self.req_id),
-            self.priority,
-            dtgt,
-            self.opened_at.strftime(DATETIMEFMT),
-            self.opened_by,
-            self.closed_at.strftime(DATETIMEFMT),
-            self.closed_by,
-            STATUS_BY_SHORT[self.status],
-            self.reason
-        ]
-        # Zip with fieldlist, and return OrderedDict
-        return OrderedDict(zip(self.fieldlist, fieldvals))
+    fields = OrderedDict([
+        ('client_id', str), ('req_id', str), ('priority', None),
+        ('date_tgt', approxdatefmt), ('opened_at', approxdatefmt), ('opened_by', None),
+        ('closed_at', approxdatefmt), ('closed_by', None),
+        ('status', statusbyshort), ('reason', None)
+    ])
+
+    # Will call tojsondict() with self
+    jsondict = tojsondict
 
