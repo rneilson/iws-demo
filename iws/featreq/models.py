@@ -102,57 +102,76 @@ def checkdatetgt(date_tgt):
         return None
 
 # JSON-compatible OrderedDict creation
-def tojsondict(model, *fields):
+def tojsondict(model, fields=None, fcalls=None):
     '''Returns JSON-compatible dict of model values.
     Uses OrderedDict to ensure values in model-specified order.
+
+    If neither of fields or fcalls are specified, the model 
+    class must have a fields attribute as an OrderedDict
+    of field names and callables for JSON compatibility.
+
+    If fields is specified, it must be an iterable of valid field
+    names of the model.
+
+    If fcalls is specified, it must be an iterable matching
+    fields, with each item a callable object or None.
     '''
-    # New version
+
     retvals = OrderedDict()
 
-    # Check if we're only doing certain fields
-    if len(fields) > 0:
-        # Iterate only over selected fields (assuming given order)
-        for fname in fields:
-            fval = getattr(model, fname)
-            fcall = model.fields[fname]
-            if fcall is not None:
-                retvals[fname] = fcall(fval)
-            else:
-                retvals[fname] = fval
-    else:
-        # Iterate over all fields
-        for fname, fcall in model.fields.items():
-            fval = getattr(model, fname)
-            if fcall is not None:
-                retvals[fname] = fcall(fval)
-            else:
-                retvals[fname] = fval
+    # Get fields dict if necessary
+    # (Checked because there might be times when model is 
+    # something weird, without the proper fields attribute, 
+    # and we don't want AttributeError when we don't need it)
+    if not fields or not fcalls:
+        fielddict = model.fields
+        if not fields:
+            fields = fielddict.keys()
+        if not fcalls:
+            fcalls = tuple(fielddict[k] for k in fields)
+
+    # Iterate over selected fields in given order, and translate
+    for fname, fcall in zip(fields, fcalls):
+        fval = getattr(model, fname)
+        if fcall is not None:
+            retvals[fname] = fcall(fval)
+        else:
+            retvals[fname] = fval
 
     return retvals
 
-def qset_vals_tojsonlist(qset, *fields):
+def qset_vals_tojsonlist(qset, fields=None, fcalls=None):
     '''Takes a QuerySet qset and an optional list of fields to
     convert to a JSON-compatible list of OrderedDicts. Avoids
     overhead of model instantiation by using values_list() as
     an intermediate reprsentation.
 
-    Base model class of qset must have the fields attribute as
-    an OrderedDict of field names and callables for JSON 
-    compatibility.
+    If neither of fields or fcalls are specified, the base model 
+    class of qset must have a fields attribute as an OrderedDict
+    of field names and callables for JSON compatibility.
+
+    If fields is specified, it must be an iterable of valid field
+    names of the QuerySet (which can include aggregates).
+
+    If fcalls is specified, it must be an iterable matching
+    fields, with each item a callable object or None.
     '''
-    # Get fields dict
-    fielddict = qset.model.fields
-    # Use field list if provided, otherwise get from fielddict
-    # (as we want to ensure field order) and make tuple of 
-    # matching callables (instead of repeated dict lookups)
-    if fields:
-        fcalls = tuple(fielddict[k] for k in fields)
-    else:
-        fields = tuple(fielddict)
-        fcalls = tuple(fielddict.values())
+    # Get fields dict if necessary
+    # (Checked because there might be times when qset is something
+    # weird, not linked to the proper model)
+    if not fields or not fcalls:
+        fielddict = qset.model.fields
+        # Use field list if provided, otherwise get from fielddict
+        # (as we want to ensure field order) and make tuple of 
+        # matching callables (instead of repeated dict lookups) if
+        # not passed in
+        if not fields:
+            fields = tuple(fielddict)
+        if not fcalls:
+            fcalls = tuple(fielddict[k] for k in fields)
     # BIG LIST COMPREHENSION ONE-LINER
     # (For each values_list() item, we make an OrderedDict of the 
-    # field name and the field value, using the callable translator
+    # field names and field values, using the callable translator
     # if it exists)
     return [ OrderedDict([ (fn, fc(fv)) if fc is not None else (fn, fv) 
         for fn, fc, fv in zip(fields, fcalls, fvals)]) 
