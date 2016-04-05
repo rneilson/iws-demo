@@ -5,13 +5,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
-from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq, approxnow, tojsondict, qset_vals_tojsonlist
+from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
+from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
 json404 = OrderedDict([('error', 'Resource not found')])
 json404str = json.dumps(json404, indent=1) + '\n'
-json_contype = 'application/json; charset=utf-8'
+json_contype = 'application/json'
 
 def index(request):
     return HttpResponse('Uh, hi?\n')
