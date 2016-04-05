@@ -1,7 +1,8 @@
 import datetime, json
 from collections import OrderedDict
-from django.http import HttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq, approxnow, tojsondict, qset_vals_tojsonlist
@@ -10,6 +11,7 @@ from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq, approxnow, tojso
 # Views may add extra information, or JSONify and send as-is
 json404 = OrderedDict([('error', 'Resource not found')])
 json404str = json.dumps(json404, indent=1) + '\n'
+json_contype = 'application/json; charset=utf-8'
 
 def index(request):
     return HttpResponse('Uh, hi?\n')
@@ -21,17 +23,25 @@ def reqindex(request):
     frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
     # Construct response
     respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 def reqbyid(request, req_id):
     # Get selected featreq
     try:
         fr = FeatureReq.objects.get(id=req_id)
     except ObjectDoesNotExist:
-        return HttpResponseNotFound(json404str, content_type='application/json')
+        return HttpResponseNotFound(json404str, content_type=json_contype)
     else:
         # Return (ordered) dict as JSON
-        return HttpResponse(json.dumps(fr.jsondict(), indent=1)+'\n', content_type='application/json')
+        return HttpResponse(json.dumps(fr.jsondict(), indent=1)+'\n', content_type=json_contype)
+
+def reqredir(request, req_id):
+    # Check if req_id exists
+    if FeatureReq.objects.filter(id=req_id).exists():
+        # Redirect to proper featreq URL
+        return HttpResponsePermanentRedirect(urlreverse('featreq-req-byid', args=(req_id,)))
+    else:
+        return HttpResponseNotFound(json404str, content_type=json_contype)
 
 def clientindex(request):
     # TODO: add filter options, additional field options
@@ -40,17 +50,25 @@ def clientindex(request):
     cllist = qset_vals_tojsonlist(ClientInfo.objects, ('id', 'name'))
     # Construct response
     respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 def clientbyid(request, client_id):
     # Get selected featreq
     try:
         cl = ClientInfo.objects.get(id=client_id)
     except ObjectDoesNotExist:
-        return HttpResponseNotFound(json404str, content_type='application/json')
+        return HttpResponseNotFound(json404str, content_type=json_contype)
     else:
         # Return (ordered) dict as JSON
-        return HttpResponse(json.dumps(cl.jsondict(), indent=1)+'\n', content_type='application/json')
+        return HttpResponse(json.dumps(cl.jsondict(), indent=1)+'\n', content_type=json_contype)
+
+def clientredir(request, client_id):
+    # Check if client_id exists
+    if ClientInfo.objects.filter(id=client_id).exists():
+        # Redirect to proper featreq URL
+        return HttpResponsePermanentRedirect(urlreverse('featreq-client-byid', args=(client_id,)))
+    else:
+        return HttpResponseNotFound(json404str, content_type=json_contype)
 
 def openindex(request):
     # TODO: add filter options, additional field options
@@ -63,28 +81,31 @@ def openindex(request):
         ('open_client_count', len(oreqlist)),
         ('open_client_list', oreqlist)
     ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 def openbyclient(request, client_id):
     # TODO: add filter options, additional field options
-    # TODO: check if client_id exists first
-    # Copy fields dict and strip out unwanted fields
-    tmpfields = OpenReq.fields.copy()
-    del tmpfields['client_id']
-    del tmpfields['req_id']
-    # Add req field and (re)use tojsondict() as translator
-    tmpfields['req'] = tojsondict
-    # Get open reqs for client, add JSON-compat dict to list
-    oreqlist = []
-    for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
-        oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
-    # Construct response
-    respdict = OrderedDict([
-        ('client_id', client_id),
-        ('open_req_count', len(oreqlist)),
-        ('open_req_list', oreqlist)
-    ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    # Check if client_id exists
+    if ClientInfo.objects.filter(id=client_id).exists():
+        # Copy fields dict and strip out unwanted fields
+        tmpfields = OpenReq.fields.copy()
+        del tmpfields['client_id']
+        del tmpfields['req_id']
+        # Add req field and (re)use tojsondict() as translator
+        tmpfields['req'] = tojsondict
+        # Get open reqs for client, add JSON-compat dict to list
+        oreqlist = []
+        for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
+            oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
+        # Construct response
+        respdict = OrderedDict([
+            ('client_id', client_id),
+            ('open_req_count', len(oreqlist)),
+            ('open_req_list', oreqlist)
+        ])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    else:
+        return HttpResponseNotFound(json404str, content_type=json_contype)
 
 def closedindex(request):
     # TODO: add filter options, additional field options
@@ -97,27 +118,30 @@ def closedindex(request):
         ('closed_client_count', len(oreqlist)),
         ('closed_client_list', oreqlist)
     ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 def closedbyclient(request, client_id):
     # TODO: add filter options, additional field options
-    # TODO: check if client_id exists first
-    # Copy fields dict and strip out unwanted fields
-    tmpfields = ClosedReq.fields.copy()
-    del tmpfields['client_id']
-    del tmpfields['req_id']
-    # Add req field and (re)use tojsondict() as translator
-    tmpfields['req'] = tojsondict
-    # Get closed reqs for client, add JSON-compat dict to list
-    oreqlist = []
-    for oreq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
-        oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
-    # Construct response
-    respdict = OrderedDict([
-        ('client_id', client_id),
-        ('closed_req_count', len(oreqlist)),
-        ('closed_req_list', oreqlist)
-    ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type='application/json')
+    # Check if client_id exists
+    if ClientInfo.objects.filter(id=client_id).exists():
+        # Copy fields dict and strip out unwanted fields
+        tmpfields = ClosedReq.fields.copy()
+        del tmpfields['client_id']
+        del tmpfields['req_id']
+        # Add req field and (re)use tojsondict() as translator
+        tmpfields['req'] = tojsondict
+        # Get closed reqs for client, add JSON-compat dict to list
+        oreqlist = []
+        for oreq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
+            oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
+        # Construct response
+        respdict = OrderedDict([
+            ('client_id', client_id),
+            ('closed_req_count', len(oreqlist)),
+            ('closed_req_list', oreqlist)
+        ])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    else:
+        return HttpResponseNotFound(json404str, content_type=json_contype)
 
 
