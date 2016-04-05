@@ -1,6 +1,6 @@
 import datetime, json, uuid
 from collections import OrderedDict
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -411,7 +411,7 @@ class OpenReqManager(models.Manager):
         '''
         # Ensure username supplied
         if not user:
-            raise ValueError('User field required')
+            raise ValueError('User required')
 
         # Get current datetime, shave off subseconds
         dnow = approxnow()
@@ -427,7 +427,7 @@ class OpenReqManager(models.Manager):
         if isinstance(client, ClientInfo):
             newargs['client'] = client
         elif isinstance(client, uuid.UUID):
-            newargs['client_id'] = str(client)
+            newargs['client_id'] = client
         elif isinstance(client, str):
             uid = validuuid(client)
             if uid:
@@ -441,7 +441,7 @@ class OpenReqManager(models.Manager):
         if isinstance(request, FeatureReq):
             newargs['req'] = request
         elif isinstance(request, uuid.UUID):
-            newargs['req_id'] = str(request)
+            newargs['req_id'] = request
         elif isinstance(request, str):
             uid = validuuid(request)
             if uid:
@@ -505,6 +505,113 @@ class OpenReq(models.Model):
     # Will call tojsondict() with self
     jsondict = tojsondict
 
+# Closed request manager
+class ClosedReqManager(models.Manager):
+    """Model manager for ClosedReq"""
+
+    def closereq(self, user, request, status='C', reason='Request completed', client=None):
+        '''Creates ClosedReq entry (or entries) from existing OpenReq(s) and 
+        removes said OpenReq(s).'''
+
+        # Ensure username supplied
+        if not user:
+            raise ValueError('User required')
+
+        # Normalize status to short form
+        if status in STATUS_BY_SHORT:
+            use_status = status
+        else:
+            use_status = STATUS_BY_TEXT.get(status, None)
+            if not use_status:
+                raise ValueError('Invalid status: {0}'.format(status))
+
+        # Ensure reason is non-empty string
+        if not reason or not isinstance(reason, str):
+            raise ValueError('Invalid reason: {0}'.format(reason))
+
+        # Get current datetime, shave off subseconds
+        dnow = approxnow()
+
+        # Gather args
+        newargs = {
+            'closed_at': dnow,
+            'closed_by': user,
+            'status': use_status,
+            'reason': reason,
+        }
+
+        # Get request id (we only need the id, really)
+        if isinstance(request, FeatureReq):
+            req_id = request.id
+        elif isinstance(request, uuid.UUID):
+            req_id = request
+        elif isinstance(request, str):
+            uid = validuuid(request)
+            if uid:
+                req_id = uid
+            else:
+                raise ValueError('Invalid req_id: {0}'.format(request))
+        else:
+            raise TypeError('Invalid req_id type: {0}'.format(type(request)))
+
+        # Get QuerySet matching req_id
+        openreqs = OpenReq.objects.filter(req_id=req_id)
+
+        # Check if client given, get id
+        if client:
+            if isinstance(client, ClientInfo):
+                client_id = client.id
+            elif isinstance(client, uuid.UUID):
+                client_id = client
+            elif isinstance(client, str):
+                uid = validuuid(client)
+                if uid:
+                    client_id = uid
+                else:
+                    raise ValueError('Invalid client_id: {0}'.format(client))
+            else:
+                raise TypeError('Invalid client_id type: {0}'.format(type(client)))
+            # Now further filter query
+            openreqs = openreqs.filter(client_id=client_id)
+
+        # We use values() since we're just going to be populating (a copy of)
+        # the newargs dict later anyways.
+        # We raise an exception if query is empty, since you can't close
+        # something that isn't open...
+        oreqlist = openreqs.values()
+        if len(oreqlist) == 0:
+            if client_id:
+                raise ObjectDoesNotExist('No open req_id {0} for client_id {1}'.format(
+                    req_id, client_id))
+            else:
+                raise ObjectDoesNotExist('No open req_id {0}'.format(req_id))
+
+        # Now the big loop: we create closed versions of each open request, 
+        # then delete the open versions.
+        # Everything gets wrapped in a transaction, since we're doing a whole
+        # bunch of changes at once, and we want them to succeed or fail 
+        # together.
+        with transaction.atomic():
+            tocreate = []
+            # Build new ClosedReq(s)
+            for oreq in oreqlist:
+                # Copy of newargs
+                closeargs = newargs.copy()
+                # Add in OpenReq values (this will add req_id and client_id)
+                closeargs.update(oreq)
+                # Strip out primary key
+                del closeargs['id']
+                # Create new ClosedReq instance and validate (will bulk create)
+                creq = ClosedReq(**closeargs)
+                creq.full_clean()
+                tocreate.append(creq)
+            # Insert them all at once
+            ClosedReq.objects.bulk_create(tocreate)
+            # Now delete the OpenReq(s)
+            openreqs.delete()
+
+        # And we're done!
+        return True
 
 # Closed requests
 class ClosedReq(models.Model):
@@ -533,6 +640,8 @@ class ClosedReq(models.Model):
     # Closed status
     status = models.CharField('Closed as', max_length=1, default='C', choices=STATUS_CHOICES)
     reason = models.CharField('Details', max_length=128, blank=True, default='')
+
+    objects = ClosedReqManager()
 
     def __str__(self):
         return str(self.client) + ": " + str(self.req)
