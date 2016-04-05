@@ -35,8 +35,8 @@ def strtoid(idstr):
 
 # Datetime string conversion
 # Uses same format as Django internal, except without subsecond resolution
-DATETIMEFMT = '%Y-%m-%d %H:%M:%S'
-DATEONLYFMT = '%Y-%m-%d'
+DATETIMEFMT = '%Y-%m-%dT%H:%M:%S'
+DATEONLYFMT = '%Y-%m-%dZ'
 
 def approxnow():
     '''Returns present datetime without microseconds'''
@@ -44,13 +44,13 @@ def approxnow():
 
 def approxnowfmt():
     '''Returns present datetime without microseconds as string,
-    formatted as '%Y-%m-%d %H:%M:%S'
+    formatted as '%Y-%m-%dT%H:%M:%S''
     '''
     return approxnow().strftime(DATETIMEFMT)
 
 def approxdatefmt(date_val):
     '''Returns date_val without microseconds as string,
-    formatted as '%Y-%m-%d %H:%M:%S'.
+    formatted as '%Y-%m-%dT%H:%M:%S'.
     Returns None if date_val is not a datetime instance.
     '''
     if isinstance(date_val, datetime.datetime):
@@ -65,7 +65,7 @@ def checkdatetgt(date_tgt):
     date_tgt is None (or any other value evaluating to False).
 
     date_tgt can be a specific datetime object, a timedelta object, or 
-    a datetime string in the format '%Y-%m-%d %H:%M:%S' or '%Y-%m-%d'.
+    a datetime string in the format '%Y-%m-%dT%H:%M:%S' or '%Y-%m-%d'.
     Invalid datetimes will raise ValueError. Types other than the above
     will raise TypeError.
     '''
@@ -406,7 +406,7 @@ class OpenReqManager(models.Manager):
         priority must be None (default) or integer in range 1 < x < 32767 (inclusive).
 
         date_tgt can be a specific datetime object, a timedelta object, or 
-        a datetime string in the format '%Y-%m-%d %H:%M:%S'. Invalid datetimes
+        a datetime string in the format '%Y-%m-%dT%H:%M:%S'. Invalid datetimes
         will raise ValueError.
         '''
         # Ensure username supplied
