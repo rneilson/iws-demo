@@ -46,7 +46,7 @@ def statusbyshort(status):
 class FeatReqManager(models.Manager):
     """Model manager for FeatureReq"""
 
-    def newrequest(self, user, title, desc, ref_url='', prod_area='Policies', id=None):
+    def newreq(self, user, title, desc, ref_url='', prod_area='Policies', id=None):
         '''Create new request'''
         # Check for required fields
         if not user:
@@ -62,7 +62,7 @@ class FeatReqManager(models.Manager):
         prod_area = prodarea if prodarea in AREA_BY_SHORT else AREA_BY_TEXT[prodarea]
         newargs = {
             'title': title,
-            'desc': desc,
+            'desc': desc.strip(),
             'ref_url': refurl,
             'prod_area': prod_area,
             'user_cr': user,
@@ -85,6 +85,7 @@ class FeatReqManager(models.Manager):
         fr.full_clean()
         fr.save()
         return fr
+
 
 # Feature request details
 class FeatureReq(models.Model):
@@ -140,6 +141,65 @@ class FeatureReq(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+    def updatereq(self, user, addtodesc='', newtitle='', newprodarea=''):
+        # Check for required fields
+        if not user:
+            raise ValueError('User field required')
+        # Ensure we're actually updating something
+        # If not, return unchanged
+        if not addtodesc and not newtitle and not newprodarea:
+            return self
+
+        # Get current datetime
+        padstr = '\n\n'
+        dt = approxnow()
+        dtstr = dt.strftime('%Y-%m-%d %H:%M:%S')
+        upstr = ""
+
+        # First append new product area change, if present
+        if newprodarea:
+            # Convert to short form if req'd
+            if newprodarea in AREA_BY_TEXT:
+                newprodarea = AREA_BY_TEXT[newprodarea]
+            if newprodarea in AREA_BY_SHORT:
+                # Change product area and append change
+                self.prod_area = newprodarea
+                upstr = upstr + padstr + '{0}, {1}:\n[Changed product area to "{2}"]'.format(
+                    dtstr, user, newprodarea)
+            else:
+                raise ValueError('Invalid product area: {0}'.format(newprodarea))
+
+        # Next append title change, if present
+        if newtitle:
+            # Force string (just in case...)
+            if not isinstance(newtitle, str):
+                raise TypeError('Invalid title type: {0}'.format(type(newtitle)))
+            # Change title and append change
+            self.title = newtitle
+            upstr = upstr + padstr + '{0}, {1}:\n[Changed title to "{2}"]'.format(
+                dtstr, user, newtitle)
+
+        # Now description addendum, if requested
+        if addtodesc:
+            # Force string (just in case...)
+            if not isinstance(addtodesc, str):
+                raise TypeError('Invalid description type: {0}'.format(type(addtodesc)))
+            # Add addendum [sic]
+            # No padding, since we'd strip it anyways later
+            upstr = upstr + padstr + '{0}, {1}:\n'.format(dtstr, user) + addtodesc
+
+        # Update description
+        self.desc = self.desc.rstrip() + upstr
+
+        # Change update user/time
+        self.date_up = dt
+        self.user_up = user
+
+        # Finally, update, validate, save, return
+        self.full_clean()
+        self.save()
+        return self
 
 
 # Client manager

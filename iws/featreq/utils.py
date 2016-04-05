@@ -29,7 +29,7 @@ def validuuid(uid, version=4):
 # Datetime string conversion
 # Uses same format as Django internal, except without subsecond resolution
 DATETIMEFMT = '%Y-%m-%dT%H:%M:%S'
-DATEONLYFMT = '%Y-%m-%dZ'
+DATEONLYFMT = '%Y-%m-%d'
 
 def approxnow():
     '''Returns present datetime without microseconds'''
