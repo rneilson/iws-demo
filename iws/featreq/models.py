@@ -149,13 +149,13 @@ class FeatureReq(models.Model):
             raise ValueError('User field required')
         # Ensure we're actually updating something
         # If not, return unchanged
-        if not addtodesc and not newtitle and not newprodarea:
+        if not addtodesc and not newtitle and not newurl and not newprodarea:
             return self
 
         # Get current datetime
-        padstr = '\n\n'
         dt = approxnow()
         dtstr = dt.strftime('%Y-%m-%d %H:%M:%S')
+        padstr = '\n\n'
         upstr = ""
 
         # First append new product area change, if present
