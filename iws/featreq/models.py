@@ -394,7 +394,7 @@ class OpenReqManager(models.Manager):
 
         # Check if client is already ClientInfo instance, use as id if not
         if isinstance(client, ClientInfo):
-            newargs['client_id'] = client.id
+            newargs['client'] = client
         elif isinstance(client, uuid.UUID):
             newargs['client_id'] = client
         elif isinstance(client, str):
@@ -427,7 +427,7 @@ class OpenReqManager(models.Manager):
                 raise ValueError('Priority out of range: {0}'.format(pr))
             newargs['priority'] = pr
             # Shift priorities if req'd
-            self.shiftpri(newargs['client_id'], pr)
+            self.shiftpri(client, pr)
 
         # Check date_tgt if given
         if date_tgt:
