@@ -143,7 +143,7 @@ class FeatureReq(models.Model):
     def __str__(self):
         return str(self.title)
 
-    def updatereq(self, user, addtodesc='', newtitle='', newprodarea=''):
+    def updatereq(self, user, addtodesc='', newtitle='', newurl='', newprodarea=''):
         # Check for required fields
         if not user:
             raise ValueError('User field required')
@@ -170,6 +170,18 @@ class FeatureReq(models.Model):
                     dtstr, user, newprodarea)
             else:
                 raise ValueError('Invalid product area: {0}'.format(newprodarea))
+
+        # Next append ref URL change, if present
+        if newurl:
+            # Force string (just in case...)
+            # TODO: validate URL format?
+            if not isinstance(newurl, str):
+                raise TypeError('Invalid URL type: {0}'.format(type(newurl)))
+            # Change URL and append change
+            self.ref_url = newurl
+            upstr = upstr + padstr + '{0}, {1}:\n[Changed reference URL to "{2}"]'.format(
+                dtstr, user, newurl)
+
 
         # Next append title change, if present
         if newtitle:
