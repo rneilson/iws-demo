@@ -1,5 +1,6 @@
 import datetime, json
 from collections import OrderedDict
+from functools import partial
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
@@ -14,14 +15,94 @@ json404 = OrderedDict([('error', 'Resource not found')])
 json404str = json.dumps(json404, indent=1) + '\n'
 json_contype = 'application/json'
 
+# OpenReq and ClosedReq modified fields and qset_vals_tojsonlist partials
+openreq_byreq_fielddict = OpenReq.fields.copy()
+del openreq_byreq_fielddict['req_id']
+openreq_byreq_partial = partial(
+    qset_vals_tojsonlist, 
+    fields=openreq_byreq_fielddict.keys(), 
+    fcalls=openreq_byreq_fielddict.values())
+
+closedreq_byreq_fielddict = ClosedReq.fields.copy()
+del closedreq_byreq_fielddict['req_id']
+closedreq_byreq_partial = partial(
+    qset_vals_tojsonlist, 
+    fields=closedreq_byreq_fielddict.keys(), 
+    fcalls=closedreq_byreq_fielddict.values())
+
+## Views
+
 def index(request):
     return HttpResponse('Uh, hi?\n')
 
-def reqindex(request):
+def reqindex(request, tolist=''):
     # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all featreqs
-    # (We only get fields id and title here, for brevity)
-    frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
+    if not tolist:
+        # We only get fields id and title here, for brevity
+        frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
+    else:
+        if tolist == 'open':
+            listopen = True
+            listclosed = False
+        elif tolist == 'closed':
+            listopen = False
+            listclosed = True
+        elif tolist == 'all':
+            listopen = True
+            listclosed = True
+
+        # We'll feed each FeatureReq into an OrderedDict by id, and append matching
+        # OpenReqs to them
+        frdict = OrderedDict()
+
+        # Get open, if requested
+        if listopen:
+            # Get all open requests, prefetching FeatureReq objects
+            oreqlist = OpenReq.objects.prefetch_related('req')
+            for oreq in oreqlist:
+                # Get/create featreq dict
+                try:
+                    fr = frdict[oreq.req_id]
+                except KeyError:
+                    # FeatureReq not in master dict, create JSON-compat dict and add
+                    fr = oreq.req.jsondict()
+                    frdict[oreq.req_id] = fr
+                # Get open_list from featreq dict
+                try:
+                    openlist = fr['open_list']
+                except KeyError:
+                    # OpenReq list not in featreq dict, add fresh list
+                    openlist = list()
+                    fr['open_list'] = openlist
+                # Now add OpenReq to list (minus redundant req_id)
+                openlist.append(oreq.jsondict(openreq_byreq_fielddict.keys(), openreq_byreq_fielddict.values()))
+
+        # Get closed, if requested
+        if listclosed:
+            # Get all closed requests, prefetching FeatureReq objects
+            creqlist = ClosedReq.objects.prefetch_related('req')
+            for creq in creqlist:
+                # Get/create featreq dict
+                try:
+                    fr = frdict[creq.req_id]
+                except KeyError:
+                    # FeatureReq not in master dict, create JSON-compat dict and add
+                    fr = creq.req.jsondict()
+                    frdict[creq.req_id] = fr
+                # Get closed_list from featreq dict
+                try:
+                    closedlist = fr['closed_list']
+                except KeyError:
+                    # ClosedReq list not in featreq dict, add fresh list
+                    closedlist = list()
+                    fr['closed_list'] = closedlist
+                # Now add ClosedReq to list (minus redundant req_id)
+                closedlist.append(creq.jsondict(closedreq_byreq_fielddict.keys(), closedreq_byreq_fielddict.values()))
+
+        # Now list-ify everything
+        frlist = list(frdict.values())
+
     # Construct response
     respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
@@ -71,7 +152,7 @@ def clientredir(request, client_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-def openindex(request):
+def openindexbyclient(request):
     # TODO: add filter options, additional field options
     # Get QuerySet of clients, with number of open requests
     oreqbycl = OpenReq.objects.values("client_id").annotate(open_count=Count('client_id'))
@@ -108,7 +189,7 @@ def openbyclient(request, client_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-def closedindex(request):
+def closedindexbyclient(request):
     # TODO: add filter options, additional field options
     # Get QuerySet of clients, with number of open requests
     oreqbycl = ClosedReq.objects.values("client_id").annotate(closed_count=Count('client_id'))

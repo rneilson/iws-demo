@@ -483,15 +483,15 @@ class OpenReq(models.Model):
         # ordering = ['priority', 'clientid']
 
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='openlist')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='open_list')
     # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='openlist')
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='open_list')
     # Client's priority (must be unique or null (uniqueness not db constraint))
     priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
     # Target date (not strictly required)
     date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
     # Open date/time
-    opened_at = models.DateTimeField('Opened at', default=approxnow, editable=False, blank=True, db_index=True)
+    opened_at = models.DateTimeField('Opened at', default=approxnow, editable=False, blank=True)
     # Opened by user (stored as username string instead of foreign key (for archival purposes))
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
 
@@ -641,9 +641,9 @@ class ClosedReq(models.Model):
         # ordering = ['closed_at']
 
     # Client attached
-    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closedlist')
+    client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='closed_list')
     # Feature request in question
-    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closedlist')
+    req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='closed_list')
     # Priority and target date at the point of closing (not unique, can be blank)
     priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
     date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
@@ -651,7 +651,7 @@ class ClosedReq(models.Model):
     opened_at = models.DateTimeField('Opened at', blank=False, editable=False)
     opened_by = models.CharField('Opened by', max_length=30, blank=False, editable=False)
     # Closed by user (stored as username string instead of foreign key (for archival purposes))
-    closed_at = models.DateTimeField('Closed at', default=approxnow, editable=False, blank=True, db_index=True)
+    closed_at = models.DateTimeField('Closed at', default=approxnow, editable=False, blank=True)
     closed_by = models.CharField('Closed by', max_length=30, blank=False, editable=False)
     # Closed status
     status = models.CharField('Closed as', max_length=1, default='C', choices=STATUS_CHOICES)
