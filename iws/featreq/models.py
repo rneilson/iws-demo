@@ -1,6 +1,7 @@
 import datetime, uuid
 from collections import OrderedDict
 from django.db import models, transaction
+from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
 from .utils import *
 
@@ -281,14 +282,97 @@ class ClientInfo(models.Model):
 class OpenReqManager(models.Manager):
     """Model manager for OpenReq"""
 
-    def attachreq(self, user, request, client, priority=None, date_tgt=None):
+    def shiftpri(self, client, priority):
+        '''Checks if client has open requests >= priority, and shifts them
+        up by one if so. New priority must be an integer in range 1 < x < 32766
+        (inclusive). Existing entries with priority value 32767 will be changed
+        to None/null.
+
+        Returns True if records were shifted, False otherwise.
+        '''
+        # If priority is None (or 0), we don't have to do anything (null != null)
+        if not priority:
+            return False
+        # If priority is not int or cannot be coerced to int, exception will
+        # pass uncaught. If priority is out of range, ValueError will be raised.
+        pr = int(priority)
+        if pr <= 0 or pr > 32767:
+            raise ValueError('Invalid priority: {0}'.format(priority))
+
+        # Check if client valid (type, anyways), and get id
+        if isinstance(client, ClientInfo):
+            client_id = client.id
+        elif isinstance(client, uuid.UUID):
+            client_id = client
+        elif isinstance(client, str):
+            uid = validuuid(client)
+            if uid:
+                client_id = uid
+            else:
+                raise ValueError('Invalid client_id: {0}'.format(client))
+        else:
+            raise TypeError('Invalid client_id type: {0}'.format(type(client)))
+
+        # Start transaction, so all of this is (or should be) atomic
+        with transaction.atomic():
+            # Check if any openreqs match client_id and priority
+            if not self.filter(id=client_id, priority=pr).exists():
+                # Nothing matches, good to go
+                return False
+            # Get everything matching client_id
+            toshift = self.filter(id=client_id)
+            # Anything at SmallIntegerField max goes to None(/null)
+            toshift.filter(priority=32767).update(priority=None)
+            # Get everything >= priority and shift it up by one
+            toshift.filter(priority__gte=pr).update(priority=F('priority')+1)
+
+        # Aaand that should do it
+        return True
+
+    def changepri(self, openreq, priority=None):
+        '''Change priority of given openreq.
+
+        Param openreq can be an OpenReq instance, a primary key, or a dict with
+        keys 'req_id' and 'client_id'.
+
+        Param priority must be None (default) or integer in range 1 < x < 32766 (inclusive).
+        '''
+        # Check type of openreq and fetch if necessary
+        if not isinstance(openreq, OpenReq):
+            # Try int (primary key)
+            if isinstance(openreq, int):
+                # Try getting OpenReq by id
+                openreq = self.get(id=openreq)
+            # Try dict with req_id and client_id
+            elif isinstance(openreq, dict) and 'req_id' in openreq and 'client_id' in openreq:
+                # Try getting OpenReq by ids (explicitly pulled from dict
+                # just in case something else weird is in there)
+                openreq = self.get(req_id=openreq['req_id'], client_id=openreq['client_id'])
+            # Nope, nothing doing
+            else:
+                raise ValueError('Invalid OpenReq identifier {0}'.format(openreq))
+
+        # If priority is None (or 0, really), we don't have to check
+        if not priority:
+            openreq.priority = None
+        # Otherwise, check/shift other priorities for this client, and *then* save
+        else:
+            self.shiftpri(openreq.client_id, priority)
+            openreq.priority = priority
+
+        # Now do the validate/save/return dance
+        openreq.full_clean()
+        openreq.save()
+        return openreq
+
+    def attachreq(self, user, client, request, priority=None, date_tgt=None):
         '''Attach feature request to client.
 
-        Both request and client must already exist, and can either be given 
+        Both client and request must already exist, and can either be given 
         directly as instance or fetched by id.
         Any ObjectDoesNotExist exceptions will be allowed to pass uncaught.
 
-        priority must be None (default) or integer in range 1 < x < 32767 (inclusive).
+        priority must be None (default) or integer in range 1 < x < 32766 (inclusive).
 
         date_tgt can be a specific datetime object, a timedelta object, or 
         a datetime string in the format '%Y-%m-%dT%H:%M:%S'. Invalid datetimes
@@ -337,10 +421,10 @@ class OpenReqManager(models.Manager):
             raise TypeError('Invalid req_id type: {0}'.format(type(request)))
 
         # Check priority (TypeError during int coercion will pass uncaught)
-        if priority is not None:
+        if not priority:
             pr = int(priority)
-            if pr <= 0 or pr > 32767:
-                raise ValueError('Invalid priority: {0}'.format(pr))
+            if pr <= 0 or pr > 32766:
+                raise ValueError('Priority out of range: {0}'.format(pr))
             newargs['priority'] = pr
 
         # Check date_tgt if given
@@ -351,6 +435,25 @@ class OpenReqManager(models.Manager):
         oreq = OpenReq(**newargs)
         oreq.full_clean()
         oreq.save()
+        return oreq
+
+    def newreq(self, user, client, priority=None, date_tgt=None, **newreq_args):
+        '''Creates new feature request and attaches to given client, which
+        can be given as ClientInfo object, UUID object, or UUID string.
+
+        Params **newreq_args will be passed to FeatureReq.newreq(). Allowed
+        fields are: title, desc, ref_url, prod_area, and id.
+
+        Params priority and date_tgt will be passed to OpenReq.attachreq().
+
+        Exceptions during any creation step will be passed uncaught.
+        '''
+        # First, make request
+        fr = FeatureReq.objects.newreq(user, **newreq_args)
+        # Next, attach to client
+        oreq = OpenReq.attachreq(user, client, fr, priority, date_tgt)
+        # Assume successful at this point (any exceptions will have already 
+        # been raised by the above funcs)
         return oreq
 
 # Open requests
