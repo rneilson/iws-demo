@@ -56,16 +56,16 @@ class FeatReqManager(models.Manager):
             raise ValueError('Title field required')
         if not desc:
             raise ValueError('Description field required')
-        if prodarea not in AREA_BY_TEXT and prodarea not in AREA_BY_SHORT:
-            raise ValueError('Invalid product area: {0}'.format(prodarea))
+        if prod_area not in AREA_BY_TEXT and prod_area not in AREA_BY_SHORT:
+            raise ValueError('Invalid product area: {0}'.format(prod_area))
 
         # Gather args
-        prod_area = prodarea if prodarea in AREA_BY_SHORT else AREA_BY_TEXT[prodarea]
+        prodarea = prod_area if prod_area in AREA_BY_SHORT else AREA_BY_TEXT[prod_area]
         newargs = {
             'title': title,
             'desc': desc.strip(),
-            'ref_url': refurl,
-            'prod_area': prod_area,
+            'ref_url': ref_url,
+            'prod_area': prodarea,
             'user_cr': user,
             'user_up': user
         }
@@ -315,12 +315,12 @@ class OpenReqManager(models.Manager):
 
         # Start transaction, so all of this is (or should be) atomic
         with transaction.atomic():
+            # Get everything matching client_id
+            toshift = self.filter(client_id=client_id)
             # Check if any openreqs match client_id and priority
-            if not self.filter(id=client_id, priority=pr).exists():
+            if not toshift.filter(priority=pr).exists():
                 # Nothing matches, good to go
                 return False
-            # Get everything matching client_id
-            toshift = self.filter(id=client_id)
             # Anything at SmallIntegerField max goes to None(/null)
             toshift.filter(priority=32767).update(priority=None)
             # Get everything >= priority and shift it up by one
@@ -394,7 +394,7 @@ class OpenReqManager(models.Manager):
 
         # Check if client is already ClientInfo instance, use as id if not
         if isinstance(client, ClientInfo):
-            newargs['client'] = client
+            newargs['client_id'] = client.id
         elif isinstance(client, uuid.UUID):
             newargs['client_id'] = client
         elif isinstance(client, str):
@@ -421,11 +421,13 @@ class OpenReqManager(models.Manager):
             raise TypeError('Invalid req_id type: {0}'.format(type(request)))
 
         # Check priority (TypeError during int coercion will pass uncaught)
-        if not priority:
+        if priority:
             pr = int(priority)
             if pr <= 0 or pr > 32766:
                 raise ValueError('Priority out of range: {0}'.format(pr))
             newargs['priority'] = pr
+            # Shift priorities if req'd
+            self.shiftpri(newargs['client_id'], pr)
 
         # Check date_tgt if given
         if date_tgt:
@@ -451,7 +453,7 @@ class OpenReqManager(models.Manager):
         # First, make request
         fr = FeatureReq.objects.newreq(user, **newreq_args)
         # Next, attach to client
-        oreq = OpenReq.attachreq(user, client, fr, priority, date_tgt)
+        oreq = self.attachreq(user, client, fr, priority, date_tgt)
         # Assume successful at this point (any exceptions will have already 
         # been raised by the above funcs)
         return oreq
@@ -464,15 +466,16 @@ class OpenReq(models.Model):
         verbose_name = 'open request'
         verbose_name_plural = 'open requests'
         db_table = 'openreqs'
-        unique_together = ['req', 'client']
+        unique_together = ['client', 'req']
+        index_together = ['client', 'priority']
         # ordering = ['priority', 'clientid']
 
     # Client attached
     client = models.ForeignKey(ClientInfo, on_delete=models.CASCADE, verbose_name='Client', related_name='openlist')
     # Feature request in question
     req = models.ForeignKey(FeatureReq, on_delete=models.CASCADE, verbose_name='Request', related_name='openlist')
-    # Client's priority (must be unique or null)
-    priority = models.SmallIntegerField('Priority', unique=True, blank=True, null=True, default=None)
+    # Client's priority (must be unique or null (uniqueness not db constraint))
+    priority = models.SmallIntegerField('Priority', blank=True, null=True, default=None)
     # Target date (not strictly required)
     date_tgt = models.DateTimeField('Target date', blank=True, null=True, default=None)
     # Open date/time
@@ -528,51 +531,61 @@ class ClosedReqManager(models.Manager):
             'reason': reason,
         }
 
-        # Get request id (we only need the id, really)
-        if isinstance(request, FeatureReq):
-            req_id = request.id
-        elif isinstance(request, uuid.UUID):
-            req_id = request
-        elif isinstance(request, str):
-            uid = validuuid(request)
-            if uid:
-                req_id = uid
-            else:
-                raise ValueError('Invalid req_id: {0}'.format(request))
+        # If request is already an OpenReq instance, things are simpler
+        if isinstance(request, OpenReq):
+            # Labelled plural, but all the transaction for loop will do
+            # is call delete(), so we won't worry about it
+            openreqs = request
+            # Get values dict and save into list, as we would below with a QuerySet
+            # when calling values()
+            oreqlist = [ { k:getattr(request, k) for k in request.fields.keys() } ]
+        # Otherwise, there are more hoops to jump through
         else:
-            raise TypeError('Invalid req_id type: {0}'.format(type(request)))
-
-        # Get QuerySet matching req_id
-        openreqs = OpenReq.objects.filter(req_id=req_id)
-
-        # Check if client given, get id
-        if client:
-            if isinstance(client, ClientInfo):
-                client_id = client.id
-            elif isinstance(client, uuid.UUID):
-                client_id = client
-            elif isinstance(client, str):
-                uid = validuuid(client)
+            # Get request id (we only need the id, really)
+            if isinstance(request, FeatureReq):
+                req_id = request.id
+            elif isinstance(request, uuid.UUID):
+                req_id = request
+            elif isinstance(request, str):
+                uid = validuuid(request)
                 if uid:
-                    client_id = uid
+                    req_id = uid
                 else:
-                    raise ValueError('Invalid client_id: {0}'.format(client))
+                    raise ValueError('Invalid req_id: {0}'.format(request))
             else:
-                raise TypeError('Invalid client_id type: {0}'.format(type(client)))
-            # Now further filter query
-            openreqs = openreqs.filter(client_id=client_id)
+                raise TypeError('Invalid req_id type: {0}'.format(type(request)))
 
-        # We use values() since we're just going to be populating (a copy of)
-        # the newargs dict later anyways.
-        # We raise an exception if query is empty, since you can't close
-        # something that isn't open...
-        oreqlist = openreqs.values()
-        if len(oreqlist) == 0:
-            if client_id:
-                raise ObjectDoesNotExist('No open req_id {0} for client_id {1}'.format(
-                    req_id, client_id))
-            else:
-                raise ObjectDoesNotExist('No open req_id {0}'.format(req_id))
+            # Get QuerySet matching req_id
+            openreqs = OpenReq.objects.filter(req_id=req_id)
+
+            # Check if client given, get id
+            if client and not client_id:
+                if isinstance(client, ClientInfo):
+                    client_id = client.id
+                elif isinstance(client, uuid.UUID):
+                    client_id = client
+                elif isinstance(client, str):
+                    uid = validuuid(client)
+                    if uid:
+                        client_id = uid
+                    else:
+                        raise ValueError('Invalid client_id: {0}'.format(client))
+                else:
+                    raise TypeError('Invalid client_id type: {0}'.format(type(client)))
+                # Now further filter query
+                openreqs = openreqs.filter(client_id=client_id)
+
+            # We use values() since we're just going to be populating (a copy of)
+            # the newargs dict later anyways.
+            # We raise an exception if query is empty, since you can't close
+            # something that isn't open...
+            oreqlist = openreqs.values()
+            if len(oreqlist) == 0:
+                if client_id:
+                    raise ObjectDoesNotExist('No open req_id {0} for client_id {1}'.format(
+                        req_id, client_id))
+                else:
+                    raise ObjectDoesNotExist('No open req_id {0}'.format(req_id))
 
         # Now the big loop: we create closed versions of each open request, 
         # then delete the open versions.
@@ -587,8 +600,11 @@ class ClosedReqManager(models.Manager):
                 closeargs = newargs.copy()
                 # Add in OpenReq values (this will add req_id and client_id)
                 closeargs.update(oreq)
-                # Strip out primary key
-                del closeargs['id']
+                # Strip out primary key if present
+                try:
+                    del closeargs['id']
+                except KeyError:
+                    pass
                 # Create new ClosedReq instance and validate (will bulk create)
                 creq = ClosedReq(**closeargs)
                 creq.full_clean()
@@ -609,7 +625,7 @@ class ClosedReq(models.Model):
         verbose_name = 'closed request'
         verbose_name_plural = 'closed requests'
         db_table = 'closedreqs'
-        unique_together = ['req', 'client']
+        unique_together = ['client', 'req']
         # ordering = ['closed_at']
 
     # Client attached
