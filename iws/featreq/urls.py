@@ -12,6 +12,7 @@ req_patterns = [
 
 client_patterns = [
     url(r'^$', views.clientindex, name='featreq-client-index'),
+    url(r'^(?P<tolist>open|closed|all)/$', views.clientindex, name='featreq-client-index-ext'),
     url(r'^(?i)(?P<client_id>[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12})', include([
         url(r'^$', views.clientbyid, name='featreq-client-byid'),
         url(r'^/$', views.clientredir)

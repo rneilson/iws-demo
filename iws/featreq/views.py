@@ -18,17 +18,22 @@ json_contype = 'application/json'
 # OpenReq and ClosedReq modified fields and qset_vals_tojsonlist partials
 openreq_byreq_fielddict = OpenReq.fields.copy()
 del openreq_byreq_fielddict['req_id']
-openreq_byreq_partial = partial(
-    qset_vals_tojsonlist, 
-    fields=openreq_byreq_fielddict.keys(), 
-    fcalls=openreq_byreq_fielddict.values())
+# openreq_byreq_partial = partial(
+#     qset_vals_tojsonlist, 
+#     fields=openreq_byreq_fielddict.keys(), 
+#     fcalls=openreq_byreq_fielddict.values())
 
 closedreq_byreq_fielddict = ClosedReq.fields.copy()
 del closedreq_byreq_fielddict['req_id']
-closedreq_byreq_partial = partial(
-    qset_vals_tojsonlist, 
-    fields=closedreq_byreq_fielddict.keys(), 
-    fcalls=closedreq_byreq_fielddict.values())
+# closedreq_byreq_partial = partial(
+#     qset_vals_tojsonlist, 
+#     fields=closedreq_byreq_fielddict.keys(), 
+#     fcalls=closedreq_byreq_fielddict.values())
+
+openreq_byclient_fielddict = OpenReq.fields.copy()
+del openreq_byclient_fielddict['client_id']
+closedreq_byclient_fielddict = ClosedReq.fields.copy()
+del closedreq_byclient_fielddict['client_id']
 
 ## Views
 
@@ -59,7 +64,7 @@ def reqindex(request, tolist=''):
         # Get open, if requested
         if listopen:
             # Get all open requests, prefetching FeatureReq objects
-            oreqlist = OpenReq.objects.prefetch_related('req')
+            oreqlist = OpenReq.objects.select_related('req')
             for oreq in oreqlist:
                 # Get/create featreq dict
                 try:
@@ -81,7 +86,7 @@ def reqindex(request, tolist=''):
         # Get closed, if requested
         if listclosed:
             # Get all closed requests, prefetching FeatureReq objects
-            creqlist = ClosedReq.objects.prefetch_related('req')
+            creqlist = ClosedReq.objects.select_related('req')
             for creq in creqlist:
                 # Get/create featreq dict
                 try:
@@ -125,11 +130,74 @@ def reqredir(request, req_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-def clientindex(request):
+def clientindex(request, tolist=''):
     # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all clients
-    # (We only get fields id and name here, for brevity)
-    cllist = qset_vals_tojsonlist(ClientInfo.objects, ('id', 'name'))
+    if not tolist:
+        # (We only get fields id and name here, for brevity)
+        cllist = qset_vals_tojsonlist(ClientInfo.objects, ('id', 'name'))
+    else:
+        if tolist == 'open':
+            listopen = True
+            listclosed = False
+        elif tolist == 'closed':
+            listopen = False
+            listclosed = True
+        elif tolist == 'all':
+            listopen = True
+            listclosed = True
+
+        # We'll feed each FeatureReq into an OrderedDict by id, and append matching
+        # OpenReqs to them
+        cldict = OrderedDict()
+
+        # Get open, if requested
+        if listopen:
+            # Get all open requests, prefetching FeatureReq objects
+            oreqlist = OpenReq.objects.select_related('client')
+            for oreq in oreqlist:
+                # Get/create featreq dict
+                try:
+                    cl = cldict[oreq.client_id]
+                except KeyError:
+                    # FeatureReq not in master dict, create JSON-compat dict and add
+                    cl = oreq.client.jsondict()
+                    cldict[oreq.client_id] = cl
+                # Get open_list from featreq dict
+                try:
+                    openlist = cl['open_list']
+                except KeyError:
+                    # OpenReq list not in featreq dict, add fresh list
+                    openlist = list()
+                    cl['open_list'] = openlist
+                # Now add OpenReq to list (minus redundant client_id)
+                openlist.append(oreq.jsondict(openreq_byclient_fielddict.keys(), openreq_byclient_fielddict.values()))
+
+        # Get closed, if requested
+        if listclosed:
+            # Get all closed requests, prefetching FeatureReq objects
+            creqlist = ClosedReq.objects.select_related('client')
+            for creq in creqlist:
+                # Get/create featreq dict
+                try:
+                    cl = cldict[creq.client_id]
+                except KeyError:
+                    # FeatureReq not in master dict, create JSON-compat dict and add
+                    cl = creq.client.jsondict()
+                    cldict[creq.client_id] = cl
+                # Get closed_list from featreq dict
+                try:
+                    closedlist = cl['closed_list']
+                except KeyError:
+                    # ClosedReq list not in featreq dict, add fresh list
+                    closedlist = list()
+                    cl['closed_list'] = closedlist
+                # Now add ClosedReq to list (minus redundant client_id)
+                closedlist.append(creq.jsondict(closedreq_byclient_fielddict.keys(), closedreq_byclient_fielddict.values()))
+
+        # Now list-ify everything
+        cllist = list(cldict.values())
+
     # Construct response
     respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
@@ -182,8 +250,8 @@ def openbyclient(request, client_id):
         # Construct response
         respdict = OrderedDict([
             ('client_id', client_id),
-            ('open_req_count', len(oreqlist)),
-            ('open_req_list', oreqlist)
+            ('open_count', len(oreqlist)),
+            ('open_list', oreqlist)
         ])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
     else:
@@ -219,8 +287,8 @@ def closedbyclient(request, client_id):
         # Construct response
         respdict = OrderedDict([
             ('client_id', client_id),
-            ('closed_req_count', len(oreqlist)),
-            ('closed_req_list', oreqlist)
+            ('closed_count', len(oreqlist)),
+            ('closed_list', oreqlist)
         ])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
     else:
