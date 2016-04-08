@@ -571,7 +571,7 @@ class ClosedReqManager(models.Manager):
             openreqs = OpenReq.objects.filter(req_id=req_id)
 
             # Check if client given, get id
-            if client and not client_id:
+            if client:
                 if isinstance(client, ClientInfo):
                     client_id = client.id
                 elif isinstance(client, uuid.UUID):
