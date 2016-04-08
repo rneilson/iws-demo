@@ -341,41 +341,60 @@ class OpenReqManager(models.Manager):
         # Aaand that should do it
         return True
 
-    def changepri(self, openreq, priority=None):
-        '''Change priority of given openreq.
+    def updatereq(self, openreq, priority=False, date_tgt=False):
+        '''Change priority and/or target date of given openreq.
 
         Param openreq can be an OpenReq instance, a primary key, or a dict with
         keys 'req_id' and 'client_id'.
 
-        Param priority must be None (default) or integer in range 1 < x < 32766 (inclusive).
+        If priority is None or an integer in range 1 < x < 32766 (inclusive),
+        it will be updated. If False (default), no update will be applied.
+
+        If date_tgt is a datetime object or a string in the form
+        '%Y-%m-%dT%H:%M:%S', and in the future, it will be updated. If False
+        (default), no update will be applied.
         '''
-        # Check type of openreq and fetch if necessary
-        if not isinstance(openreq, OpenReq):
-            # Try int (primary key)
-            if isinstance(openreq, int):
-                # Try getting OpenReq by id
-                openreq = self.get(id=openreq)
-            # Try dict with req_id and client_id
-            elif isinstance(openreq, dict) and 'req_id' in openreq and 'client_id' in openreq:
-                # Try getting OpenReq by ids (explicitly pulled from dict
-                # just in case something else weird is in there)
-                openreq = self.get(req_id=openreq['req_id'], client_id=openreq['client_id'])
-            # Nope, nothing doing
-            else:
-                raise ValueError('Invalid OpenReq identifier {0}'.format(openreq))
+        # Wrap it all in a transaction -- too many parts to be safe from race
+        # conditions otherwise
+        with transaction.atomic():
+            # Check type of openreq and fetch if necessary
+            if not isinstance(openreq, OpenReq):
+                # Try int (primary key)
+                if isinstance(openreq, int):
+                    # Try getting OpenReq by id
+                    openreq = self.get(id=openreq)
+                # Try dict with req_id and client_id
+                elif isinstance(openreq, dict) and 'req_id' in openreq and 'client_id' in openreq:
+                    # Try getting OpenReq by ids (explicitly pulled from dict
+                    # just in case something else weird is in there)
+                    openreq = self.get(req_id=openreq['req_id'], client_id=openreq['client_id'])
+                # Nope, nothing doing
+                else:
+                    raise ValueError('Invalid OpenReq identifier {0}'.format(openreq))
 
-        # If priority is None (or 0, really), we don't have to check
-        if not priority:
-            openreq.priority = None
-        # Otherwise, check/shift other priorities for this client, and *then* save
-        else:
-            self.shiftpri(openreq.client_id, priority)
-            openreq.priority = priority
+            # If we're not doing anything, return openreq unmodified
+            if priority is False and date_tgt is False:
+                return openreq
 
-        # Now do the validate/save/return dance
-        openreq.full_clean()
-        openreq.save()
-        return openreq
+            # Only update priority if not False
+            if priority is not False:
+                # If priority is None or 0, we don't have to check/shift
+                if priority is None or priority == 0:
+                    openreq.priority = None
+                # Otherwise, check/shift other priorities for this client, and *then* save
+                elif priority != openreq.priority:
+                    self.shiftpri(openreq.client_id, priority)
+                    openreq.priority = priority
+
+            # Only update date_tgt if not False
+            if date_tgt is not False:
+                # Ensure date_tgt is in the future
+                openreq.date_tgt = checkdatetgt(date_tgt)
+
+            # Now do the validate/save/return dance
+            openreq.full_clean()
+            openreq.save()
+            return openreq
 
     def attachreq(self, user, client, request, priority=None, date_tgt=None):
         '''Attach feature request to client.
