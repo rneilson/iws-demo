@@ -16,24 +16,36 @@ json404str = json.dumps(json404, indent=1) + '\n'
 json_contype = 'application/json'
 
 # OpenReq and ClosedReq modified fields and qset_vals_tojsonlist partials
-openreq_byreq_fielddict = OpenReq.fields.copy()
-del openreq_byreq_fielddict['req_id']
+openreq_byreq_fields = OpenReq.fields.copy()
+del openreq_byreq_fields['req_id']
 # openreq_byreq_partial = partial(
 #     qset_vals_tojsonlist, 
-#     fields=openreq_byreq_fielddict.keys(), 
-#     fcalls=openreq_byreq_fielddict.values())
+#     fields=openreq_byreq_fields.keys(), 
+#     fcalls=openreq_byreq_fields.values())
 
-closedreq_byreq_fielddict = ClosedReq.fields.copy()
-del closedreq_byreq_fielddict['req_id']
+closedreq_byreq_fields = ClosedReq.fields.copy()
+del closedreq_byreq_fields['req_id']
 # closedreq_byreq_partial = partial(
 #     qset_vals_tojsonlist, 
-#     fields=closedreq_byreq_fielddict.keys(), 
-#     fcalls=closedreq_byreq_fielddict.values())
+#     fields=closedreq_byreq_fields.keys(), 
+#     fcalls=closedreq_byreq_fields.values())
 
-openreq_byclient_fielddict = OpenReq.fields.copy()
-del openreq_byclient_fielddict['client_id']
-closedreq_byclient_fielddict = ClosedReq.fields.copy()
-del closedreq_byclient_fielddict['client_id']
+client_with_counts_dict = OrderedDict([
+    ('id', ClientInfo.fields['id']),
+    ('name', None),
+    ('open_count', None),
+    ('closed_count', None)
+])
+
+openreq_byclient_fields = OpenReq.fields.copy()
+del openreq_byclient_fields['client_id']
+del openreq_byclient_fields['req_id']
+openreq_byclient_fields['req'] = tojsondict
+
+closedreq_byclient_fields = ClosedReq.fields.copy()
+del closedreq_byclient_fields['client_id']
+del closedreq_byclient_fields['req_id']
+closedreq_byclient_fields['req'] = tojsondict
 
 ## Views
 
@@ -81,7 +93,7 @@ def reqindex(request, tolist=''):
                     openlist = list()
                     fr['open_list'] = openlist
                 # Now add OpenReq to list (minus redundant req_id)
-                openlist.append(oreq.jsondict(openreq_byreq_fielddict.keys(), openreq_byreq_fielddict.values()))
+                openlist.append(oreq.jsondict(openreq_byreq_fields.keys(), openreq_byreq_fields.values()))
 
         # Get closed, if requested
         if listclosed:
@@ -103,7 +115,7 @@ def reqindex(request, tolist=''):
                     closedlist = list()
                     fr['closed_list'] = closedlist
                 # Now add ClosedReq to list (minus redundant req_id)
-                closedlist.append(creq.jsondict(closedreq_byreq_fielddict.keys(), closedreq_byreq_fielddict.values()))
+                closedlist.append(creq.jsondict(closedreq_byreq_fields.keys(), closedreq_byreq_fields.values()))
 
         # Now list-ify everything
         frlist = list(frdict.values())
@@ -133,71 +145,11 @@ def reqredir(request, req_id):
 def clientindex(request, tolist=''):
     # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all clients
-    if not tolist:
-        # (We only get fields id and name here, for brevity)
-        cllist = qset_vals_tojsonlist(ClientInfo.objects, ('id', 'name'))
-    else:
-        if tolist == 'open':
-            listopen = True
-            listclosed = False
-        elif tolist == 'closed':
-            listopen = False
-            listclosed = True
-        elif tolist == 'all':
-            listopen = True
-            listclosed = True
-
-        # We'll feed each FeatureReq into an OrderedDict by id, and append matching
-        # OpenReqs to them
-        cldict = OrderedDict()
-
-        # Get open, if requested
-        if listopen:
-            # Get all open requests, prefetching FeatureReq objects
-            oreqlist = OpenReq.objects.select_related('client')
-            for oreq in oreqlist:
-                # Get/create featreq dict
-                try:
-                    cl = cldict[oreq.client_id]
-                except KeyError:
-                    # FeatureReq not in master dict, create JSON-compat dict and add
-                    cl = oreq.client.jsondict()
-                    cldict[oreq.client_id] = cl
-                # Get open_list from featreq dict
-                try:
-                    openlist = cl['open_list']
-                except KeyError:
-                    # OpenReq list not in featreq dict, add fresh list
-                    openlist = list()
-                    cl['open_list'] = openlist
-                # Now add OpenReq to list (minus redundant client_id)
-                openlist.append(oreq.jsondict(openreq_byclient_fielddict.keys(), openreq_byclient_fielddict.values()))
-
-        # Get closed, if requested
-        if listclosed:
-            # Get all closed requests, prefetching FeatureReq objects
-            creqlist = ClosedReq.objects.select_related('client')
-            for creq in creqlist:
-                # Get/create featreq dict
-                try:
-                    cl = cldict[creq.client_id]
-                except KeyError:
-                    # FeatureReq not in master dict, create JSON-compat dict and add
-                    cl = creq.client.jsondict()
-                    cldict[creq.client_id] = cl
-                # Get closed_list from featreq dict
-                try:
-                    closedlist = cl['closed_list']
-                except KeyError:
-                    # ClosedReq list not in featreq dict, add fresh list
-                    closedlist = list()
-                    cl['closed_list'] = closedlist
-                # Now add ClosedReq to list (minus redundant client_id)
-                closedlist.append(creq.jsondict(closedreq_byclient_fielddict.keys(), closedreq_byclient_fielddict.values()))
-
-        # Now list-ify everything
-        cllist = list(cldict.values())
-
+    # Get client id, name, and open/closed counts
+    clqset = ClientInfo.objects.annotate(
+        open_count=Count('open_list', distinct=True), 
+        closed_count=Count('closed_list', distinct=True))
+    cllist = qset_vals_tojsonlist(clqset, client_with_counts_dict.keys(), client_with_counts_dict.values())
     # Construct response
     respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
@@ -220,78 +172,37 @@ def clientredir(request, client_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-def openindexbyclient(request):
-    # TODO: add filter options, additional field options
-    # Get QuerySet of clients, with number of open requests
-    oreqbycl = OpenReq.objects.values("client_id").annotate(open_count=Count('client_id'))
-    # Convert to JSON-compat list (with translators)
-    oreqlist = qset_vals_tojsonlist(oreqbycl, ('client_id', 'open_count'), (OpenReq.fields['client_id'], None))
-    # Return list as JSON
-    respdict = OrderedDict([
-        ('open_client_count', len(oreqlist)),
-        ('open_client_list', oreqlist)
-    ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-
-def openbyclient(request, client_id):
-    # TODO: add filter options, additional field options
+def clientreqindex(request, client_id, tolist):
     # Check if client_id exists
-    if ClientInfo.objects.filter(id=client_id).exists():
-        # Copy fields dict and strip out unwanted fields
-        tmpfields = OpenReq.fields.copy()
-        del tmpfields['client_id']
-        del tmpfields['req_id']
-        # Add req field and (re)use tojsondict() as translator
-        tmpfields['req'] = tojsondict
-        # Get open reqs for client, add JSON-compat dict to list
-        oreqlist = []
-        for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
-            oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
-        # Construct response
-        respdict = OrderedDict([
-            ('client_id', client_id),
-            ('open_count', len(oreqlist)),
-            ('open_list', oreqlist)
-        ])
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-    else:
+    if not ClientInfo.objects.filter(id=client_id).exists():
         return HttpResponseNotFound(json404str, content_type=json_contype)
-
-def closedindexbyclient(request):
-    # TODO: add filter options, additional field options
-    # Get QuerySet of clients, with number of open requests
-    oreqbycl = ClosedReq.objects.values("client_id").annotate(closed_count=Count('client_id'))
-    # Convert to JSON-compat list (with translators)
-    oreqlist = qset_vals_tojsonlist(oreqbycl, ('client_id', 'closed_count'), (ClosedReq.fields['client_id'], None))
-    # Return list as JSON
-    respdict = OrderedDict([
-        ('closed_client_count', len(oreqlist)),
-        ('closed_client_list', oreqlist)
-    ])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-
-def closedbyclient(request, client_id):
-    # TODO: add filter options, additional field options
-    # Check if client_id exists
-    if ClientInfo.objects.filter(id=client_id).exists():
-        # Copy fields dict and strip out unwanted fields
-        tmpfields = ClosedReq.fields.copy()
-        del tmpfields['client_id']
-        del tmpfields['req_id']
-        # Add req field and (re)use tojsondict() as translator
-        tmpfields['req'] = tojsondict
-        # Get closed reqs for client, add JSON-compat dict to list
-        oreqlist = []
-        for oreq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
-            oreqlist.append(oreq.jsondict(fields=tmpfields.keys(), fcalls=tmpfields.values()))
-        # Construct response
-        respdict = OrderedDict([
-            ('client_id', client_id),
-            ('closed_count', len(oreqlist)),
-            ('closed_list', oreqlist)
-        ])
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
     else:
-        return HttpResponseNotFound(json404str, content_type=json_contype)
+        respdict = OrderedDict([('client_id', client_id)])
+
+        # Get open, if requested
+        if tolist == 'open' or tolist == 'all':
+            # Get open reqs for client, add JSON-compat dict to list
+            oreqlist = []
+            for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
+                oreqlist.append(oreq.jsondict(
+                    fields=openreq_byclient_fields.keys(), 
+                    fcalls=openreq_byclient_fields.values()))
+            # Add to response
+            respdict['open_count'] = len(oreqlist)
+            respdict['open_list'] = oreqlist
+
+        # Get closed, if requested
+        if tolist == 'closed' or tolist == 'all':
+            # Get closed reqs for client, add JSON-compat dict to list
+            creqlist = []
+            for creq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
+                creqlist.append(creq.jsondict(
+                    fields=closedreq_byclient_fields.keys(), 
+                    fcalls=closedreq_byclient_fields.values()))
+            # Add to response
+            respdict['open_count'] = len(creqlist)
+            respdict['open_list'] = creqlist
+
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 
