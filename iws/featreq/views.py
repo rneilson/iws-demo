@@ -200,8 +200,8 @@ def clientreqindex(request, client_id, tolist):
                     fields=closedreq_byclient_fields.keys(), 
                     fcalls=closedreq_byclient_fields.values()))
             # Add to response
-            respdict['open_count'] = len(creqlist)
-            respdict['open_list'] = creqlist
+            respdict['closed_count'] = len(creqlist)
+            respdict['closed_list'] = creqlist
 
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
