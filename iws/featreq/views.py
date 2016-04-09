@@ -1,13 +1,15 @@
 import datetime, json
 from collections import OrderedDict
 from functools import partial
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect, HttpResponseNotAllowed
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
 from .utils import approxnow, tojsondict, qset_vals_tojsonlist
+
+## Common vars
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
@@ -47,28 +49,49 @@ del closedreq_byclient_fields['client_id']
 del closedreq_byclient_fields['req_id']
 closedreq_byclient_fields['req'] = tojsondict
 
-## Views
+## Shortcut funcs and decorators
 
+def allow_methods(methods, usejson=True):
+    '''Decorator for views.
+    Returns HttpResponseNotAllowed object with decorated parameters.
+    '''
+    def wrap(f):
+        methodset = set(methods)
+        if usejson:
+            def wrapped(request, *args, **kwargs):
+                if request.method in methodset:
+                    return f(request, *args, **kwargs)
+                else:
+                    return HttpResponseNotAllowed(methods, content_type=json_contype)
+        else:
+            def wrapped(request, *args, **kwargs):
+                if request.method in methodset:
+                    return f(request, *args, **kwargs)
+                else:
+                    return HttpResponseNotAllowed(methods)
+        return wrapped
+    return wrap
+
+## View funcs
+
+@allow_methods(['GET', 'HEAD'], usejson=False)
 def index(request):
     return HttpResponse('Uh, hi?\n')
 
-def reqindex(request, tolist=''):
+@allow_methods(['GET'])
+def reqindex(request):
     # TODO: add filter options, additional field options
-    # Get JSON-compat dicts for all featreqs
-    if not tolist:
-        # We only get fields id and title here, for brevity
-        frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
-    else:
-        if tolist == 'open':
-            listopen = True
-            listclosed = False
-        elif tolist == 'closed':
-            listopen = False
-            listclosed = True
-        elif tolist == 'all':
-            listopen = True
-            listclosed = True
+    # TODO: add open/closed counts
+    # We only get fields id and title here, for brevity
+    frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
+    # Construct response
+    respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
+    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
+def reqindex_ext(request, tolist):
+    # TODO: add filter options, additional field options
+
+    def _getindex(request, listopen, listclosed):
         # We'll feed each FeatureReq into an OrderedDict by id, and append matching
         # OpenReqs to them
         frdict = OrderedDict()
@@ -120,9 +143,34 @@ def reqindex(request, tolist=''):
         # Now list-ify everything
         frlist = list(frdict.values())
 
-    # Construct response
-    respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        # Construct response
+        respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+
+    @allow_methods(['GET', 'POST'])
+    def _openindex(request):
+        if request.method == 'GET':
+            return _getindex(request, listopen=True, listclosed=False)
+        # TODO: add POST method
+
+    @allow_methods(['GET', 'POST'])
+    def _closedindex(request):
+        if request.method == 'GET':
+            return _getindex(request, listopen=False, listclosed=True)
+        # TODO: add POST method
+
+    @allow_methods(['GET'])
+    def _allindex(request):
+        return _getindex(request, listopen=True, listclosed=True)
+
+    # Forward to appropriate inner function
+    if tolist == 'open':
+        return _openindex(request)
+    elif tolist == 'closed':
+        return _closedindex(request)
+    elif tolist == 'all':
+        return _allindex(request)
+
 
 def reqbyid(request, req_id):
     # Get selected featreq

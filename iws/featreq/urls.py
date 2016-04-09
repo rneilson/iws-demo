@@ -3,7 +3,7 @@ from . import views
 
 req_patterns = [
     url(r'^$', views.reqindex, name='featreq-req-index'),
-    url(r'^(?P<tolist>open|closed|all)/$', views.reqindex, name='featreq-req-index-ext'),
+    url(r'^(?P<tolist>open|closed|all)/$', views.reqindex_ext, name='featreq-req-index-ext'),
     url(r'^(?i)(?P<req_id>[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12})', include([
         url(r'^$', views.reqbyid, name='featreq-req-byid'),
         url(r'^/$', views.reqredir)
