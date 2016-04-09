@@ -1,7 +1,8 @@
 import datetime, json
 from collections import OrderedDict
 from functools import partial
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect,\
+    HttpResponseNotAllowed, HttpResponseBadRequest
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
@@ -13,7 +14,7 @@ from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
-json404 = OrderedDict([('error', 'Resource not found')])
+json404 = OrderedDict([('status_code', 404), ('error', 'Resource not found')])
 json404str = json.dumps(json404, indent=1) + '\n'
 json_contype = 'application/json'
 
@@ -57,31 +58,37 @@ def allow_methods(methods, usejson=True):
     '''
     def wrap(f):
         methodset = set(methods)
+        respstr = 'Method {0} not available here.'
         if usejson:
             def wrapped(request, *args, **kwargs):
                 if request.method in methodset:
                     return f(request, *args, **kwargs)
                 else:
-                    return HttpResponseNotAllowed(methods, content_type=json_contype)
+                    errordict = OrderedDict([
+                        ('status_code', 405),
+                        ('error', respstr.format(request.method))
+                    ])
+                    jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
+                    return HttpResponseNotAllowed(methods, jsonbytes, content_type=json_contype)
         else:
             def wrapped(request, *args, **kwargs):
                 if request.method in methodset:
                     return f(request, *args, **kwargs)
                 else:
-                    return HttpResponseNotAllowed(methods)
+                    return HttpResponseNotAllowed(methods, respstr.format(request.method)+'\n')
         return wrapped
     return wrap
 
 ## View funcs
 
-@allow_methods(['GET', 'HEAD'], usejson=False)
+@allow_methods(['GET'], usejson=False)
 def index(request):
     return HttpResponse('Uh, hi?\n')
 
 @allow_methods(['GET'])
 def reqindex(request):
     # TODO: add filter options, additional field options
-    # TODO: add open/closed counts
+    # TODO: add open/closed counts?
     # We only get fields id and title here, for brevity
     frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
     # Construct response
@@ -171,7 +178,7 @@ def reqindex_ext(request, tolist):
     elif tolist == 'all':
         return _allindex(request)
 
-
+@allow_methods(['GET', 'POST'])
 def reqbyid(request, req_id):
     # Get selected featreq
     try:
@@ -179,8 +186,10 @@ def reqbyid(request, req_id):
     except ObjectDoesNotExist:
         return HttpResponseNotFound(json404str, content_type=json_contype)
     else:
-        # Return (ordered) dict as JSON
-        return HttpResponse(json.dumps(fr.jsondict(), indent=1)+'\n', content_type=json_contype)
+        if request.method == 'GET':
+            # Return (ordered) dict as JSON
+            return HttpResponse(json.dumps({'req': fr.jsondict()}, indent=1)+'\n', content_type=json_contype)
+        # TODO: handle POST
 
 def reqredir(request, req_id):
     # Check if req_id exists
@@ -190,7 +199,8 @@ def reqredir(request, req_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-def clientindex(request, tolist=''):
+@allow_methods(['GET'])
+def clientindex(request):
     # TODO: add filter options, additional field options
     # Get JSON-compat dicts for all clients
     # Get client id, name, and open/closed counts
@@ -202,6 +212,7 @@ def clientindex(request, tolist=''):
     respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
+@allow_methods(['GET', 'POST'])
 def clientbyid(request, client_id):
     # Get selected featreq
     try:
@@ -209,26 +220,26 @@ def clientbyid(request, client_id):
     except ObjectDoesNotExist:
         return HttpResponseNotFound(json404str, content_type=json_contype)
     else:
-        # Return (ordered) dict as JSON
-        return HttpResponse(json.dumps(cl.jsondict(), indent=1)+'\n', content_type=json_contype)
+        if request.method == 'GET':
+            # Return (ordered) dict as JSON
+            return HttpResponse(json.dumps({'client': cl.jsondict()}, indent=1)+'\n', content_type=json_contype)
+        # TODO: handle POST
 
 def clientredir(request, client_id):
     # Check if client_id exists
     if ClientInfo.objects.filter(id=client_id).exists():
-        # Redirect to proper featreq URL
+        # Redirect to proper client info URL
         return HttpResponsePermanentRedirect(urlreverse('featreq-client-byid', args=(client_id,)))
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
 def clientreqindex(request, client_id, tolist):
-    # Check if client_id exists
-    if not ClientInfo.objects.filter(id=client_id).exists():
-        return HttpResponseNotFound(json404str, content_type=json_contype)
-    else:
+
+    def _getindex(request, client_id, listopen=False, listclosed=False):
         respdict = OrderedDict([('client_id', client_id)])
 
         # Get open, if requested
-        if tolist == 'open' or tolist == 'all':
+        if listopen:
             # Get open reqs for client, add JSON-compat dict to list
             oreqlist = []
             for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
@@ -240,7 +251,7 @@ def clientreqindex(request, client_id, tolist):
             respdict['open_list'] = oreqlist
 
         # Get closed, if requested
-        if tolist == 'closed' or tolist == 'all':
+        if listclosed:
             # Get closed reqs for client, add JSON-compat dict to list
             creqlist = []
             for creq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
@@ -253,4 +264,30 @@ def clientreqindex(request, client_id, tolist):
 
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
+    @allow_methods(['GET', 'POST'])
+    def _openindex(request, client_id):
+        if request.method == 'GET':
+            return _getindex(request, client_id, listopen=True)
+        # TODO: handle POST
+
+    @allow_methods(['GET', 'POST'])
+    def _closedindex(request, client_id):
+        if request.method == 'GET':
+            return _getindex(request, client_id, listclosed=True)
+        # TODO: handle POST
+
+    @allow_methods(['GET'])
+    def _allindex(request, client_id):
+        return _getindex(request, client_id, listopen=True, listclosed=True)
+
+    # Check if client_id exists
+    if not ClientInfo.objects.filter(id=client_id).exists():
+        return HttpResponseNotFound(json404str, content_type=json_contype)
+    else:
+        if tolist == 'open':
+            return _openindex(request, client_id)
+        elif tolist == 'closed':
+            return _closedindex(request, client_id)
+        elif tolist == 'all':
+            return _allindex(request, client_id)
 
