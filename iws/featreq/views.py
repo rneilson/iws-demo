@@ -79,6 +79,192 @@ def allow_methods(methods, usejson=True):
         return wrapped
     return wrap
 
+def getusername(request):
+    '''Extracts username from request, or provides default.'''
+    unknown_user = 'UNKNOWN'
+    try:
+        username = request.user.get_username()
+    except AttributeError:
+        # TODO: raise exception instead (once auth in place)
+        username = unknown_user
+    else:
+        if not username:
+            # TODO: raise exception instead (once auth in place)
+            username = unknown_user
+    return username
+
+def badrequest(request, errormsg, field=None, usejson=True):
+    '''Constructs 400 Bad Request response with given error message.'''
+    if usejson:
+        if field:
+            # Create an error JSON object with field in question
+            errordetail = OrderedDict([
+                ('field', str(field)),
+                ('msg', str(errormsg))
+            ])
+        else:
+            # Make a plain string
+            errordetail = str(errormsg)
+
+        # Create reponse payload
+        errordict = OrderedDict([
+            ('status_code', 405),
+            ('error', errordetail)
+        ])
+        jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
+        return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
+    else:
+        if field:
+            respstr = 'Status code: 405\nError in field: {0}\nError message: {1}\n'.format(field, str(errormsg))
+        else:
+            respstr = 'Status code: 405\nError message: {0}\n'.format(str(errormsg))
+        return HttpResponseBadRequest(respstr)
+
+def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=None):
+    '''Extracts ordered dict of arguments from POST request. Requests with
+    content type 'application/json' will use the request body decoded from
+    JSON; all other requests will use Django's QueryDict as the source.
+
+    Returns an OrderedDict, ordered by fieldnames if given.
+
+    If fieldnames is specified, only those fields will be extracted.
+
+    If required is specified, ValueError will be raised if any fieldnames
+    in required are missing. For best efficiency, pass as a set instead of
+    a list or tuple.
+
+    If aslist is specified, any fieldnames in aslist will be stored in the
+    returned dictionary as lists, even if there is only one value. For best
+    efficiency, pass as a set instead of a list or tuple.
+
+    If asint is specified, any fieldnames in asint will be coerced to int,
+    or a list of ints if the fieldname is also in aslist, and any ValueError
+    caught will be re-raised as ValueError with the fieldname in the
+    exception message.
+    '''
+    if request.META.CONTENT_TYPE.lower() == json_contype:
+        # Specific codepath for JSON, since we can decode into the form
+        # of our own choosing
+
+        # Set encoding, falling back to UTF-8
+        encoding = request.encoding
+        if not encoding:
+            encoding = 'utf-8'
+
+        # If fieldnames given, we need to populate and order the returned
+        # dict, so we'll decode JSON as a regular dict and transfer over
+        # values field-by-field
+        if fieldnames:
+            respdict = OrderedDict()
+            tmpdict = json.decode(request.body.decode(encoding))
+            for fn in fieldnames:
+                try:
+                    fv = tmpdict[fn]
+                except KeyError:
+                    pass
+                else:
+                    respdict[fn] = fv
+        # If no fieldnames given, we decode straight into an OrderedDict
+        else:
+            respdict = json.decode(request.body.decode(encoding), object_pairs_hook=OrderedDict)
+
+        # Now we check the output
+        # Check required fields
+        if required:
+            for fn in required:
+                if fn not in respdict:
+                    raise ValueError('Required field {0} missing'.format(fn))
+        # Check aslist fields
+        if aslist:
+            for fn in aslist:
+                try:
+                    fv = respdict[fn]
+                except KeyError:
+                    pass
+                else:
+                    if not isinstance(fv, list):
+                        if fv is None:
+                            respdict[fn] = []
+                        else:
+                            respdict[fn] = [fv]
+        # Check asint fields
+        if asint:
+            for fn in asint:
+                try:
+                    fv = respdict[fn]
+                except KeyError:
+                    pass
+                else:
+                    if isinstance(fv, list):
+                        try:
+                            fv = [ int(v) for v in fv ]
+                        except (ValueError, TypeError) as e:
+                            raise ValueError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
+                    else:
+                        try:
+                            fv = int(fv)
+                        except (ValueError, TypeError) as e:
+                            raise ValueError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
+                    respdict[fn] = fv
+
+        # Now we can return the final product
+        return respdict
+
+    else:
+        # We use a different approach to non-JSON requests, as the request
+        # data is in QueryDict form -- we do aslist and asint checks per
+        # field while building the OrderedDict, and check required beforehand
+
+        # Check required
+        if required:
+            for fn in required:
+                if fn not in request.POST:
+                    raise ValueError('Required field {0} missing'.format(fn))
+
+        # Use the QueryDict's keys as fieldname list if not provided
+        if not fieldnames:
+            fieldnames = request.POST.keys()
+
+        # Give aslist and asint empty sets to save ourselves extra existence
+        # checks while iterating
+        if not aslist:
+            aslist = set()
+        if not asint:
+            asint = set()
+
+        # Now we iterate over the fieldnames, and put them in order, checking
+        # aslist and asint as we go
+        respdict = OrderedDict()
+        for fn in fieldnames:
+            if fn in request.POST:
+                if fn in aslist:
+                    # Get the list form
+                    fv = request.POST.getlist(fn)
+                    # Convert to list of ints if required
+                    if fn in asint:
+                        try:
+                            fv = [ int(v) for v in fv ]
+                        except (ValueError, TypeError) as e:
+                            raise ValueError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
+                else:
+                    # Get the single item form
+                    fv = request.POST.get(fn)
+                    # Convert to int if required
+                    if fn in asint:
+                        try:
+                            fv = int(fv)
+                        except (ValueError, TypeError) as e:
+                            raise ValueError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
+                # Add final form to response
+                respdict[fn] = fv
+
+            # We've already checked required fields, so we don't have to
+            # handle missing fields here
+
+        # Now we can return the final product
+        return respdict
+
+
 ## View funcs
 
 @allow_methods(['GET'], usejson=False)
