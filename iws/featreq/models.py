@@ -143,13 +143,13 @@ class FeatureReq(models.Model):
     def __str__(self):
         return str(self.title)
 
-    def updatereq(self, user, addtodesc='', newtitle='', newurl='', newprodarea=''):
+    def updatereq(self, user, desc='', title='', ref_url='', prod_area=''):
         # Check for required fields
         if not user:
             raise ValueError('User field required')
         # Ensure we're actually updating something
         # If not, return unchanged
-        if not addtodesc and not newtitle and not newurl and not newprodarea:
+        if not desc and not title and not ref_url and not prod_area:
             return self
 
         # Get current datetime
@@ -159,48 +159,48 @@ class FeatureReq(models.Model):
         upstr = ""
 
         # First append new product area change, if present
-        if newprodarea:
+        if prod_area:
             # Convert to short form if req'd
-            if newprodarea in AREA_BY_TEXT:
-                newprodarea = AREA_BY_TEXT[newprodarea]
-            if newprodarea in AREA_BY_SHORT:
+            if prod_area in AREA_BY_TEXT:
+                prod_area = AREA_BY_TEXT[prod_area]
+            if prod_area in AREA_BY_SHORT:
                 # Change product area and append change
-                self.prod_area = newprodarea
+                self.prod_area = prod_area
                 upstr = upstr + padstr + '{0}, {1}:\n[Changed product area to "{2}"]'.format(
-                    dtstr, user, AREA_BY_SHORT[newprodarea])
+                    dtstr, user, AREA_BY_SHORT[prod_area])
             else:
-                raise ValueError('Invalid product area: {0}'.format(newprodarea))
+                raise ValueError('Invalid product area: {0}'.format(prod_area))
 
         # Next append ref URL change, if present
-        if newurl:
+        if ref_url:
             # Force string (just in case...)
             # TODO: validate URL format?
-            if not isinstance(newurl, str):
-                raise TypeError('Invalid URL type: {0}'.format(type(newurl)))
+            if not isinstance(ref_url, str):
+                raise TypeError('Invalid URL type: {0}'.format(type(ref_url)))
             # Change URL and append change
-            self.ref_url = newurl
+            self.ref_url = ref_url
             upstr = upstr + padstr + '{0}, {1}:\n[Changed reference URL to "{2}"]'.format(
-                dtstr, user, newurl)
+                dtstr, user, ref_url)
 
 
         # Next append title change, if present
-        if newtitle:
+        if title:
             # Force string (just in case...)
-            if not isinstance(newtitle, str):
-                raise TypeError('Invalid title type: {0}'.format(type(newtitle)))
+            if not isinstance(title, str):
+                raise TypeError('Invalid title type: {0}'.format(type(title)))
             # Change title and append change
-            self.title = newtitle
+            self.title = title
             upstr = upstr + padstr + '{0}, {1}:\n[Changed title to "{2}"]'.format(
-                dtstr, user, newtitle)
+                dtstr, user, title)
 
         # Now description addendum, if requested
-        if addtodesc:
+        if desc:
             # Force string (just in case...)
-            if not isinstance(addtodesc, str):
-                raise TypeError('Invalid description type: {0}'.format(type(addtodesc)))
+            if not isinstance(desc, str):
+                raise TypeError('Invalid description type: {0}'.format(type(desc)))
             # Add addendum [sic]
             # No padding, since we'd strip it anyways later
-            upstr = upstr + padstr + '{0}, {1}:\n'.format(dtstr, user) + addtodesc
+            upstr = upstr + padstr + '{0}, {1}:\n'.format(dtstr, user) + desc
 
         # Update description
         self.desc = self.desc.rstrip() + upstr

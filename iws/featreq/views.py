@@ -393,22 +393,16 @@ def reqbyid(request, req_id):
                 return badrequest(request, e)
 
             # Update request
-            if postargs['req_action'] == 'update':
+            action = postargs.pop('req_action')
+            if action == 'update':
 
-                # Collate args
-                upargs = {'user': username}
-                if 'desc' in postargs:
-                    upargs['addtodesc'] = postargs['desc']
-                if 'title' in postargs:
-                    upargs['newtitle'] = postargs['title']
-                if 'ref_url' in postargs:
-                    upargs['newurl'] = postargs['ref_url']
-                if 'prod_area' in postargs:
-                    upargs['newprodarea'] = postargs['prod_area']
+                # Add user
+                postargs['user'] = username
+                postargs.move_to_end('user', last=False)
 
                 # Attempt update and return new featreq or error
                 try:
-                    fr = fr.updatereq(**upargs)
+                    fr = fr.updatereq(**postargs)
                 except Exception as e:
                     return badrequest(request, e)
                 else:
