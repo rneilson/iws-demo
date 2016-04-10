@@ -157,7 +157,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
         # values field-by-field
         if fieldnames:
             respdict = OrderedDict()
-            tmpdict = json.decode(request.body.decode(encoding))
+            tmpdict = json.loads(request.body.decode(encoding))
             for fn in fieldnames:
                 try:
                     fv = tmpdict[fn]
@@ -385,7 +385,10 @@ def reqbyid(request, req_id):
 
             # Get args
             try:
-                postargs = getargsfrompost(request, required={'req_action'})
+                postargs = getargsfrompost(request, 
+                    fieldnames=('req_action', 'desc', 'title', 'ref_url', 'prod_area'), 
+                    required={'req_action'}
+                )
             except ValueError as e:
                 return badrequest(request, e)
 
