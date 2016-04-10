@@ -276,19 +276,39 @@ def index(request):
 def reqindex(request):
     # TODO: add filter options, additional field options
     # TODO: add open/closed counts?
-    # We only get fields id and title here, for brevity
-    frlist = qset_vals_tojsonlist(FeatureReq.objects, ('id', 'title'))
+
+    # Get requested fieldname list
+    fields = request.GET.getlist('fields')
+    # Default fields if none provided
+    if not fields:
+        fields = ('id', 'title')
+    # All fields (must be last parameter in query string)
+    elif fields[-1].lower() == 'all':
+        # tojsondict() will get fields from model
+        fields = None
+
+    frlist = qset_vals_tojsonlist(FeatureReq.objects, fields)
     # Construct response
     respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 def reqindex_ext(request, tolist):
-    # TODO: add filter options, additional field options
+    # TODO: add filter options
 
     def _getindex(request, listopen, listclosed):
         # We'll feed each FeatureReq into an OrderedDict by id, and append matching
         # OpenReqs to them
         frdict = OrderedDict()
+
+        # Get requested fieldname list
+        fields = request.GET.getlist('fields')
+        # Default fields if none provided
+        if not fields:
+            fields = ('id', 'title')
+        # All fields (must be last parameter in query string)
+        elif fields[-1].lower() == 'all':
+            # tojsondict() will get fields from model
+            fields = None
 
         # Get open, if requested
         if listopen:
@@ -300,7 +320,7 @@ def reqindex_ext(request, tolist):
                     fr = frdict[oreq.req_id]
                 except KeyError:
                     # FeatureReq not in master dict, create JSON-compat dict and add
-                    fr = oreq.req.jsondict()
+                    fr = oreq.req.jsondict(fields)
                     frdict[oreq.req_id] = fr
                 # Get open_list from featreq dict
                 try:
@@ -322,7 +342,7 @@ def reqindex_ext(request, tolist):
                     fr = frdict[creq.req_id]
                 except KeyError:
                     # FeatureReq not in master dict, create JSON-compat dict and add
-                    fr = creq.req.jsondict()
+                    fr = creq.req.jsondict(fields)
                     frdict[creq.req_id] = fr
                 # Get closed_list from featreq dict
                 try:
@@ -340,6 +360,7 @@ def reqindex_ext(request, tolist):
         # Construct response
         respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+
 
     @allow_methods(['GET', 'POST'])
     def _openindex(request):
