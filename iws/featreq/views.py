@@ -431,6 +431,76 @@ def reqbyid(request, req_id):
             else:
                 return badrequest(request, 'Invalid action "{0}"'.format(postargs['req_action']), field='req_action')
 
+@ensure_csrf_cookie
+@allow_methods(['GET', 'POST'])
+def reqbyid_ext(request, req_id, tolist):
+
+    def _getext(request, featreq, listopen, listclosed):
+        # Get requested fieldname list
+        fields = request.GET.getlist('fields')
+
+        # Default fields if none provided
+        if not fields:
+            fields = ['id']
+        # All fields (must be last parameter in query string)
+        elif fields[-1].lower() == 'all':
+            # tojsondict() will get fields from model
+            fields = None
+
+        # Get featreq dict
+        frdict = featreq.jsondict(fields)
+
+        # Get open if requested
+        if listopen:
+            frdict['open_list'] = qset_vals_tojsonlist(
+                featreq.open_list,
+                openreq_byreq_fields.keys(),
+                openreq_byreq_fields.values()
+            )
+
+        # Get closed if requested
+        if listclosed:
+            frdict['closed_list'] = qset_vals_tojsonlist(
+                featreq.closed_list,
+                closedreq_byreq_fields.keys(),
+                closedreq_byreq_fields.values()
+            )
+
+        # Return dict as JSON
+        return HttpResponse(json.dumps({'req': frdict}, indent=1)+'\n', content_type=json_contype)
+
+    @allow_methods(['GET', 'POST'])
+    def _openext(request, featreq):
+        if request.method == 'GET':
+            return _getext(request, featreq, listopen=True, listclosed=False)
+        # TODO: add POST method
+
+    @allow_methods(['GET', 'POST'])
+    def _closedext(request, featreq):
+        if request.method == 'GET':
+            return _getext(request, featreq, listopen=False, listclosed=True)
+        # TODO: add POST method
+
+    @allow_methods(['GET'])
+    def _allext(request, featreq):
+        return _getext(request, featreq, listopen=True, listclosed=True)
+
+    # Get selected featreq
+    try:
+        fr = FeatureReq.objects.get(id=req_id)
+    except ObjectDoesNotExist:
+        return HttpResponseNotFound(json404str, content_type=json_contype)
+    else:
+        # Forward to appropriate inner function
+        if tolist == 'open':
+            return _openext(request, fr)
+        elif tolist == 'closed':
+            return _closedext(request, fr)
+        elif tolist == 'all':
+            return _allext(request, fr)
+
+
+
 def reqredir(request, req_id):
     # Check if req_id exists
     if FeatureReq.objects.filter(id=req_id).exists():
