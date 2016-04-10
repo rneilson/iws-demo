@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
 from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
@@ -142,7 +143,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
     caught will be re-raised as ValueError with the fieldname in the
     exception message.
     '''
-    if request.META.CONTENT_TYPE.lower() == json_contype:
+    if  request.META['CONTENT_TYPE'].lower() == json_contype:
         # Specific codepath for JSON, since we can decode into the form
         # of our own choosing
 
@@ -166,7 +167,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
                     respdict[fn] = fv
         # If no fieldnames given, we decode straight into an OrderedDict
         else:
-            respdict = json.decode(request.body.decode(encoding), object_pairs_hook=OrderedDict)
+            respdict = json.loads(request.body.decode(encoding), object_pairs_hook=OrderedDict)
 
         # Now we check the output
         # Check required fields
@@ -364,6 +365,8 @@ def reqindex_ext(request, tolist):
     elif tolist == 'all':
         return _allindex(request)
 
+#@csrf_exempt
+@ensure_csrf_cookie
 @allow_methods(['GET', 'POST'])
 def reqbyid(request, req_id):
     # Get selected featreq
@@ -375,7 +378,40 @@ def reqbyid(request, req_id):
         if request.method == 'GET':
             # Return (ordered) dict as JSON
             return HttpResponse(json.dumps({'req': fr.jsondict()}, indent=1)+'\n', content_type=json_contype)
-        # TODO: handle POST
+        elif request.method == 'POST':
+            # Get user
+            # TODO: try/except (once auth in place)
+            username = getusername(request)
+
+            # Get args
+            try:
+                postargs = getargsfrompost(request, required={'req_action'})
+            except ValueError as e:
+                return badrequest(request, e)
+
+            # Update request
+            if postargs['req_action'] == 'update':
+
+                # Collate args
+                upargs = {'user': username}
+                if 'desc' in postargs:
+                    upargs['addtodesc'] = postargs['desc']
+                if 'title' in postargs:
+                    upargs['newtitle'] = postargs['title']
+                if 'ref_url' in postargs:
+                    upargs['newurl'] = postargs['ref_url']
+                if 'prod_area' in postargs:
+                    upargs['newprodarea'] = postargs['prod_area']
+
+                # Attempt update and return new featreq or error
+                try:
+                    fr = fr.updatereq(**upargs)
+                except Exception as e:
+                    return badrequest(request, e)
+                else:
+                    return HttpResponse(json.dumps({'req': fr.jsondict()}, indent=1)+'\n', content_type=json_contype)
+            else:
+                return badrequest(request, 'Invalid action "{0}"'.format(postargs['req_action']), field='req_action')
 
 def reqredir(request, req_id):
     # Check if req_id exists

@@ -167,7 +167,7 @@ class FeatureReq(models.Model):
                 # Change product area and append change
                 self.prod_area = newprodarea
                 upstr = upstr + padstr + '{0}, {1}:\n[Changed product area to "{2}"]'.format(
-                    dtstr, user, newprodarea)
+                    dtstr, user, AREA_BY_SHORT[newprodarea])
             else:
                 raise ValueError('Invalid product area: {0}'.format(newprodarea))
 
