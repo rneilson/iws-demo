@@ -43,13 +43,15 @@ client_with_counts_dict = OrderedDict([
 
 openreq_byclient_fields = OpenReq.fields.copy()
 del openreq_byclient_fields['client_id']
-del openreq_byclient_fields['req_id']
-openreq_byclient_fields['req'] = tojsondict
+#openreq_byclient_fields.move_to_end('req_id')
+#del openreq_byclient_fields['req_id']
+#openreq_byclient_fields['req'] = tojsondict
 
 closedreq_byclient_fields = ClosedReq.fields.copy()
 del closedreq_byclient_fields['client_id']
-del closedreq_byclient_fields['req_id']
-closedreq_byclient_fields['req'] = tojsondict
+#closedreq_byclient_fields.move_to_end('req_id')
+#del closedreq_byclient_fields['req_id']
+#closedreq_byclient_fields['req'] = tojsondict
 
 ## Shortcut funcs and decorators
 
@@ -265,6 +267,28 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
         # Now we can return the final product
         return respdict
 
+def getfieldsfromget(request, empty=None, allfields=None):
+    '''Get fieldnames from query string in request.
+
+    If no fieldnames in query, will return value of empty.
+
+    If fieldname 'all' in query, will return value of allfields.
+    '''
+
+    # Get requested fieldname list
+    fields = request.GET.getlist('fields')
+
+    # Default fields if none provided
+    if not fields:
+        # None (default) will typically get fields from model
+        fields = empty
+    # All fields (must be last parameter in query string)
+    elif 'all' in fields:
+        # None (default) will typically get fields from model
+        fields = allfields
+
+    return fields
+
 
 ## View funcs
 
@@ -274,24 +298,20 @@ def index(request):
 
 @allow_methods(['GET'])
 def reqindex(request):
-    # TODO: add filter options, additional field options
+    # TODO: add filter options
     # TODO: add open/closed counts?
 
     # Get requested fieldname list
-    fields = request.GET.getlist('fields')
-    # Default fields if none provided
-    if not fields:
-        fields = ('id', 'title')
-    # All fields (must be last parameter in query string)
-    elif fields[-1].lower() == 'all':
-        # tojsondict() will get fields from model
-        fields = None
+    fields = getfieldsfromget(request, empty=['id', 'title'])
 
+    # Get featreqs
     frlist = qset_vals_tojsonlist(FeatureReq.objects, fields)
+
     # Construct response
     respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
+@ensure_csrf_cookie
 def reqindex_ext(request, tolist):
     # TODO: add filter options
 
@@ -301,14 +321,7 @@ def reqindex_ext(request, tolist):
         frdict = OrderedDict()
 
         # Get requested fieldname list
-        fields = request.GET.getlist('fields')
-        # Default fields if none provided
-        if not fields:
-            fields = ('id', 'title')
-        # All fields (must be last parameter in query string)
-        elif fields[-1].lower() == 'all':
-            # tojsondict() will get fields from model
-            fields = None
+        fields = getfieldsfromget(request, empty=['id', 'title'], allfields=FeatureReq.fields.keys())
 
         # Get open, if requested
         if listopen:
@@ -435,17 +448,9 @@ def reqbyid(request, req_id):
 @allow_methods(['GET', 'POST'])
 def reqbyid_ext(request, req_id, tolist):
 
-    def _getext(request, featreq, listopen, listclosed):
-        # Get requested fieldname list
-        fields = request.GET.getlist('fields')
-
-        # Default fields if none provided
-        if not fields:
-            fields = ['id']
-        # All fields (must be last parameter in query string)
-        elif fields[-1].lower() == 'all':
-            # tojsondict() will get fields from model
-            fields = None
+    def _getext(request, featreq, listopen=False, listclosed=False):
+        # Get featreq fields
+        fields = getfieldsfromget(request, empty=['id'])
 
         # Get featreq dict
         frdict = featreq.jsondict(fields)
@@ -472,13 +477,13 @@ def reqbyid_ext(request, req_id, tolist):
     @allow_methods(['GET', 'POST'])
     def _openext(request, featreq):
         if request.method == 'GET':
-            return _getext(request, featreq, listopen=True, listclosed=False)
+            return _getext(request, featreq, listopen=True)
         # TODO: add POST method
 
     @allow_methods(['GET', 'POST'])
     def _closedext(request, featreq):
         if request.method == 'GET':
-            return _getext(request, featreq, listopen=False, listclosed=True)
+            return _getext(request, featreq, listclosed=True)
         # TODO: add POST method
 
     @allow_methods(['GET'])
@@ -546,33 +551,73 @@ def clientredir(request, client_id):
 def clientreqindex(request, client_id, tolist):
 
     def _getindex(request, client_id, listopen=False, listclosed=False):
-        respdict = OrderedDict([('client_id', client_id)])
+        # Get featreq fields
+        # For default we want None, so we can still test if featreq fields
+        # asked for in querystring
+        # If all fields requested, just use FeatureReq fields attribute
+        fields = getfieldsfromget(request, empty=None, allfields=FeatureReq.fields.keys())
+
+        respdict = OrderedDict([('id', client_id)])
 
         # Get open, if requested
         if listopen:
-            # Get open reqs for client, add JSON-compat dict to list
             oreqlist = []
-            for oreq in OpenReq.objects.filter(client_id=client_id).select_related('req'):
-                oreqlist.append(oreq.jsondict(
+            # Get open reqs for client
+            qset = OpenReq.objects.filter(client_id=client_id)
+
+            # Only fetch related featreq if details requested
+            if fields:
+                qset = qset.select_related('req')
+
+            for oreq in qset:
+                # Get JSON-compat dict
+                oreqdict = oreq.jsondict(
                     fields=openreq_byclient_fields.keys(), 
-                    fcalls=openreq_byclient_fields.values()))
+                    fcalls=openreq_byclient_fields.values()
+                )
+
+                if fields:
+                    # Remove redundant req_id
+                    del oreqdict['req_id']
+                    # Add featreq details (with specified fields)
+                    oreqdict['req'] = oreq.req.jsondict(fields)
+                    # TODO: move to front?
+
+                oreqlist.append(oreqdict)
+
             # Add to response
-            respdict['open_count'] = len(oreqlist)
             respdict['open_list'] = oreqlist
 
         # Get closed, if requested
         if listclosed:
-            # Get closed reqs for client, add JSON-compat dict to list
             creqlist = []
-            for creq in ClosedReq.objects.filter(client_id=client_id).select_related('req'):
-                creqlist.append(creq.jsondict(
+            # Get closed reqs for client
+            qset = ClosedReq.objects.filter(client_id=client_id)
+
+            # Only fetch related featreq if details requested
+            if fields:
+                qset = qset.select_related('req')
+
+            for creq in qset:
+                # Get JSON-compat dict
+                creq.jsondict(
                     fields=closedreq_byclient_fields.keys(), 
-                    fcalls=closedreq_byclient_fields.values()))
+                    fcalls=closedreq_byclient_fields.values()
+                )
+
+                if fields:
+                    # Remove redundant req_id
+                    del creqdict['req_id']
+                    # Add featreq details (with specified fields)
+                    creqdict['req'] = creq.req.jsondict(fields)
+                    # TODO: move to front?
+
+                creqlist.append(creqdict)
+
             # Add to response
-            respdict['closed_count'] = len(creqlist)
             respdict['closed_list'] = creqlist
 
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        return HttpResponse(json.dumps({'client': respdict}, indent=1)+'\n', content_type=json_contype)
 
     @allow_methods(['GET', 'POST'])
     def _openindex(request, client_id):
