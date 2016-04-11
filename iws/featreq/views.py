@@ -267,7 +267,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
         # Now we can return the final product
         return respdict
 
-def getfieldsfromget(request, empty=None, allfields=None):
+def getfieldsfromget(request, empty=None, allfields=None, queryname='field'):
     '''Get fieldnames from query string in request.
 
     If no fieldnames in query, will return value of empty.
@@ -276,7 +276,7 @@ def getfieldsfromget(request, empty=None, allfields=None):
     '''
 
     # Get requested fieldname list
-    fields = request.GET.getlist('fields')
+    fields = request.GET.getlist(queryname)
 
     # Default fields if none provided
     if not fields:
