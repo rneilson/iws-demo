@@ -1,8 +1,8 @@
 import datetime, json
 from collections import OrderedDict
 from functools import partial
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect,\
-    HttpResponseNotAllowed, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect,\
+    HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
@@ -296,20 +296,55 @@ def getfieldsfromget(request, empty=None, allfields=None):
 def index(request):
     return HttpResponse('Uh, hi?\n')
 
-@allow_methods(['GET'])
+@allow_methods(['GET', 'POST'])
 def reqindex(request):
     # TODO: add filter options
-    # TODO: add open/closed counts?
 
-    # Get requested fieldname list
-    fields = getfieldsfromget(request, empty=['id', 'title'])
+    if request.method == 'GET':
+        # Get requested fieldname list
+        fields = getfieldsfromget(request, empty=['id', 'title'])
 
-    # Get featreqs
-    frlist = qset_vals_tojsonlist(FeatureReq.objects, fields)
+        # Get featreqs
+        frlist = qset_vals_tojsonlist(FeatureReq.objects, fields)
 
-    # Construct response
-    respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        # Construct response
+        respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+
+    elif request.method == 'POST':
+        # Get user
+        # TODO: try/except (once auth in place)
+        username = getusername(request)
+
+        # Get args
+        try:
+            # TODO: remove title and desc from required if any additional
+            # actions get defined
+            postargs = getargsfrompost(request, 
+                fieldnames=('req_action', 'id', 'title', 'desc', 'ref_url', 'prod_area'), 
+                required={'req_action', 'title', 'desc'}
+            )
+        except ValueError as e:
+            return badrequest(request, e)
+
+        # Update request
+        action = postargs.pop('req_action').lower()
+        if action == 'create':
+            # Add user
+            postargs['user'] = username
+            postargs.move_to_end('user', last=False)
+
+            # Attempt featreq creation and return new featreq or error
+            try:
+                fr = FeatureReq.objects.newreq(**postargs)
+            except Exception as e:
+                return badrequest(request, e)
+            else:
+                resp = HttpResponse(json.dumps({'req': fr.jsondict()}, indent=1)+'\n', status=201, content_type=json_contype)
+                resp['Location'] = urlreverse('featreq-req-byid', kwargs={'req_id':fr.id})
+                return resp
+        else:
+            return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
 @ensure_csrf_cookie
 @allow_methods(['GET'])
