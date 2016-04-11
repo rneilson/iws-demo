@@ -269,16 +269,27 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
         # Now we can return the final product
         return respdict
 
-def getfieldsfromget(request, empty=None, allfields=None, queryname='field'):
-    '''Get fieldnames from query string in request.
+def getfieldsfromget(
+    request, empty=None, allfields=None, allowed=None,
+    fieldsep=',', fieldname='fields', allfieldname='all'):
+    '''Get field values from query string in request.
 
-    If no fieldnames in query, will return value of empty.
+    If there are no fields of fieldname in the query, will return value of
+    param empty.
 
-    If fieldname 'all' in query, will return value of allfields.
+    If there is a field value of allfieldname (default is 'all') in the query,
+    will return value of param allfields.
+
+    If allowed is specified, field values will be checked for inclusion, and
+    only values in allowed will be returned.
+
+    If fieldsep is specified (default is ','), field values will be split
+    using fieldsep as the separator. Note: this is done after checking for the
+    value of allfieldname.
     '''
 
     # Get requested fieldname list
-    fields = request.GET.getlist(queryname)
+    fields = request.GET.getlist(fieldname)
 
     # Default fields if none provided
     if not fields:
@@ -288,6 +299,16 @@ def getfieldsfromget(request, empty=None, allfields=None, queryname='field'):
     elif 'all' in fields:
         # None (default) will typically get fields from model
         fields = allfields
+    # Split fields if req'd
+    elif fieldsep:
+        newfields = []
+        for fv in fields:
+            newfields.extend(fv.split(fieldsep))
+        fields = newfields
+
+    # Filter by allowed if given
+    if allowed:
+        fields = [ fv for fv in fields if fv in allowed ]
 
     return fields
 
@@ -348,7 +369,7 @@ def reqindex(request):
 
     if request.method == 'GET':
         # Get requested fieldname list
-        fields = getfieldsfromget(request, empty=['id', 'title'])
+        fields = getfieldsfromget(request, empty=['id', 'title'], allowed=FeatureReq.fields)
 
         # Get featreqs
         frlist = qset_vals_tojsonlist(FeatureReq.objects, fields)
@@ -402,7 +423,12 @@ def reqindex_ext(request, tolist):
         frdict = OrderedDict()
 
         # Get requested fieldname list
-        fields = getfieldsfromget(request, empty=['id', 'title'], allfields=FeatureReq.fields.keys())
+        fields = getfieldsfromget(
+            request,
+            empty=['id', 'title'],
+            allfields=FeatureReq.fields.keys(),
+            allowed=FeatureReq.fields
+        )
 
         # Get open, if requested
         if listopen:
@@ -531,7 +557,7 @@ def reqbyid_ext(request, req_id, tolist):
 
     def _getext(request, featreq, listopen=False, listclosed=False):
         # Get featreq fields
-        fields = getfieldsfromget(request, empty=['id'])
+        fields = getfieldsfromget(request, empty=['id'], allowed=FeatureReq.fields)
 
         # Get featreq dict
         frdict = featreq.jsondict(fields)
@@ -757,7 +783,12 @@ def clientreqindex(request, client_id, tolist):
         # For default we want None, so we can still test if featreq fields
         # asked for in querystring
         # If all fields requested, just use FeatureReq fields attribute
-        fields = getfieldsfromget(request, empty=None, allfields=FeatureReq.fields.keys())
+        fields = getfieldsfromget(
+            request,
+            empty=None,
+            allfields=FeatureReq.fields.keys(),
+            allowed=FeatureReq.fields
+        )
 
         respdict = OrderedDict([('id', client_id)])
 
