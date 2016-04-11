@@ -16,8 +16,8 @@ from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 ## Common vars
 
 # Default session exipiry time
-# 10 mins for testing purposes at present
-SESSION_EXPIRY = 600
+# 24h for testing purposes at present
+SESSION_EXPIRY = 86400
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
