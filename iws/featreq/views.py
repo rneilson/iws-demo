@@ -7,7 +7,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt, requires_csrf_token
+from django.middleware.csrf import get_token as csrf_get_token
+from django.contrib.auth import authenticate, login
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
 from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
@@ -292,9 +294,53 @@ def getfieldsfromget(request, empty=None, allfields=None, queryname='field'):
 
 ## View funcs
 
+@ensure_csrf_cookie
+@requires_csrf_token
 @allow_methods(['GET'], usejson=False)
 def index(request):
-    return HttpResponse('Uh, hi?\n')
+    if not request.user.is_authenticated():
+        return HttpResponseRedirect(urlreverse('featreq-login'))
+    else:
+        # TODO: send as JSON
+        username = request.user.get_username()
+        fullname = request.user.get_full_name()
+        if not fullname:
+            fullname = '[{0}]'.format(username)
+        if request.META['CONTENT_TYPE'] == json_contype:
+            respdict = OrderedDict([
+                ('username', username),
+                ('full_name', fullname),
+                ('crsf_token', csrf_get_token(request))
+            ])
+            return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        else:
+            histr = 'Uh, hi {0}?\nYour CSRF token is: {1}\n'.format(fullname, csrf_get_token(request))
+            return HttpResponse(histr)
+
+@ensure_csrf_cookie
+@requires_csrf_token
+@allow_methods(['GET', 'POST'])
+def apilogin(request):
+    if request.method == 'GET':
+        # TODO: anything else to put in here?
+        respdict = {'crsf_token': csrf_get_token(request)}
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    elif request.method == 'POST':
+        # Get login args
+        postargs = getargsfrompost(
+            request,
+            fieldnames=('username', 'password'),
+            required={'username', 'password'}
+        )
+        user = authenticate(username=postargs['username'], password=postargs['password'])
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+                return HttpResponseRedirect(urlreverse('featreq-index'))
+            else:
+                return badrequest(request, 'User {0} is disabled'.format(user.get_username()), 'username')
+        else:
+            return badrequest(request, 'Login failed')
 
 @allow_methods(['GET', 'POST'])
 def reqindex(request):
@@ -346,7 +392,6 @@ def reqindex(request):
         else:
             return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
-@ensure_csrf_cookie
 @allow_methods(['GET'])
 def reqindex_ext(request, tolist):
     # TODO: add filter options
@@ -439,8 +484,6 @@ def reqindex_ext(request, tolist):
         return _getindex(request, listopen=True, listclosed=True)
         # return _allindex(request)
 
-#@csrf_exempt
-@ensure_csrf_cookie
 @allow_methods(['GET', 'POST'])
 def reqbyid(request, req_id):
     # Get selected featreq
@@ -483,7 +526,6 @@ def reqbyid(request, req_id):
             else:
                 return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
-@ensure_csrf_cookie
 @allow_methods(['GET', 'POST'])
 def reqbyid_ext(request, req_id, tolist):
 
