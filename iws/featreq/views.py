@@ -59,64 +59,6 @@ del closedreq_byclient_fields['client_id']
 #del closedreq_byclient_fields['req_id']
 #closedreq_byclient_fields['req'] = tojsondict
 
-## Decorators
-
-def allow_methods(methods, usejson=True):
-    '''Decorator for views.
-    Returns HttpResponseNotAllowed object with decorated parameters.
-    '''
-    def wrap(f):
-        methodset = set(methods)
-        respstr = 'Method {0} not available here.'
-        if usejson:
-            def wrapped(request, *args, **kwargs):
-                if request.method in methodset:
-                    return f(request, *args, **kwargs)
-                else:
-                    errordict = OrderedDict([
-                        ('status_code', 405),
-                        ('error', respstr.format(request.method))
-                    ])
-                    jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
-                    return HttpResponseNotAllowed(methods, jsonbytes, content_type=json_contype)
-        else:
-            def wrapped(request, *args, **kwargs):
-                if request.method in methodset:
-                    return f(request, *args, **kwargs)
-                else:
-                    return HttpResponseNotAllowed(methods, respstr.format(request.method)+'\n')
-        return wrapped
-    return wrap
-
-def auth_required(f):
-    '''Decorator for views. Checks that user is authenticated, returns
-    403 Forbidden response if not.
-    '''
-    def wrapped(request, *args, **kwargs):
-        if request.user.is_authenticated():
-            if request.session.get_expiry_age() > 0:
-                return f(request, *args, **kwargs)
-            else:
-                errordict = OrderedDict([
-                    ('status_code', 403),
-                    ('error', 'Session expired')
-                ])
-                # Will fall through to response
-        else:
-            errordict = OrderedDict([
-                ('status_code', 403),
-                ('error', 'Not logged in')
-            ])
-            # Will fall through to response
-        if request.META['CONTENT_TYPE'].lower() == json_contype or\
-            request.META['HTTP_ACCEPT'].lower() == json_contype:
-            return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
-        else:
-            errorstr = 'Status code: 403\nError message: {0}\n'.format(errordict['error'])
-            return HttpResponseForbidden(errorstr)
-    return wrapped
-
-
 ## Shortcut funcs
 
 def getusername(request):
@@ -160,6 +102,20 @@ def badrequest(request, errormsg, field=None, usejson=True):
             respstr = 'Status code: 400\nError message: {0}\n'.format(str(errormsg))
         return HttpResponseBadRequest(respstr)
 
+def forbidden(request, errormsg='Not authorized', usejson=True):
+    if usejson and\
+        (request.META['CONTENT_TYPE'].lower() == json_contype or\
+        request.META['HTTP_ACCEPT'].lower() == json_contype):
+
+        errordict = OrderedDict([
+            ('status_code', 403),
+            ('error', errormsg)])
+        return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
+
+    else:
+        errorstr = 'Status code: 403\nError message: {0}\n'.format(errormsg)
+        return HttpResponseForbidden(errorstr)
+
 def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=None):
     '''Extracts ordered dict of arguments from POST request. Requests with
     content type 'application/json' will use the request body decoded from
@@ -182,7 +138,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
     caught will be re-raised as ValueError with the fieldname in the
     exception message.
     '''
-    if  request.META['CONTENT_TYPE'].lower() == json_contype:
+    if request.META['CONTENT_TYPE'].lower() == json_contype:
         # Specific codepath for JSON, since we can decode into the form
         # of our own choosing
 
@@ -348,6 +304,47 @@ def getfieldsfromget(
     return fields
 
 
+## Decorators
+
+def allow_methods(methods, usejson=True):
+    '''Decorator for views.
+    Returns HttpResponseNotAllowed object with decorated parameters.
+    '''
+    def wrap(f):
+        methodset = set(methods)
+        respstr = 'Method {0} not available here.'
+        if usejson:
+            def wrapped(request, *args, **kwargs):
+                if request.method in methodset:
+                    return f(request, *args, **kwargs)
+                else:
+                    errordict = OrderedDict([
+                        ('status_code', 405),
+                        ('error', respstr.format(request.method))
+                    ])
+                    jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
+                    return HttpResponseNotAllowed(methods, jsonbytes, content_type=json_contype)
+        else:
+            def wrapped(request, *args, **kwargs):
+                if request.method in methodset:
+                    return f(request, *args, **kwargs)
+                else:
+                    return HttpResponseNotAllowed(methods, respstr.format(request.method)+'\n')
+        return wrapped
+    return wrap
+
+def auth_required(f):
+    '''Decorator for views. Checks that user is authenticated, returns
+    403 Forbidden response if not.
+    '''
+    def wrapped(request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return f(request, *args, **kwargs)
+        else:
+            return forbidden(request, 'Not logged in or session expired')
+    return wrapped
+
+
 ## View funcs
 
 @ensure_csrf_cookie
@@ -388,19 +385,24 @@ def apilogin(request):
         # Get login args
         postargs = getargsfrompost(
             request,
-            fieldnames=('username', 'password'),
-            required={'username', 'password'}
+            fieldnames=('auth_action', 'username', 'password'),
+            required={'auth_action', 'username', 'password'}
         )
-        user = authenticate(username=postargs['username'], password=postargs['password'])
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                request.session.set_expiry(SESSION_EXPIRY)
-                return HttpResponseRedirect(urlreverse('featreq-index'))
+        action = postargs.get('auth_action', None)
+        if action and action.lower() == 'login':
+            user = authenticate(username=postargs['username'], password=postargs['password'])
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    request.session.set_expiry(SESSION_EXPIRY)
+                    return HttpResponseRedirect(urlreverse('featreq-index'))
+                else:
+                    # TODO: is this a security hole? Should we just return "Login failed"?
+                    return forbidden(request, 'User {0} is disabled'.format(user.get_username()))
             else:
-                return badrequest(request, 'User {0} is disabled'.format(user.get_username()), 'username')
+                return forbidden(request, 'Login failed')
         else:
-            return badrequest(request, 'Login failed')
+            return badrequest(request, 'Invalid action: {0}'.format(action), 'auth_action')
 
 @auth_required
 @allow_methods(['GET', 'POST'])
