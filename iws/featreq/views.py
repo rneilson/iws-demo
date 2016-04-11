@@ -312,6 +312,7 @@ def reqindex(request):
     return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
 @ensure_csrf_cookie
+@allow_methods(['GET'])
 def reqindex_ext(request, tolist):
     # TODO: add filter options
 
@@ -374,30 +375,34 @@ def reqindex_ext(request, tolist):
         respdict = OrderedDict([('req_count', len(frlist)), ('req_list', frlist)])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
-
-    @allow_methods(['GET', 'POST'])
+    '''
+    @allow_methods(['GET'])
     def _openindex(request):
-        if request.method == 'GET':
-            return _getindex(request, listopen=True, listclosed=False)
-        # TODO: add POST method
+        #if request.method == 'GET':
+        return _getindex(request, listopen=True, listclosed=False)
+        # TODO: add POST method?
 
-    @allow_methods(['GET', 'POST'])
+    @allow_methods(['GET'])
     def _closedindex(request):
-        if request.method == 'GET':
-            return _getindex(request, listopen=False, listclosed=True)
-        # TODO: add POST method
+        #if request.method == 'GET':
+        return _getindex(request, listopen=False, listclosed=True)
+        # TODO: add POST method?
 
     @allow_methods(['GET'])
     def _allindex(request):
         return _getindex(request, listopen=True, listclosed=True)
+    '''
 
     # Forward to appropriate inner function
     if tolist == 'open':
-        return _openindex(request)
+        return _getindex(request, listopen=True, listclosed=False)
+        # return _openindex(request)
     elif tolist == 'closed':
-        return _closedindex(request)
+        return _getindex(request, listopen=False, listclosed=True)
+        # return _closedindex(request)
     elif tolist == 'all':
-        return _allindex(request)
+        return _getindex(request, listopen=True, listclosed=True)
+        # return _allindex(request)
 
 #@csrf_exempt
 @ensure_csrf_cookie
