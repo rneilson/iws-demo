@@ -320,8 +320,8 @@ def reqindex(request):
         try:
             # TODO: remove title and desc from required if any additional
             # actions get defined
-            postargs = getargsfrompost(request, 
-                fieldnames=('req_action', 'id', 'title', 'desc', 'ref_url', 'prod_area'), 
+            postargs = getargsfrompost(request,
+                fieldnames=('req_action', 'id', 'title', 'desc', 'ref_url', 'prod_area'),
                 required={'req_action', 'title', 'desc'}
             )
         except ValueError as e:
@@ -637,18 +637,55 @@ def reqredir(request, req_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
-@allow_methods(['GET'])
+@allow_methods(['GET', 'POST'])
 def clientindex(request):
     # TODO: add filter options, additional field options
-    # Get JSON-compat dicts for all clients
-    # Get client id, name, and open/closed counts
-    clqset = ClientInfo.objects.annotate(
-        open_count=Count('open_list', distinct=True), 
-        closed_count=Count('closed_list', distinct=True))
-    cllist = qset_vals_tojsonlist(clqset, client_with_counts_dict.keys(), client_with_counts_dict.values())
-    # Construct response
-    respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
-    return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    if request.method == 'GET':
+        # Get JSON-compat dicts for all clients
+        # Get client id, name, and open/closed counts
+        clqset = ClientInfo.objects.annotate(
+            open_count=Count('open_list', distinct=True), 
+            closed_count=Count('closed_list', distinct=True))
+        cllist = qset_vals_tojsonlist(clqset, client_with_counts_dict.keys(), client_with_counts_dict.values())
+        # Construct response
+        respdict = OrderedDict([('client_count', len(cllist)), ('client_list', cllist)])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+
+    elif request.method == 'POST':
+        # Get user
+        # TODO: try/except (once auth in place)
+        username = getusername(request)
+
+        # Get args
+        try:
+            # TODO: remove title and desc from required if any additional
+            # actions get defined
+            postargs = getargsfrompost(request,
+                fieldnames=('cli_action', 'name', 'con_name', 'con_mail', 'id'),
+                required={'cli_action', 'name'}
+            )
+        except ValueError as e:
+            return badrequest(request, e)
+
+        # Update request
+        action = postargs.pop('cli_action').lower()
+        if action == 'create':
+            # User not recorded by newclient() at present
+            # postargs['user'] = username
+            # postargs.move_to_end('user', last=False)
+
+            # Attempt client creation and return new featreq or error
+            try:
+                cl = ClientInfo.objects.newclient(**postargs)
+            except Exception as e:
+                return badrequest(request, e)
+            else:
+                resp = HttpResponse(json.dumps({'client': cl.jsondict()}, indent=1)+'\n', status=201, content_type=json_contype)
+                resp['Location'] = urlreverse('featreq-client-byid', kwargs={'client_id':cl.id})
+                return resp
+        else:
+            return badrequest(request, 'Invalid action "{0}"'.format(action), field='cli_action')
+
 
 @allow_methods(['GET', 'POST'])
 def clientbyid(request, client_id):
