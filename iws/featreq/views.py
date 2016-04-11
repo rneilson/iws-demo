@@ -111,16 +111,16 @@ def badrequest(request, errormsg, field=None, usejson=True):
 
         # Create reponse payload
         errordict = OrderedDict([
-            ('status_code', 405),
+            ('status_code', 400),
             ('error', errordetail)
         ])
         jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
         return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
     else:
         if field:
-            respstr = 'Status code: 405\nError in field: {0}\nError message: {1}\n'.format(field, str(errormsg))
+            respstr = 'Status code: 400\nError in field: {0}\nError message: {1}\n'.format(field, str(errormsg))
         else:
-            respstr = 'Status code: 405\nError message: {0}\n'.format(str(errormsg))
+            respstr = 'Status code: 400\nError message: {0}\n'.format(str(errormsg))
         return HttpResponseBadRequest(respstr)
 
 def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=None):
@@ -429,7 +429,6 @@ def reqbyid(request, req_id):
             # Update request
             action = postargs.pop('req_action')
             if action == 'update':
-
                 # Add user
                 postargs['user'] = username
                 postargs.move_to_end('user', last=False)
@@ -442,7 +441,7 @@ def reqbyid(request, req_id):
                 else:
                     return HttpResponse(json.dumps({'req': fr.jsondict()}, indent=1)+'\n', content_type=json_contype)
             else:
-                return badrequest(request, 'Invalid action "{0}"'.format(postargs['req_action']), field='req_action')
+                return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
 @ensure_csrf_cookie
 @allow_methods(['GET', 'POST'])
@@ -478,7 +477,48 @@ def reqbyid_ext(request, req_id, tolist):
     def _openext(request, featreq):
         if request.method == 'GET':
             return _getext(request, featreq, listopen=True)
-        # TODO: add POST method
+        elif request.method == 'POST':
+            # Check/get user
+            # TODO: try/except (once auth in place)
+            username = getusername(request)
+
+            # Check args
+            try:
+                attachargs = getargsfrompost(
+                    request,
+                    fieldnames=('req_action', 'client_id', 'priority', 'date_tgt'),
+                    required=('req_action', 'client_id'),
+                    asint={'priority'}
+                )
+            except ValueError as e:
+                return badrequest(request, e)
+
+            # Check action
+            action = attachargs.pop('req_action')
+            if action.lower() == 'attach':
+                # attachreq() takes client instead of client_id
+                client_id = attachargs.pop('client_id')
+                # Check client_id
+                if not ClientInfo.objects.filter(id=client_id).exists():
+                    return badrequest(request, 'No client with id {0}'.format(client_id), 'client_id')
+                # Put client_id back in dict under new name
+                attachargs['client'] = client_id
+
+                # Add username and req_id
+                attachargs['request'] = featreq
+                attachargs['user'] = username
+
+                # Now attempt to attach
+                try:
+                    OpenReq.objects.attachreq(**attachargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getext(request, featreq, listopen=True)
+            else:
+                return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
     @allow_methods(['GET', 'POST'])
     def _closedext(request, featreq):
@@ -503,8 +543,6 @@ def reqbyid_ext(request, req_id, tolist):
             return _closedext(request, fr)
         elif tolist == 'all':
             return _allext(request, fr)
-
-
 
 def reqredir(request, req_id):
     # Check if req_id exists
