@@ -487,15 +487,15 @@ def reqbyid_ext(request, req_id, tolist):
                 attachargs = getargsfrompost(
                     request,
                     fieldnames=('req_action', 'client_id', 'priority', 'date_tgt'),
-                    required=('req_action', 'client_id'),
+                    required={'req_action', 'client_id'},
                     asint={'priority'}
                 )
             except ValueError as e:
                 return badrequest(request, e)
 
             # Check action
-            action = attachargs.pop('req_action')
-            if action.lower() == 'attach':
+            action = attachargs.pop('req_action').lower()
+            if action == 'attach':
                 # attachreq() takes client instead of client_id
                 client_id = attachargs.pop('client_id')
                 # Check client_id
@@ -524,7 +524,52 @@ def reqbyid_ext(request, req_id, tolist):
     def _closedext(request, featreq):
         if request.method == 'GET':
             return _getext(request, featreq, listclosed=True)
-        # TODO: add POST method
+        elif request.method == 'POST':
+            # Check/get user
+            # TODO: try/except (once auth in place)
+            username = getusername(request)
+
+            # Check args
+            try:
+                closeargs = getargsfrompost(
+                    request,
+                    fieldnames=('req_action', 'client_id', 'status', 'reason'),
+                    required={'req_action'}
+                )
+            except ValueError as e:
+                return badrequest(request, e)
+
+            # Check action
+            action = closeargs.pop('req_action').lower()
+            if action == 'close':
+                # Check if client specified
+                try:
+                    client_id = closeargs.pop('client_id')
+                except KeyError:
+                    pass
+                else:
+                    # Check client_id
+                    if not ClientInfo.objects.filter(id=client_id).exists():
+                        return badrequest(request, 'No client with id {0}'.format(client_id), 'client_id')
+                    # closereq() takes client instead of client_id
+                    # Put client_id back in dict under new name
+                    closeargs['client'] = client_id
+
+                # Add username and req_id
+                closeargs['request'] = featreq
+                closeargs['user'] = username
+
+                # Now attempt to close
+                try:
+                    ClosedReq.objects.closereq(**closeargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getext(request, featreq, listclosed=True)
+            else:
+                return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
     @allow_methods(['GET'])
     def _allext(request, featreq):
