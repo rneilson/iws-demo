@@ -2,7 +2,7 @@ import datetime, json
 from collections import OrderedDict
 from functools import partial
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect,\
-    HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
+    HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
@@ -14,6 +14,10 @@ from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
 from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
 ## Common vars
+
+# Default session exipiry time
+# 10 mins for testing purposes at present
+SESSION_EXPIRY = 600
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
@@ -55,7 +59,7 @@ del closedreq_byclient_fields['client_id']
 #del closedreq_byclient_fields['req_id']
 #closedreq_byclient_fields['req'] = tojsondict
 
-## Shortcut funcs and decorators
+## Decorators
 
 def allow_methods(methods, usejson=True):
     '''Decorator for views.
@@ -83,6 +87,37 @@ def allow_methods(methods, usejson=True):
                     return HttpResponseNotAllowed(methods, respstr.format(request.method)+'\n')
         return wrapped
     return wrap
+
+def auth_required(f):
+    '''Decorator for views. Checks that user is authenticated, returns
+    403 Forbidden response if not.
+    '''
+    def wrapped(request, *args, **kwargs):
+        if request.user.is_authenticated():
+            if request.session.get_expiry_age() > 0:
+                return f(request, *args, **kwargs)
+            else:
+                errordict = OrderedDict([
+                    ('status_code', 403),
+                    ('error', 'Session expired')
+                ])
+                # Will fall through to response
+        else:
+            errordict = OrderedDict([
+                ('status_code', 403),
+                ('error', 'Not logged in')
+            ])
+            # Will fall through to response
+        if request.META['CONTENT_TYPE'].lower() == json_contype or\
+            request.META['HTTP_ACCEPT'].lower() == json_contype:
+            return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
+        else:
+            errorstr = 'Status code: 403\nError message: {0}\n'.format(errordict['error'])
+            return HttpResponseForbidden(errorstr)
+    return wrapped
+
+
+## Shortcut funcs
 
 def getusername(request):
     '''Extracts username from request, or provides default.'''
@@ -327,15 +362,18 @@ def index(request):
         fullname = request.user.get_full_name()
         if not fullname:
             fullname = '[{0}]'.format(username)
-        if request.META['CONTENT_TYPE'] == json_contype:
+        if request.META['CONTENT_TYPE'].lower() == json_contype or\
+            request.META['HTTP_ACCEPT'].lower() == json_contype:
             respdict = OrderedDict([
                 ('username', username),
                 ('full_name', fullname),
-                ('crsf_token', csrf_get_token(request))
+                ('crsf_token', csrf_get_token(request)),
+                ('session_expiry', request.session.get_expiry_age())
             ])
             return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
         else:
-            histr = 'Uh, hi {0}?\nYour CSRF token is: {1}\n'.format(fullname, csrf_get_token(request))
+            histr = 'Uh, hi {0}?\nYour CSRF token is: {1}\nYour session expires in {2}s\n'.format(
+                fullname, csrf_get_token(request), request.session.get_expiry_age())
             return HttpResponse(histr)
 
 @ensure_csrf_cookie
@@ -357,12 +395,14 @@ def apilogin(request):
         if user is not None:
             if user.is_active:
                 login(request, user)
+                request.session.set_expiry(SESSION_EXPIRY)
                 return HttpResponseRedirect(urlreverse('featreq-index'))
             else:
                 return badrequest(request, 'User {0} is disabled'.format(user.get_username()), 'username')
         else:
             return badrequest(request, 'Login failed')
 
+@auth_required
 @allow_methods(['GET', 'POST'])
 def reqindex(request):
     # TODO: add filter options
@@ -413,6 +453,7 @@ def reqindex(request):
         else:
             return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
+@auth_required
 @allow_methods(['GET'])
 def reqindex_ext(request, tolist):
     # TODO: add filter options
@@ -510,6 +551,7 @@ def reqindex_ext(request, tolist):
         return _getindex(request, listopen=True, listclosed=True)
         # return _allindex(request)
 
+@auth_required
 @allow_methods(['GET', 'POST'])
 def reqbyid(request, req_id):
     # Get selected featreq
@@ -552,6 +594,7 @@ def reqbyid(request, req_id):
             else:
                 return badrequest(request, 'Invalid action "{0}"'.format(action), field='req_action')
 
+@auth_required
 @allow_methods(['GET', 'POST'])
 def reqbyid_ext(request, req_id, tolist):
 
@@ -697,6 +740,7 @@ def reqbyid_ext(request, req_id, tolist):
         elif tolist == 'all':
             return _allext(request, fr)
 
+@auth_required
 def reqredir(request, req_id):
     # Check if req_id exists
     if FeatureReq.objects.filter(id=req_id).exists():
@@ -705,6 +749,7 @@ def reqredir(request, req_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
+@auth_required
 @allow_methods(['GET', 'POST'])
 def clientindex(request):
     # TODO: add filter options, additional field options
@@ -755,6 +800,7 @@ def clientindex(request):
             return badrequest(request, 'Invalid action "{0}"'.format(action), field='cli_action')
 
 
+@auth_required
 @allow_methods(['GET', 'POST'])
 def clientbyid(request, client_id):
     # Get selected featreq
@@ -768,6 +814,7 @@ def clientbyid(request, client_id):
             return HttpResponse(json.dumps({'client': cl.jsondict()}, indent=1)+'\n', content_type=json_contype)
         # TODO: handle POST
 
+@auth_required
 def clientredir(request, client_id):
     # Check if client_id exists
     if ClientInfo.objects.filter(id=client_id).exists():
@@ -776,6 +823,7 @@ def clientredir(request, client_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
+@auth_required
 def clientreqindex(request, client_id, tolist):
 
     def _getindex(request, client_id, listopen=False, listclosed=False):
