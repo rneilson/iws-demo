@@ -301,7 +301,7 @@ def getfieldsfromget(
         fields = newfields
 
     # Filter by allowed if given
-    if allowed:
+    if fields and allowed:
         fields = [ fv for fv in fields if fv in allowed ]
 
     return fields
@@ -701,7 +701,6 @@ def reqbyid_ext(request, req_id, tolist):
             action = postargs.pop('action').lower()
 
             if action == 'open':
-                # attachreq() takes client instead of client_id
                 try:
                     client_id = postargs.pop('client_id')
                 except KeyError:
@@ -717,6 +716,7 @@ def reqbyid_ext(request, req_id, tolist):
                         del postargs[fn]
 
                 # Put client_id back in dict under new name
+                # attachreq() takes client instead of client_id
                 postargs['client'] = client_id
 
                 # Add username and req_id
@@ -743,7 +743,6 @@ def reqbyid_ext(request, req_id, tolist):
                     # Check client_id is in open list for this featreq
                     if not fr.open_list.filter(client_id=client_id).exists():
                         return badrequest(request, 'Request not open for client_id {0}'.format(client_id), 'client_id')
-                    # closereq() takes client instead of client_id
 
                 # Check for unsupported args
                 for fn in postargs:
@@ -751,6 +750,7 @@ def reqbyid_ext(request, req_id, tolist):
                         del postargs[fn]
 
                 # Put client_id back in dict under new name
+                # closereq() takes client instead of client_id
                 postargs['client'] = client_id
 
                 # Add username and req_id
@@ -856,7 +856,34 @@ def clientbyid(request, client_id):
         if request.method == 'GET':
             # Return (ordered) dict as JSON
             return HttpResponse(json.dumps({'client': cl.jsondict()}, indent=1)+'\n', content_type=json_contype)
-        # TODO: handle POST
+
+        elif request.method == 'POST':
+            # User not recorded by updateclient() at present
+            # username = getusername(request)
+
+            # Get args
+            try:
+                postargs = getargsfrompost(request, 
+                    fieldnames=('action', 'name', 'con_name', 'con_mail'), 
+                    required={'action'}
+                )
+            except ValueError as e:
+                return badrequest(request, e)
+
+            action = postargs.pop('action')
+            
+            # Update client
+            if action == 'update':
+                # Attempt update and return client details or error
+                try:
+                    cl = cl.updateclient(**postargs)
+                except Exception as e:
+                    return badrequest(request, e)
+                else:
+                    return HttpResponse(json.dumps({'client': cl.jsondict()}, indent=1)+'\n', content_type=json_contype)
+            else:
+                return badrequest(request, 'Invalid action "{0}"'.format(action), field='action')
+
 
 @auth_required
 def clientredir(request, client_id):
