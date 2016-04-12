@@ -74,17 +74,18 @@ def getusername(request):
     try:
         username = request.user.get_username()
     except AttributeError:
-        # TODO: raise exception instead (once auth in place)
+        # TODO: raise exception instead(?)
         username = unknown_user
     else:
         if not username:
-            # TODO: raise exception instead (once auth in place)
+            # TODO: raise exception instead(?)
             username = unknown_user
     return username
 
-def badrequest(request, errormsg, field=None, usejson=True):
+def badrequest(request, errormsg, field=None):
     '''Constructs 400 Bad Request response with given error message.'''
-    if usejson:
+
+    if req_is_json(request):
         if field:
             # Create an error JSON object with field in question
             errordetail = OrderedDict([
@@ -109,8 +110,10 @@ def badrequest(request, errormsg, field=None, usejson=True):
             respstr = 'Status code: 400\nError message: {0}\n'.format(str(errormsg))
         return HttpResponseBadRequest(respstr)
 
-def forbidden(request, errormsg='Not authorized', usejson=True):
-    if usejson and req_is_json(request):
+def forbidden(request, errormsg='Not authorized'):
+    '''Constructs 403 Forbidden response with given error message.'''
+
+    if req_is_json(request):
         errordict = OrderedDict([
             ('status_code', 403),
             ('error', errormsg)])
@@ -290,7 +293,7 @@ def getfieldsfromget(
         # None (default) will typically get fields from model
         fields = empty
     # All fields (must be last parameter in query string)
-    elif 'all' in fields:
+    elif allfieldname in fields:
         # None (default) will typically get fields from model
         fields = allfields
     # Split fields if req'd
