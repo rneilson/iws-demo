@@ -283,6 +283,46 @@ class ClientInfo(models.Model):
     def __str__(self):
         return str(self.name)
 
+    def updateclient(self, name='', con_name='', con_mail=''):
+        '''Update existing ClientInfo.
+        If con_name and/or con_mail are given as None, they will be cleared
+        and replaced with the empty string.
+        '''
+
+        # Ensure we're actually updating something
+        # If not, return unchanged
+        if not name and not con_name and not con_mail:
+            return self
+
+        # Update fields with new info
+        if name:
+            # Force string (just in case...)
+            if not isinstance(name, str):
+                raise TypeError('Invalid name type: {0}'.format(type(name)))
+            self.name = name
+
+        if con_name:
+            # Force string (just in case...)
+            if not isinstance(con_name, str):
+                raise TypeError('Invalid con_name type: {0}'.format(type(con_name)))
+            self.con_name = con_name
+        elif con_name is None:
+            self.con_name = ''
+
+        # Now description addendum, if requested
+        if con_mail:
+            # Force string (just in case...)
+            if not isinstance(con_mail, str):
+                raise TypeError('Invalid con_mail type: {0}'.format(type(con_mail)))
+            self.con_mail = con_mail
+        elif con_mail is None:
+            self.con_mail = ''
+
+        # Finally, update, validate, save, return
+        self.full_clean()
+        self.save()
+        return self
+
 
 ## Request relations
 # Normally we'd use an abstract base class here, and subclass for open/closed,
