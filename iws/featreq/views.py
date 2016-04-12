@@ -952,7 +952,7 @@ def clientreqindex(request, client_id, tolist):
 
             for creq in qset:
                 # Get JSON-compat dict
-                creq.jsondict(
+                creqdict = creq.jsondict(
                     fields=closedreq_byclient_fields.keys(), 
                     fcalls=closedreq_byclient_fields.values()
                 )
@@ -971,11 +971,115 @@ def clientreqindex(request, client_id, tolist):
 
         return HttpResponse(json.dumps({'client': respdict}, indent=1)+'\n', content_type=json_contype)
 
-    @allow_methods(['GET'])
+    @allow_methods(['GET', 'POST'])
     def _openindex(request, client_id):
         if request.method == 'GET':
             return _getindex(request, client_id, listopen=True)
-        # TODO: handle POST(?)
+
+        elif request.method == 'POST':
+            # Check/get user
+            username = getusername(request)
+
+            # Check args
+            try:
+                postargs = getargsfrompost(
+                    request,
+                    fieldnames=('action', 'req_id', 'priority', 'date_tgt', 'status', 'reason'),
+                    required={'action', 'req_id'},
+                    asint={'priority'}
+                )
+            except ValueError as e:
+                return badrequest(request, e)
+
+            # Check action
+            action = postargs.pop('action').lower()
+            req_id = postargs.pop('req_id')
+
+            if action == 'open':
+                # Check req_id
+                if not FeatureReq.objects.filter(id=req_id).exists():
+                    return badrequest(request, 'No request with id {0}'.format(req_id), 'req_id')
+
+                # Remove unsupported args
+                for fn in postargs:
+                    if fn not in {'priority', 'date_tgt'}:
+                        del postargs[fn]
+
+                # Put req_id back in dict under new name
+                # attachreq() takes client instead of req_id
+                postargs['request'] = req_id
+
+                # Add username and req_id
+                postargs['client'] = client_id
+                postargs['user'] = username
+
+                # Now attempt to attach
+                try:
+                    OpenReq.objects.attachreq(**postargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getindex(request, client_id, listopen=True)
+
+            elif action == 'update':
+                # Check req_id is in open list for this client
+                try:
+                    oreq = OpenReq.objects.get(client_id=client_id, req_id=req_id)
+                except ObjectDoesNotExist:
+                    return badrequest(request, 'Request not open for req_id {0}'.format(req_id), 'req_id')
+
+                # Remove unsupported args
+                for fn in postargs:
+                    if fn not in {'priority', 'date_tgt'}:
+                        del postargs[fn]
+
+                # Add openreq
+                postargs['openreq'] = oreq
+
+                # Now attempt to update
+                try:
+                    OpenReq.objects.updatereq(**postargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getindex(request, client_id, listopen=True)
+
+            elif action == 'close':
+                # Check req_id is in open list for this client
+                try:
+                    oreq = OpenReq.objects.get(client_id=client_id, req_id=req_id)
+                except ObjectDoesNotExist:
+                    return badrequest(request, 'Request not open for req_id {0}'.format(req_id), 'req_id')
+
+                # Remove unsupported args
+                for fn in postargs:
+                    if fn not in {'status', 'reason'}:
+                        del postargs[fn]
+
+                # Put client_id back in dict under new name
+                # closereq() takes client instead of client_id
+                postargs['client'] = client_id
+
+                # Add username and openreq
+                postargs['request'] = oreq
+                postargs['user'] = username
+
+                # Now attempt to close
+                try:
+                    ClosedReq.objects.closereq(**postargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getindex(request, client_id, listopen=True)
+
+            else:
+                return badrequest(request, 'Invalid action "{0}"'.format(action), field='action')
 
     @allow_methods(['GET'])
     def _closedindex(request, client_id):
