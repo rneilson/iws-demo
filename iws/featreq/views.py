@@ -9,7 +9,7 @@ from django.db.models import Count
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt, requires_csrf_token
 from django.middleware.csrf import get_token as csrf_get_token
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
 from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 
@@ -61,6 +61,13 @@ del closedreq_byclient_fields['client_id']
 
 ## Shortcut funcs
 
+def req_is_json(request):
+    if request.META['CONTENT_TYPE'].lower() == json_contype or\
+        request.META['HTTP_ACCEPT'].lower() == json_contype:
+        return True
+    else:
+        return False
+
 def getusername(request):
     '''Extracts username from request, or provides default.'''
     unknown_user = 'UNKNOWN'
@@ -103,15 +110,11 @@ def badrequest(request, errormsg, field=None, usejson=True):
         return HttpResponseBadRequest(respstr)
 
 def forbidden(request, errormsg='Not authorized', usejson=True):
-    if usejson and\
-        (request.META['CONTENT_TYPE'].lower() == json_contype or\
-        request.META['HTTP_ACCEPT'].lower() == json_contype):
-
+    if usejson and req_is_json(request):
         errordict = OrderedDict([
             ('status_code', 403),
             ('error', errormsg)])
         return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
-
     else:
         errorstr = 'Status code: 403\nError message: {0}\n'.format(errormsg)
         return HttpResponseForbidden(errorstr)
@@ -347,20 +350,44 @@ def auth_required(f):
 
 ## View funcs
 
+def _basicresp(request):
+    loggedin = request.user.is_authenticated()
+    username = request.user.get_username()
+    try:
+        fullname = request.user.get_full_name()
+    except AttributeError:
+        fullname = '[anonymous]'.format(username)
+    if not fullname:
+        fullname = '[user {0}]'.format(username)
+    if req_is_json(request):
+        respdict = OrderedDict([
+            ('logged_in', loggedin),
+            ('username', username),
+            ('full_name', fullname),
+            ('crsf_token', csrf_get_token(request)),
+            ('session_expiry', request.session.get_expiry_age())
+        ])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    else:
+        histr = 'Logged in:{0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
+            loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
+        return HttpResponse(histr)
+
 @ensure_csrf_cookie
 @requires_csrf_token
-@allow_methods(['GET'], usejson=False)
+@allow_methods(['GET'])
 def index(request):
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(urlreverse('featreq-login'))
+        return HttpResponseRedirect(urlreverse('featreq-auth'))
     else:
-        # TODO: send as JSON
         username = request.user.get_username()
-        fullname = request.user.get_full_name()
+        try:
+            fullname = request.user.get_full_name()
+        except AttributeError:
+            fullname = '[user {0}]'.format(username)
         if not fullname:
-            fullname = '[{0}]'.format(username)
-        if request.META['CONTENT_TYPE'].lower() == json_contype or\
-            request.META['HTTP_ACCEPT'].lower() == json_contype:
+            fullname = '[user {0}]'.format(username)
+        if req_is_json(request):
             respdict = OrderedDict([
                 ('username', username),
                 ('full_name', fullname),
@@ -376,33 +403,49 @@ def index(request):
 @ensure_csrf_cookie
 @requires_csrf_token
 @allow_methods(['GET', 'POST'])
-def apilogin(request):
+def apiauth(request):
+
     if request.method == 'GET':
-        # TODO: anything else to put in here?
-        respdict = {'crsf_token': csrf_get_token(request)}
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        return _basicresp(request)
+
     elif request.method == 'POST':
         # Get login args
         postargs = getargsfrompost(
             request,
-            fieldnames=('auth_action', 'username', 'password'),
-            required={'auth_action', 'username', 'password'}
+            fieldnames=('action', 'username', 'password'),
+            required={'action', 'username'}
         )
-        action = postargs.get('auth_action', None)
-        if action and action.lower() == 'login':
+        action = postargs['action'].lower()
+        if action == 'login':
+            # Ensure password supplied
+            if 'password' not in postargs:
+                return badrequest(request, 'No password given', 'password')
+
+            # Log out current user, if any
+            logout(request)
+
+            # Authenticate user and return result
             user = authenticate(username=postargs['username'], password=postargs['password'])
             if user is not None:
                 if user.is_active:
                     login(request, user)
                     request.session.set_expiry(SESSION_EXPIRY)
-                    return HttpResponseRedirect(urlreverse('featreq-index'))
+                    # TODO: return something directly?
+                    return _basicresp(request)
                 else:
                     # TODO: is this a security hole? Should we just return "Login failed"?
                     return forbidden(request, 'User {0} is disabled'.format(user.get_username()))
             else:
                 return forbidden(request, 'Login failed')
+        elif action == 'logout':
+            # Make sure usernames (given and stored) match
+            if postargs['username'] != request.user.get_username():
+                return badrequest(request, 'Given username does not match current user', 'username')
+            # Log out user
+            logout(request)
+            return _basicresp(request)
         else:
-            return badrequest(request, 'Invalid action: {0}'.format(action), 'auth_action')
+            return badrequest(request, 'Invalid action: {0}'.format(action), 'action')
 
 @auth_required
 @allow_methods(['GET', 'POST'])

@@ -22,7 +22,7 @@ client_patterns = [
 
 urlpatterns = [
     url(r'^$', views.index, name='featreq-index'),
-    url(r'^login/', views.apilogin, name='featreq-login'),
+    url(r'^auth/', views.apiauth, name='featreq-auth'),
     url(r'^req/', include(req_patterns)),
     url(r'^client/', include(client_patterns)),
 ]
