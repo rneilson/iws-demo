@@ -1,6 +1,6 @@
 # Databases
 *.sqlite3
-*.sqlite3.bak*
+*.sqlite3.*bak
 
 # Python compiled
 *.pyo
