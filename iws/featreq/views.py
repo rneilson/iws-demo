@@ -62,8 +62,8 @@ del closedreq_byclient_fields['client_id']
 ## Shortcut funcs
 
 def req_is_json(request):
-    if request.META['CONTENT_TYPE'].lower() == json_contype or\
-        request.META['HTTP_ACCEPT'].lower() == json_contype:
+    if request.META.get('CONTENT_TYPE', '').lower() == json_contype or\
+        request.META.get('HTTP_ACCEPT', '').lower() == json_contype:
         return True
     else:
         return False
@@ -367,7 +367,7 @@ def _basicresp(request):
             ('logged_in', loggedin),
             ('username', username),
             ('full_name', fullname),
-            ('crsf_token', csrf_get_token(request)),
+            ('csrf_token', csrf_get_token(request)),
             ('session_expiry', request.session.get_expiry_age())
         ])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
@@ -394,13 +394,12 @@ def index(request):
             respdict = OrderedDict([
                 ('username', username),
                 ('full_name', fullname),
-                ('crsf_token', csrf_get_token(request)),
                 ('session_expiry', request.session.get_expiry_age())
             ])
             return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
         else:
-            histr = 'Uh, hi {0}?\nYour CSRF token is: {1}\nYour session expires in {2}s\n'.format(
-                fullname, csrf_get_token(request), request.session.get_expiry_age())
+            histr = 'Uh, hi {0}?\nYour session expires in {1}s\n'.format(
+                fullname, request.session.get_expiry_age())
             return HttpResponse(histr)
 
 @ensure_csrf_cookie
