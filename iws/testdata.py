@@ -10,8 +10,11 @@ userinfo = OrderedDict([
     ('username', 'iws-admin'),
     ('password', None),
     ('csrf_token', None)])
+
 CON_TYPE = 'application/json'
 BASEURL='/featreq/'
+
+CLIENTFMT = '{name:12s}\t{id:36s}'
 
 # Shortcuts
 
@@ -29,12 +32,31 @@ def postjson(client, postpath, postdata=None, expcode=200):
     assert resp.status_code == expcode
     return json.loads(resp.content.decode(), object_pairs_hook=OrderedDict)
 
+def printrows(rows, fields, headers, spacer='  '):
+    widths = []
+    # Get column widths per field
+    for fn, hd in zip(fields, headers):
+        # Get max of lengths for field
+        width = max(len(str(row[fn])) for row in rows) if rows else 0
+        # Check if header is longer
+        width = max(width, len(hd))
+        # Add to list
+        widths.append(width)
+
+    # Print headers
+    print(spacer.join(header.ljust(width) for header, width in zip(headers, widths)))
+    # Print separators
+    print(spacer.join('-' * width for width in widths))
+    # Print rows
+    for row in rows:
+        print(spacer.join(str(row[fn]).ljust(width) for fn, width in zip(fields, widths)))
+
 # Test funcs
 
 def login(client):
-    authurl = BASEURL + 'auth/'
+    urlstr = BASEURL + 'auth/'
     # Get current user status
-    respobj = getjson(client, authurl)
+    respobj = getjson(client, urlstr)
 
     # Update CSRF token
     userinfo['csrf_token'] = respobj['csrf_token']
@@ -42,7 +64,7 @@ def login(client):
     # Check if logged in (shouldn't be)
     if respobj['logged_in'] is False:
         sys.stderr.write('Logging in as {0}...\n'.format(userinfo['username']))
-        loginobj = postjson(client, authurl, {
+        loginobj = postjson(client, urlstr, {
             'action': 'login',
             'username': userinfo['username'],
             'password': userinfo['password']})
@@ -57,12 +79,34 @@ def login(client):
         sys.stderr.write('Successfully logged in as {0}\n'.format(loginobj['username']))
 
 def listclients(client):
-    cliurl = BASEURL + 'client/'
+    urlstr = BASEURL + 'client/'
 
     # Get and return client list
-    respobj = getjson(client, cliurl)
+    respobj = getjson(client, urlstr)
     assert 'client_list' in respobj
     return respobj['client_list']
+
+def listreqs(client):
+    urlstr = BASEURL + 'req/'
+
+    # Get and return client list
+    respobj = getjson(client, urlstr)
+    assert 'req_list' in respobj
+    return respobj['req_list']
+
+def listreqsbyclient(client, client_id, listopen=True):
+    if listopen:
+        urlstr = BASEURL + 'client/' + client_id + '/open/'
+        respobj = getjson(client, urlstr)
+        assert 'client' in respobj
+        assert 'open_list' in respobj['client']
+        return respobj['client']['open_list']
+    else:
+        urlstr = BASEURL + 'client/' + client_id + '/closed/'
+        respobj = getjson(client, urlstr)
+        assert 'client' in respobj
+        assert 'closed_list' in respobj['client']
+        return respobj['client']['closed_list']
 
 def buildtestdata(client):
     # Templates
@@ -109,10 +153,37 @@ if __name__ == "__main__":
     login(cl)
     print()
 
-    # Get and print client list
+    # Get, store, and print client list
     cllist = listclients(cl)
     cllist.sort(key=lambda x: x['name'].lower())
-    print('Client list:')
-    for c in cllist:
-        print(c['id'], c['name'])
 
+    printrows(cllist, ('name', 'id'), ('Client name', 'Client ID'))
+    print()
+
+    # Store for later
+    cldict = OrderedDict((c['id'], c) for c in cllist)
+
+    # Get featreqs
+    frdict = { fr['id']:fr for fr in listreqs(cl) }
+
+    # Get and print open featreq list per client
+    for c in cldict.values():
+        frlist = listreqsbyclient(cl, c['id'])
+        frlist.sort(key=lambda x: x['priority'])
+
+        # Per-client header
+        headstr = '{0} open requests:\n'.format(c['name'])
+        print(headstr)
+
+        # Have to make list of new dicts pulling in title
+        printlist = []
+        for fr in frlist:
+            printlist.append({
+                'pr': fr['priority'],
+                'id': fr['req_id'],
+                'ti': frdict[fr['req_id']]['title']
+                })
+
+        # Now print
+        printrows(printlist, ('pr', 'ti', 'id'), ('Priority', 'Title', 'Request ID'))
+        print()
