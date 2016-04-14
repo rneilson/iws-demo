@@ -929,6 +929,10 @@ def clientreqindex(request, client_id, tolist):
                     # Add featreq details (with specified fields)
                     oreqdict['req'] = oreq.req.jsondict(fields)
                     # TODO: move to front?
+                else:
+                    # Move req_id into req sub-object
+                    req_id = oreqdict.pop('req_id')
+                    oreqdict['req'] = {'id': req_id}
 
                 oreqlist.append(oreqdict)
 
@@ -958,6 +962,10 @@ def clientreqindex(request, client_id, tolist):
                     # Add featreq details (with specified fields)
                     creqdict['req'] = creq.req.jsondict(fields)
                     # TODO: move to front?
+                else:
+                    # Move req_id into req sub-object
+                    req_id = oreqdict.pop('req_id')
+                    oreqdict['req'] = {'id': req_id}
 
                 creqlist.append(creqdict)
 
