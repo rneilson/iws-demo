@@ -86,21 +86,14 @@ def badrequest(request, errormsg, field=None):
     '''Constructs 400 Bad Request response with given error message.'''
 
     if req_is_json(request):
-        if field:
-            # Create an error JSON object with field in question
-            errordetail = OrderedDict([
-                ('field', str(field)),
-                ('msg', str(errormsg))
-            ])
-        else:
-            # Make a plain string
-            errordetail = str(errormsg)
-
         # Create reponse payload
         errordict = OrderedDict([
             ('status_code', 400),
-            ('error', errordetail)
+            ('error', str(errormsg))
         ])
+        if field:
+            errordict['field'] = str(field)
+            errordict.move_to_end('error')
         jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
         return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
     else:
@@ -936,6 +929,10 @@ def clientreqindex(request, client_id, tolist):
                     # Add featreq details (with specified fields)
                     oreqdict['req'] = oreq.req.jsondict(fields)
                     # TODO: move to front?
+                else:
+                    # Move req_id into req sub-object
+                    req_id = oreqdict.pop('req_id')
+                    oreqdict['req'] = {'id': req_id}
 
                 oreqlist.append(oreqdict)
 
@@ -965,6 +962,10 @@ def clientreqindex(request, client_id, tolist):
                     # Add featreq details (with specified fields)
                     creqdict['req'] = creq.req.jsondict(fields)
                     # TODO: move to front?
+                else:
+                    # Move req_id into req sub-object
+                    req_id = oreqdict.pop('req_id')
+                    oreqdict['req'] = {'id': req_id}
 
                 creqlist.append(creqdict)
 
