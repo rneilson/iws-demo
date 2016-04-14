@@ -32,16 +32,14 @@ def postjson(client, postpath, postdata=None, expcode=200):
     assert resp.status_code == expcode
     return json.loads(resp.content.decode(), object_pairs_hook=OrderedDict)
 
-def printrows(rows, fields, headers, spacer='  '):
-    widths = []
-    # Get column widths per field
-    for fn, hd in zip(fields, headers):
-        # Get max of lengths for field
-        width = max(len(str(row[fn])) for row in rows) if rows else 0
-        # Check if header is longer
-        width = max(width, len(hd))
-        # Add to list
-        widths.append(width)
+def printrows(rows, headers, spacer='  '):
+    if rows:
+        # Get column widths per field
+        widths = [ max(map(lambda x: len(str(x)), col)) for col in zip(*rows) ]
+        # Check if headers are longer
+        widths = [ max(width, len(hd)) for width, hd in zip(widths, headers) ]
+    else:
+        widths = [ len(hd) for hd in headers ]
 
     # Print headers
     print(spacer.join(header.ljust(width) for header, width in zip(headers, widths)))
@@ -49,7 +47,7 @@ def printrows(rows, fields, headers, spacer='  '):
     print(spacer.join('-' * width for width in widths))
     # Print rows
     for row in rows:
-        print(spacer.join(str(row[fn]).ljust(width) for fn, width in zip(fields, widths)))
+        print(spacer.join(str(col).ljust(width) for col, width in zip(row, widths)))
 
 # Test funcs
 
@@ -157,7 +155,7 @@ if __name__ == "__main__":
     cllist = listclients(cl)
     cllist.sort(key=lambda x: x['name'].lower())
 
-    printrows(cllist, ('name', 'id'), ('Client name', 'Client ID'))
+    printrows([ (c['name'], c['id']) for c in cllist ], ('Client name', 'Client ID'))
     print()
 
     # Store for later
@@ -175,15 +173,9 @@ if __name__ == "__main__":
         headstr = '{0} open requests:\n'.format(c['name'])
         print(headstr)
 
-        # Have to make list of new dicts pulling in title
-        printlist = []
-        for fr in frlist:
-            printlist.append({
-                'pr': fr['priority'],
-                'id': fr['req_id'],
-                'ti': frdict[fr['req_id']]['title']
-                })
+        # Have to make list of lists, since pulling in title
+        printlist = [ [ fr['priority'], frdict[fr['req_id']]['title'], fr['req_id'] ] for fr in frlist ]
 
         # Now print
-        printrows(printlist, ('pr', 'ti', 'id'), ('Priority', 'Title', 'Request ID'))
+        printrows(printlist, ('Priority', 'Title', 'Request ID'))
         print()
