@@ -696,7 +696,7 @@ class ClosedReq(models.Model):
         verbose_name = 'closed request'
         verbose_name_plural = 'closed requests'
         db_table = 'closedreqs'
-        unique_together = ['client', 'req']
+        # unique_together = ['client', 'req']
         # ordering = ['closed_at']
 
     # Client attached
