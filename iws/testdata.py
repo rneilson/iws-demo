@@ -14,7 +14,6 @@ userinfo = OrderedDict([
 CON_TYPE = 'application/json'
 BASEURL='/featreq/'
 
-CLIENTFMT = '{name:12s}\t{id:36s}'
 
 # Shortcuts
 
@@ -49,9 +48,10 @@ def printrows(rows, headers, spacer='  '):
     for row in rows:
         print(spacer.join(str(col).ljust(width) for col, width in zip(row, widths)))
 
+
 # Test funcs
 
-def login(client):
+def testlogin(client):
     urlstr = BASEURL + 'auth/'
     # Get current user status
     respobj = getjson(client, urlstr)
@@ -62,6 +62,10 @@ def login(client):
     # Check if logged in (shouldn't be)
     if respobj['logged_in'] is False:
         sys.stderr.write('Logging in as {0}...\n'.format(userinfo['username']))
+
+        # Get password to use
+        userinfo['password'] = getpass.getpass()
+
         loginobj = postjson(client, urlstr, {
             'action': 'login',
             'username': userinfo['username'],
@@ -75,6 +79,8 @@ def login(client):
         userinfo['csrf_token'] = loginobj['csrf_token']
 
         sys.stderr.write('Successfully logged in as {0}\n'.format(loginobj['username']))
+    else:
+        sys.stderr.write('Logged in as {0}\n'.format(respobj['username']))
 
 def listclients(client):
     urlstr = BASEURL + 'client/'
@@ -137,18 +143,19 @@ if __name__ == "__main__":
 
     # Now we can access application stuff
     from django.test import Client
+    from django.contrib.auth.models import User
 
     # TODO: command-line option for username
     # TODO: command-line option for building test data
-
-    # Get password to use
-    userinfo['password'] = getpass.getpass(prompt='Password for {0}: '.format(userinfo['username']))
 
     # Create test client
     cl = Client(enforce_csrf_checks=True, HTTP_ACCEPT=CON_TYPE)
 
     # Login
-    login(cl)
+    # Force login for now to skip password
+    user = User.objects.get(username=userinfo['username'])
+    cl.force_login(user)
+    testlogin(cl)
     print()
 
     # Get, store, and print client list
