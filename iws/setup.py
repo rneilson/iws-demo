@@ -37,9 +37,11 @@ def makesecretkey(filename=None):
         sys.stdout.flush()
 
 def makesessiondir(dirname=None):
+    from django.conf import settings
+
     # Default to current dir
     if not dirname:
-        dirname = os.path.join(BASEPATH, SESSION_DIRNAME)
+        dirname = settings.SESSION_FILE_PATH
 
     # Attempt mkdir, do nothing if already exists
     try:
@@ -115,6 +117,13 @@ def appendallowedhosts(filename=None):
     
     sys.stdout.flush()
 
+def initdatabase():
+    from django.core import management
+
+    # Just run migrate command straight-up
+    management.call_command('migrate')
+
+
 if __name__ == "__main__":
     # TODO: cmdline args
     # TODO: command-line option for username
@@ -127,6 +136,7 @@ if __name__ == "__main__":
     import django
     django.setup()
 
+    initdatabase()
     appendallowedhosts()
     makesuperuser()
     makesessiondir()
