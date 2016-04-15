@@ -123,6 +123,14 @@ def initdatabase():
     # Just run migrate command straight-up
     management.call_command('migrate')
 
+def initstatic():
+    from django.core import management
+
+    sys.stdout.write('Collecting static files...\n')
+    sys.stdout.flush()
+
+    # Just run collectstatic command straight-up
+    management.call_command('collectstatic', verbosity=0, noinput=True)
 
 if __name__ == "__main__":
     # TODO: cmdline args
@@ -141,5 +149,6 @@ if __name__ == "__main__":
     makesuperuser()
     makesessiondir()
     makesecretkey()
+    initstatic()
 
     sys.stdout.write('Setup complete.\n')
