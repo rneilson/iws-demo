@@ -17,14 +17,6 @@ BASEURL='/featreq/'
 
 # Shortcuts
 
-def djangosetup():
-    # Django environment setup
-    # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'iws.settings')
-    import django
-    django.setup()
-
-
 def getjson(client, getpath, getdata=None, expcode=200, assertcode=True):
     resp = client.get(getpath, getdata, follow=True)
     if assertcode:
@@ -235,7 +227,6 @@ def buildtestdata(client):
     # TODO: close some requests
     sys.stderr.write('\n')
     sys.stderr.flush()
-    
 
 if __name__ == "__main__":
     # Parse cmdline args
@@ -244,8 +235,11 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--build-data', action='store_true', dest='builddata', help='build test data')
     args = parser.parse_args()
 
-    # Setup Django environment
-    djangosetup()
+    # Django environment setup
+    # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'iws.settings')
+    import django
+    django.setup()
 
     # Now we can access application stuff
     from django.test import Client
