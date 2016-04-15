@@ -8,3 +8,6 @@
 
 # Secrets
 secretkey.txt
+
+# Static
+static/
