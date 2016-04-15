@@ -129,4 +129,5 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.file'
 SESSION_FILE_PATH = os.path.join(BASE_DIR, 'tmp/')
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SILENCED_SYSTEM_CHECKS = ['urls.W002']
+CSRF_COOKIE_HTTPONLY = True
 
