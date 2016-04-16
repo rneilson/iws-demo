@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import os, sys, errno, getpass, random, string
+import os, sys, errno, getpass, random, string, argparse
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_FILENAME = 'secretkey.txt'
 SESSION_DIRNAME = 'tmp'
 SETTINGS_FILENAME = 'iws/settings.py'
+VENV_FILENAME = 'virtualenv.txt'
 
 def makesecretkey(filename=None):
     # Default to current dir
@@ -132,11 +133,47 @@ def initstatic():
     # Just run collectstatic command straight-up
     management.call_command('collectstatic', verbosity=0, noinput=True)
 
+def venvfile():
+    # Detect currently-used virtualenv
+    try:
+        venvpath = os.environ['VIRTUAL_ENV']
+    except KeyError:
+        venvpath = None
+
+    sys.stdout.write('Python virtualenv path (leave blank for {0}): '.format(str(venvpath)))
+    sys.stdout.flush()
+    usepath = sys.stdin.readline().strip()
+    if not usepath:
+        usepath = venvpath
+
+    with open(os.path.join(BASEPATH, VENV_FILENAME), 'w') as f:
+        if usepath:
+            f.write(usepath)
+
+def logfile():
+    # Create empty log dir and file
+    logdir = os.path.join(BASEPATH, 'log')
+    os.makedirs(logdir, exist_ok=True)
+    logfilename = os.path.join(logdir, 'iws.log')
+    try:
+        f = open(logfilename, 'x')
+    except FileExistsError:
+        sys.stdout.write("Log file at {0} already exists, skipping creation\n".format(logfilename))
+    except OSError as e:
+        sys.stdout.write("Couldn't create uWSGI log file at {0}, error: {1}\n".format(logfilename, str(e)))
+    else:
+        f.close()
+        sys.stdout.write("Created log file at {0}\n".format(logfilename))
+    finally:
+        sys.stdout.flush()
+
 if __name__ == "__main__":
-    # TODO: cmdline args
+    # Command line args
     # TODO: command-line option for username
-    # parser = argparse.ArgumentParser(description='Initial setup of iws-demo application')
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Initial setup of iws-demo application')
+    parser.add_argument('-u', '--uwsgi-config', action='store_true', dest='uwsgi',
+        help='create uwsgi log file and virtualenv pointer')
+    args = parser.parse_args()
 
     # Django environment setup
     # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -150,5 +187,8 @@ if __name__ == "__main__":
     makesessiondir()
     makesecretkey()
     initstatic()
+    if args.uwsgi:
+        venvfile()
+        logfile()
 
     sys.stdout.write('Setup complete.\n')

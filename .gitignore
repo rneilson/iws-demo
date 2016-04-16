@@ -11,3 +11,7 @@ secretkey.txt
 
 # Static
 static/
+
+# uwsgi files
+virtualenv.txt
+log/
