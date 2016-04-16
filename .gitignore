@@ -6,8 +6,9 @@
 *.pyo
 *.pyc
 
-# Secrets
+# Local configs
 secretkey.txt
+allowhosts.txt
 
 # Static
 static/

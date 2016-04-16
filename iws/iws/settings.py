@@ -27,7 +27,9 @@ with open(os.path.join(BASE_DIR, 'secretkey.txt'), 'r') as f:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+# Get ALLOWED_HOSTS from file (created in setup.py)
+with open(os.path.join(BASE_DIR, 'allowhosts.txt'), 'r') as f:
+    ALLOWED_HOSTS = [ host.strip() for host in f.readlines() ]
 
 
 # Application definition

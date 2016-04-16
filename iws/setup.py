@@ -5,7 +5,7 @@ import os, sys, errno, random, string, argparse
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_FILENAME = 'secretkey.txt'
 SESSION_DIRNAME = 'tmp'
-SETTINGS_FILENAME = 'iws/settings.py'
+ALLOWED_HOSTS_FILENAME = 'allowhosts.txt'
 
 ROOTPATH = os.path.dirname(BASEPATH)
 UWSGI_SAMPLE_FILENAME = 'uwsgi/example_uwsgi.ini'
@@ -89,16 +89,32 @@ def makesuperuser(username='iws-admin'):
     finally:
         sys.stdout.flush()
 
-def appendallowedhosts(filename=None):
+def allowedhosts(filename=None):
     from django.conf import settings
 
     # Default
     if not filename:
-        filename = os.path.join(BASEPATH, SETTINGS_FILENAME)
+        filename = os.path.join(BASEPATH, ALLOWED_HOSTS_FILENAME)
 
-    # Check environment for ALLOWED_HOSTS
-    if settings.ALLOWED_HOSTS:
-        sys.stdout.write('Allowed hosts: {0}\n'.format(', '.join(settings.ALLOWED_HOSTS)))
+    # Check file for ALLOWED_HOSTS
+    sys.stdout.write("Checking allowed hosts file at {0}\n".format(filename))
+    sys.stdout.flush()
+    try:
+        f = open(filename, 'r')
+    except FileNotFoundError:
+        fqdnlist = []
+    except OSError as e:
+        sys.stdout.write("Couldn't open allowed hosts file at {0}, error: {1}\n".format(filename, str(e)))
+        sys.stdout.flush()
+        # Should we raise instead?
+        return
+    else:
+        fqdnlist = [ host.strip() for host in f.readlines() ]
+        f.close()
+
+    # Now get host list if not present
+    if fqdnlist:
+        sys.stdout.write('Allowed hosts: {0}\n'.format(', '.join(fqdnlist)))
     else:
         sys.stdout.write('No allowed hosts found\n')
         fqdnstr = ''
@@ -109,11 +125,12 @@ def appendallowedhosts(filename=None):
             fqdnstr = sys.stdin.readline().strip()
 
         # Parse fqdn list and write to settings.py
-        fqdnlist = [ "'{0}'".format(dn.strip()) for dn in fqdnstr.split(',') ]
-        with open(filename, 'a') as f:
-            f.write('\nALLOWED_HOSTS = [ {0} ]\n'.format(', '.join(fqdnlist)))
+        fqdnlist = [ '{0}'.format(dn.strip()) for dn in fqdnstr.split(',') ]
+        writestr = '\n'.join(fqdnlist) + '\n'
+        with open(filename, 'w') as f:
+            f.write(writestr)
 
-        sys.stdout.write('Appended new ALLOWED_HOSTS to {0}\n'.format(filename))
+        sys.stdout.write('Wrote new allowed host list to {0}\n'.format(filename))
     
     sys.stdout.flush()
 
@@ -125,12 +142,17 @@ def initdatabase():
 
 def initstatic():
     from django.core import management
+    from django.core.management.base import CommandError
 
     sys.stdout.write('Collecting static files...\n')
     sys.stdout.flush()
 
     # Just run collectstatic command straight-up
-    management.call_command('collectstatic', verbosity=0, noinput=True)
+    try:
+        management.call_command('collectstatic', verbosity=0, noinput=True)
+    except CommandError:
+        # Most likely due to collectstatic being user-cancelled
+        pass
 
 def uwsgiconfig():
     # Copy example config into actual config
@@ -196,9 +218,10 @@ if __name__ == "__main__":
         help='create uwsgi log file and virtualenv pointer')
     args = parser.parse_args()
 
-    # First create session/secret locations
+    # First check/create required files
     makesessiondir()
     makesecretkey()
+    allowedhosts()
 
     # Django environment setup
     # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -207,7 +230,6 @@ if __name__ == "__main__":
     django.setup()
 
     initdatabase()
-    appendallowedhosts()
     makesuperuser()
     initstatic()
 
