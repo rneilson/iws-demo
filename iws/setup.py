@@ -77,10 +77,6 @@ def makesuperuser(username='iws-admin'):
         emailaddr = sys.stdin.readline().strip()
         # Create superuser in backend
         management.call_command('createsuperuser', username=username, email=emailaddr)
-        # Set password and save
-        user = User.objects.get(username=username)
-        user.set_password(password)
-        user.save()
         sys.stdout.write('Created superuser {0}\n'.format(username))
     else:
         if not user.is_superuser:
