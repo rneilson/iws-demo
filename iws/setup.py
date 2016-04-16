@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, sys, errno, getpass, random, string, argparse
+import os, sys, errno, random, string, argparse
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_FILENAME = 'secretkey.txt'
@@ -71,7 +71,6 @@ def makesuperuser(username='iws-admin'):
         sys.stdout.write('Email address: ')
         sys.stdout.flush()
         emailaddr = sys.stdin.readline().strip()
-        password = getpass.getpass()
         # Create superuser in backend
         management.call_command('createsuperuser', username=username, email=emailaddr)
         # Set password and save
