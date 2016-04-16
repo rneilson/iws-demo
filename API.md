@@ -6,12 +6,12 @@ In addition to the generic JSON field formats, the following field types used in
 
 Type | Constraints
 ---- | -----------
-<priority> | Integer in range 1-32766 or `null`
-<uuidstring> | UUID version 4 in string form, with or without hyphens
-<urlstring> | URL-formatted string
-<datetime> | UTC date/time string in the forms `yyyy-mm-dd` or `yy-mm-ddThh:mm:ss`, or `null`
-<prodarea> | One of the following strings: "Policies", "Billing", "Claims", "Reports"
-<status> | One of the following strings: "Complete", "Rejected", "Deferred"
+`<priority>` | Integer in range 1-32766 or `null`
+`<uuidstring>` | UUID version 4 in string form, with or without hyphens
+`<urlstring>` | URL-formatted string
+`<datetime>` | UTC date/time string in the forms `yyyy-mm-dd` or `yy-mm-ddThh:mm:ss`, or `null`
+`<prodarea>` | One of the following strings: "Policies", "Billing", "Claims", "Reports"
+`<status>` | One of the following strings: "Complete", "Rejected", "Deferred"
 
 ## Object formats
 
@@ -50,8 +50,8 @@ Feature request `<req>`:
 Open request `<open>`:
 ```
 {
-  "client_id": <uuidstring>,	# Client ID (RELATIONAL)
-  "priority": <priority>,		# Client priority
+  "client_id": <uuidstring>,	# Client ID (RELATIONAL`)
+`  "priority": <priority>,		# Client priority
   "date_tgt": <datetime>,		# Target completion date
   "opened_at": <datetime>,		# Date opened
   "opened_by": <string>,		# Username opened
@@ -109,7 +109,7 @@ Example for all fields:
 
 ## API endpoints
 
-### /featreq/client/
+#### `/featreq/client/`
 
 Methods: GET, POST
 
@@ -152,7 +152,7 @@ Return value, status code 201:
 ```
 
 
-### /featreq/client/<client id>
+#### `/featreq/client/<client id>`
 
 Methods: GET, POST
 
@@ -187,7 +187,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/client/<client id>/open/
+#### `/featreq/client/<client id>/open/`
 
 Methods: GET, POST
 
@@ -260,7 +260,7 @@ Return value, status code 200:
 *As per GET*
 
 
-### /featreq/client/<client id>/closed/
+#### `/featreq/client/<client id>/closed/`
 
 Methods: GET
 
@@ -292,7 +292,7 @@ Return value, status code 200:
 }
 ```
 
-### /featreq/client/<client id>/all/
+#### `/featreq/client/<client id>/all/`
 
 Methods: GET
 
@@ -336,7 +336,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/
+#### `/featreq/req/`
 
 List of requests available.
 
@@ -379,7 +379,7 @@ Return value, status code 201:
 ```
 
 
-### /featreq/req/open/
+#### `/featreq/req/open/`
 
 List of open requests.
 
@@ -410,7 +410,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/closed/
+#### `/featreq/req/closed/`
 
 List of closed requests.
 
@@ -445,7 +445,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/<req id>
+#### `/featreq/req/<req id>`
 
 Request details for given id.
 
@@ -482,7 +482,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/<req id>/open/
+#### `/featreq/req/<req id>/open/`
 
 Methods: GET, POST
 
@@ -509,7 +509,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/<req id>/closed/
+#### `/featreq/req/<req id>/closed/`
 
 Methods: GET
 
@@ -540,7 +540,7 @@ Return value, status code 200:
 ```
 
 
-### /featreq/req/<req id>/all/
+#### `/featreq/req/<req id>/all/`
 
 Methods: GET
 
