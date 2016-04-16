@@ -42,7 +42,7 @@ def makesessiondir(dirname=None):
 
     # Default to current dir
     if not dirname:
-        dirname = settings.SESSION_FILE_PATH
+        dirname = os.path.join(BASEPATH, SESSION_DIRNAME)
 
     # Attempt mkdir, do nothing if already exists
     try:
