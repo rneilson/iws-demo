@@ -964,8 +964,8 @@ def clientreqindex(request, client_id, tolist):
                     # TODO: move to front?
                 else:
                     # Move req_id into req sub-object
-                    req_id = oreqdict.pop('req_id')
-                    oreqdict['req'] = {'id': req_id}
+                    req_id = creqdict.pop('req_id')
+                    creqdict['req'] = {'id': req_id}
 
                 creqlist.append(creqdict)
 
