@@ -14,4 +14,4 @@ static/
 
 # uwsgi files
 log/
-iws-uwsgi.ini
+iws_uwsgi.ini
