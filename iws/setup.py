@@ -165,7 +165,7 @@ def uwsgiconfig():
         # Get sample config and pad string
         sampleconfig = f.read()
         f.close()
-        sampleconfig += '\n\n'
+        sampleconfig += '\n'
 
         # Open actual config
         destfilename = os.path.join(ROOTPATH, UWSGI_DEST_FILENAME)
