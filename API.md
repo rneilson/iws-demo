@@ -50,7 +50,7 @@ Feature request `<req>`:
 Open request `<open>`:
 ```
 {
-  "client_id": <uuidstring>,	# Client ID (RELATIONAL`)
+  "client_id": <uuidstring>,	# Client ID (RELATIONAL)
 `  "priority": <priority>,		# Client priority
   "date_tgt": <datetime>,		# Target completion date
   "opened_at": <datetime>,		# Date opened
@@ -90,7 +90,7 @@ Relational fields, as noted in their respective object format descriptions above
 
 ### Query string parameters
 
-All endpoints which return <req> objects, either at the reponse's top level or within another object, can specify which fields are returned using the `fields` query string parameter. This can be included multiple times, or as a combined parameter with the values separated by commas. Using the value `all` will return all fields excluding recursive references (ie a <req> object inside an <open> object will not include the fields `open_list` or `closed_list`).
+All endpoints which return `<req>` objects, either at the reponse's top level or within another object, can specify which fields are returned using the `fields` query string parameter. This can be included multiple times, or as a combined parameter with the values separated by commas. Using the value `all` will return all fields excluding recursive references (ie a `<req>` object inside an `<open>` object will not include the fields `open_list` or `closed_list`).
 
 Example using multiple values:
 ```
@@ -108,6 +108,51 @@ Example for all fields:
 ```
 
 ## API endpoints
+
+#### `/featreq/auth`
+
+Methods: GET, POST
+
+**GET**
+
+Show current authentication details.
+
+Return value, status code 200:
+```
+{
+ "logged_in": <boolean>,
+ "username": <string>,        # Current username, empty if not logged in
+ "full_name": <string>,       # Full name of user, [anonymous] if not logged in
+ "csrf_token": <string>,      # CSRF token string matching cookie "csrftoken"
+ "session_expiry": <integer>  # Time until session expires, in seconds
+}
+```
+
+**POST**
+
+Log in:
+```
+{
+ "action": "login",
+ "username": <string>,        # Required
+ "password": <string>,        # Required
+}
+```
+
+Return value, status code 200:
+*As per GET*
+
+Log out:
+```
+{
+ "action": "logout",
+ "username": <string>,        # Required
+}
+```
+
+Return value, status code 200:
+*As per GET*
+
 
 #### `/featreq/client/`
 
@@ -228,7 +273,6 @@ Open a request:
 ```
 
 Return value, status code 200:
-
 *As per GET*
 
 Update an open request:
@@ -242,7 +286,6 @@ Update an open request:
 ```
 
 Return value, status code 200:
-
 *As per GET*
 
 Close an open request:
@@ -256,7 +299,6 @@ Close an open request:
 ```
 
 Return value, status code 200:
-
 *As per GET*
 
 
@@ -475,11 +517,7 @@ Update request:
 ```
 
 Return value, status code 200:
-```
-{
- "req": <req>
-}
-```
+*As per GET*
 
 
 #### `/featreq/req/<req id>/open/`
@@ -542,7 +580,7 @@ Return value, status code 200:
 
 #### `/featreq/req/<req id>/all/`
 
-Methods: GET
+Methods: GET, POST
 
 **GET**
 
@@ -592,7 +630,6 @@ Open a request:
 ```
 
 Return value, status code 200:
-
 *As per GET*
 
 Close an open request:
@@ -606,7 +643,6 @@ Close an open request:
 ```
 
 Return value, status code 200:
-
 *As per GET*
 
 
