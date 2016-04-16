@@ -51,7 +51,7 @@ Open request `<open>`:
 ```
 {
   "client_id": <uuidstring>,	# Client ID (RELATIONAL)
-`  "priority": <priority>,		# Client priority
+  "priority": <priority>,		# Client priority
   "date_tgt": <datetime>,		# Target completion date
   "opened_at": <datetime>,		# Date opened
   "opened_by": <string>,		# Username opened
@@ -90,7 +90,7 @@ Relational fields, as noted in their respective object format descriptions above
 
 ### Query string parameters
 
-All endpoints which return `<req>` objects, either at the reponse's top level or within another object, can specify which fields are returned using the `fields` query string parameter. This can be included multiple times, or as a combined parameter with the values separated by commas. Using the value `all` will return all fields excluding recursive references (ie a `<req>` object inside an `<open>` object will not include the fields `open_list` or `closed_list`).
+All endpoints which return `<req>` objects, either at the reponse's top level or within another object, can specify which fields are returned using the `fields` query string parameter. This can be included multiple times, or as a combined parameter with the values separated by commas. Using the value `all` will return all fields excluding relational references (ie a `<req>` object inside an `<open>` object will not include the fields `open_list` or `closed_list`).
 
 Example using multiple values:
 ```
@@ -225,12 +225,7 @@ Update client:
 ```
 
 Return value, status code 200:
-```
-{
- "client": <client>
-}
-```
-
+*As per GET*
 
 #### `/featreq/client/<client id>/open/`
 
@@ -522,7 +517,7 @@ Return value, status code 200:
 
 #### `/featreq/req/<req id>/open/`
 
-Methods: GET, POST
+Methods: GET
 
 **GET**
 
