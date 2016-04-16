@@ -175,6 +175,10 @@ if __name__ == "__main__":
         help='create uwsgi log file and virtualenv pointer')
     args = parser.parse_args()
 
+    # First create session/secret locations
+    makesessiondir()
+    makesecretkey()
+
     # Django environment setup
     # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'iws.settings')
@@ -184,9 +188,9 @@ if __name__ == "__main__":
     initdatabase()
     appendallowedhosts()
     makesuperuser()
-    makesessiondir()
-    makesecretkey()
     initstatic()
+
+    # Optional uWSGI config helpers
     if args.uwsgi:
         venvfile()
         logfile()
