@@ -6,7 +6,11 @@ BASEPATH = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_FILENAME = 'secretkey.txt'
 SESSION_DIRNAME = 'tmp'
 SETTINGS_FILENAME = 'iws/settings.py'
-VENV_FILENAME = 'virtualenv.txt'
+
+ROOTPATH = os.path.dirname(BASEPATH)
+UWSGI_SAMPLE_FILENAME = 'uwsgi/example_uwsgi.ini'
+UWSGI_DEST_FILENAME = 'iws_uwsgi.ini'
+UWSGI_LOG_FILENAME = 'log/iws.log'
 
 def makesecretkey(filename=None):
     # Default to current dir
@@ -132,39 +136,61 @@ def initstatic():
     # Just run collectstatic command straight-up
     management.call_command('collectstatic', verbosity=0, noinput=True)
 
-def venvfile():
-    # Detect currently-used virtualenv
+def uwsgiconfig():
+    # Copy example config into actual config
+    samplefilename = os.path.join(ROOTPATH, UWSGI_SAMPLE_FILENAME)
     try:
-        venvpath = os.environ['VIRTUAL_ENV']
-    except KeyError:
-        venvpath = None
-
-    sys.stdout.write('Python virtualenv path (leave blank for {0}): '.format(str(venvpath)))
-    sys.stdout.flush()
-    usepath = sys.stdin.readline().strip()
-    if not usepath:
-        usepath = venvpath
-
-    with open(os.path.join(BASEPATH, VENV_FILENAME), 'w') as f:
-        if usepath:
-            f.write(usepath)
-
-def logfile():
-    # Create empty log dir and file
-    logdir = os.path.join(BASEPATH, 'log')
-    os.makedirs(logdir, exist_ok=True)
-    logfilename = os.path.join(logdir, 'iws.log')
-    try:
-        f = open(logfilename, 'x')
-    except FileExistsError:
-        sys.stdout.write("Log file at {0} already exists, skipping creation\n".format(logfilename))
+        f = open(samplefilename, 'r')
     except OSError as e:
-        sys.stdout.write("Couldn't create uWSGI log file at {0}, error: {1}\n".format(logfilename, str(e)))
+        sys.stdout.write("Couldn't open uWSGI example file at {0}, error: {1}\n".format(samplefilename, str(e)))
     else:
+        # Get sample config and pad string
+        sampleconfig = f.read()
         f.close()
-        sys.stdout.write("Created log file at {0}\n".format(logfilename))
-    finally:
-        sys.stdout.flush()
+        sampleconfig += '\n\n'
+
+        # Open actual config
+        destfilename = os.path.join(ROOTPATH, UWSGI_DEST_FILENAME)
+        try:
+            f = open(destfilename, 'w')
+        except OSError as e:
+            sys.stdout.write("Couldn't write uWSGI config file at {0}, error: {1}\n".format(destfilename, str(e)))
+        else:
+            f.write(sampleconfig)
+
+            # Detect currently-used virtualenv
+            try:
+                venvpath = os.environ['VIRTUAL_ENV']
+            except KeyError:
+                venvpath = None
+
+            sys.stdout.write('Python virtualenv path (leave blank for {0}): '.format(str(venvpath)))
+            sys.stdout.flush()
+            usepath = sys.stdin.readline().strip()
+            if not usepath:
+                usepath = venvpath
+
+            if usepath:
+                f.write('home = {0}\n'.format(usepath))
+
+            # Close config file
+            f.close()
+
+            # Create empty log dir and file
+            logfilename = os.path.join(ROOTPATH, UWSGI_LOG_FILENAME)
+            logdir = os.path.dirname(logfilename)
+            os.makedirs(logdir, exist_ok=True)
+            try:
+                f = open(logfilename, 'x')
+            except FileExistsError:
+                sys.stdout.write("Log file at {0} already exists, skipping creation\n".format(logfilename))
+            except OSError as e:
+                sys.stdout.write("Couldn't create uWSGI log file at {0}, error: {1}\n".format(logfilename, str(e)))
+            else:
+                f.close()
+                sys.stdout.write("Created log file at {0}\n".format(logfilename))
+            finally:
+                sys.stdout.flush()
 
 if __name__ == "__main__":
     # Command line args
@@ -191,7 +217,6 @@ if __name__ == "__main__":
 
     # Optional uWSGI config helpers
     if args.uwsgi:
-        venvfile()
-        logfile()
+        uwsgiconfig()
 
     sys.stdout.write('Setup complete.\n')
