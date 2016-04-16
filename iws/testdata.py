@@ -3,6 +3,8 @@
 import os, sys
 import datetime, time, json, getpass, argparse
 from collections import OrderedDict
+from django.test import Client
+from django.test.utils import override_settings
 
 # Defaults/globals
 
@@ -17,12 +19,14 @@ BASEURL='/featreq/'
 
 # Shortcuts
 
+@override_settings(DEBUG=True)
 def getjson(client, getpath, getdata=None, expcode=200, assertcode=True):
     resp = client.get(getpath, getdata, follow=True)
     if assertcode:
         assert resp.status_code == expcode
     return json.loads(resp.content.decode(), object_pairs_hook=OrderedDict)
 
+@override_settings(DEBUG=True)
 def postjson(client, postpath, postdata=None, expcode=200, assertcode=True):
     resp = client.post(
         postpath,
@@ -240,9 +244,8 @@ if __name__ == "__main__":
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'iws.settings')
     import django
     django.setup()
-
+    
     # Now we can access application stuff
-    from django.test import Client
     from django.contrib.auth.models import User
 
     # Create test client
