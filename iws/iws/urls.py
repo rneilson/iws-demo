@@ -16,6 +16,9 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 
+admin.site.site_header = 'IWS-Demo administration'
+admin.site.site_title = 'IWS-Demo site admin'
+
 urlpatterns = [
     url(r'^featreq/', include('featreq.urls')),
     url(r'^admin/', admin.site.urls),
