@@ -367,7 +367,7 @@ def _basicresp(request):
     else:
         histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
             loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
-        return HttpResponse(histr)
+        return HttpResponse(histr, content_type='text/plain')
 
 @ensure_csrf_cookie
 @requires_csrf_token
@@ -393,7 +393,7 @@ def index(request):
         else:
             histr = 'Uh, hi {0}?\nYour session expires in {1}s\n'.format(
                 fullname, request.session.get_expiry_age())
-            return HttpResponse(histr)
+            return HttpResponse(histr, content_type='text/plain')
 
 @ensure_csrf_cookie
 @requires_csrf_token
