@@ -391,7 +391,7 @@ def index(request):
             ])
             return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
         else:
-            histr = 'Uh, hi {0}?\nYour session expires in {1}s\n'.format(
+            histr = 'Hello, {0}.\nYour session expires in {1}s\n'.format(
                 fullname, request.session.get_expiry_age())
             return HttpResponse(histr, content_type='text/plain')
 
