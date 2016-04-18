@@ -4,7 +4,7 @@ import os, sys, errno, random, string, argparse
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_FILENAME = 'iws/settings.py'
-SETTINGS_DEFAULT = 'iws/settings.py.default'
+SETTINGS_DEFAULT = 'iws/default-settings.py'
 SECRET_KEY_FILENAME = 'secretkey.txt'
 SESSION_DIRNAME = 'tmp'
 ALLOWED_HOSTS_FILENAME = 'allowhosts.txt'
