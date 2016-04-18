@@ -1,0 +1,63 @@
+#!/bin/bash
+
+if [[ $# -ne 2 ]]; then
+	printf "Usage: iws-curl [command] [URL]
+
+Commands:
+    get     Send GET request to URL
+    post    Send POST request to URL with JSON data from stdin
+    csrf	Print CSRF token from cookies
+
+"
+	exit 1
+fi
+
+COOKIEDIR="tmp"
+COOKIEJAR="$COOKIEDIR/iwscookies"
+
+if [[ ! -d "$COOKIEDIR" ]]; then
+	mkdir "$COOKIEDIR"
+fi
+
+if [[ ! -e "$COOKIEJAR" ]]; then
+	touch "$COOKIEJAR"
+fi
+
+REQTYPE=$1
+REQURL=$2
+BASEURL=$(echo $REQURL | sed -r 's@(https?)://([0-9a-zA-Z.\-]+):?[0-9]*/.*@\1://\2/@')
+
+BASECMD=("curl" "-L" "-b" "$COOKIEJAR" "-c" "$COOKIEJAR" "-e" "$BASEURL")
+JSONCMD=("${BASECMD[@]}" "-H" "\"Accept: application/json\"")
+CSRF=$(grep 'csrftoken' $COOKIEJAR | cut -f 7)
+POSTCMD=("-H" "\"Content-Type: application/json\"" "-H" "\"X-CSRFToken: $CSRF\"" "--data-binary" '@-')
+
+case $REQTYPE in
+get)
+	if [[ -z "$REQURL" ]]; then
+		printf "No URL specified\n"
+		exit 1
+	else
+		CURLCMD=("${JSONCMD[@]}" "$REQURL")
+		eval "${CURLCMD[*]}"
+	fi
+	;;
+post)
+	if [[ -z "$REQURL" ]]; then
+		printf "No URL specified\n"
+		exit 1
+	elif [[ -z "$CSRF" ]]; then
+		printf "No CSRF token found - please perform get request first to set cookie\n"
+		exit 1
+	else
+		CURLCMD=("${JSONCMD[@]}" "${POSTCMD[@]}" "$REQURL")
+		eval "${CURLCMD[*]}"
+	fi
+	;;
+csrf)
+	printf "%s\n" $CSRF
+	;;
+*)
+	printf "Unknown command: '%s'\n" $REQTYPE
+	;;
+esac
