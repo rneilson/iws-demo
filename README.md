@@ -201,7 +201,7 @@ In order to log in, we have to send a POST request to the same endpoint, with ou
 ```
 ./iws-curl post https://iws.example.com/featreq/auth/
 ```
-As `iws-curl` reads POST data from stdin, we need to enter it directly (or redirect from a file or pipe). If directly entering on the command line, `iws-curl` will seem to hang, waiting for input. Enter the following:
+As `iws-curl` reads POST data from stdin, we need to enter it directly (or redirect from a file or pipe). If directly entering on the command line, `iws-curl` will wait for input. Enter the following:
 ```
 {"action":"login","username":"iws-admin","password":"<your-password-here>"}
 ```
