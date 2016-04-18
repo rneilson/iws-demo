@@ -14,15 +14,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import include, url
-
-# Disabled by default
-# from django.contrib import admin
-# admin.site.site_header = 'IWS-Demo administration'
-# admin.site.site_title = 'IWS-Demo site admin'
-
+from django.conf import settings
 
 urlpatterns = [
     url(r'^featreq/', include('featreq.urls')),
-    # url(r'^admin/', admin.site.urls),
 ]
 
+# Enable admin only if set
+if hasattr(settings, 'IWS_ENABLE_ADMIN') and settings.IWS_ENABLE_ADMIN:
+    from django.contrib import admin
+    admin.site.site_header = 'IWS-Demo administration'
+    admin.site.site_title = 'IWS-Demo site admin'
+    urlpatterns.append(url(r'^admin/', admin.site.urls))
+    

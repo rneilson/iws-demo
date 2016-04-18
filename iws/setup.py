@@ -37,11 +37,29 @@ def copysettings(filename=None):
             sys.stdout.write("Couldn't open default settings file at {0}, error: {1}\n".format(defaultfile, str(e)))
             raise
         else:
+            # Get default settings from file
             defset = g.read()
             g.close()
+
+            # Write defaults to new settings file
             f.write(defset)
+
+            # Optionally enable /admin/
+            answer = ''
+            while not answer.startswith(('y', 'n')):
+                sys.stdout.write('Enable Django admin (yes/no)? ')
+                sys.stdout.flush()
+                answer = sys.stdin.readline().strip().lower()
+
+            if answer.startswith('y'):
+                f.write('IWS_ENABLE_ADMIN = True\n')
+                sys.stdout.write('Enabling Django admin in settings file\n')
+            else:
+                sys.stdout.write('Leaving Django admin disabled\n')
+
             f.close()
             sys.stdout.write('Created settings file {0}\n'.format(filename))
+            sys.stdout.flush()
 
 def makesecretkey(filename=None):
     # Default to current dir
