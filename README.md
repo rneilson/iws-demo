@@ -2,11 +2,11 @@
 
 This is a demonstration web application for creating and managing feature requests for a group of clients, written in Python using Django, and implementing a RESTful JSON API backend.
 
-Please note that this is a work in progress, and the API is not considered stable at this time. A demonstration frontend is in development.
+Please note that this is a work in progress, and the API is not considered stable at this time. A demonstration frontend is in consideration.
 
 ### API
 
-Please refer to API.md for API endpoint documentation.
+Please refer to `API.md` for API endpoint documentation.
 
 ### Requirements
 
