@@ -1,5 +1,13 @@
 # IWS-Demo API
 
+## Overview
+
+IWS-Demo is organized around *clients* and *requests*. Clients may have multiple requests attached, in open or closed states. Requests may be open and/or closed for multiple clients.
+
+Each client's open requests are sorted by their `priority` field, which may be an integer in the range 1-32766, or null. Non-null priority values are unique per-client, and are automatically shifted in least-first order when a request is opened or updated.
+
+Closed requests retain the `priority` and `date_tgt` fields at the time they were closed.
+
 ## Field types
 
 In addition to the generic JSON field formats, the following field types used in this API have additional attributes and constraints:
@@ -18,60 +26,60 @@ Type | Constraints
 Client `<client>`:
 ```
 {
-  "id": <uuidstring>,			# Client ID
-  "name": <string>,				# Client name
-  "con_name": <string>,			# Contact name
-  "con_mail": <string>,			# Contact email
-  "date_add": <datetime>,		# Date added
-  "open_count": <integer>,		# Number of open requests (RELATIONAL)
-  "open_list": [ <open> ],		# List of open requests (RELATIONAL)
-  "closed_count": <integer>,	# Number of closed requests (RELATIONAL)
-  "closed_list": [ <closed> ]	# List of closed requests (RELATIONAL)
+  "id": <uuidstring>,         # Client ID
+  "name": <string>,           # Client name
+  "con_name": <string>,       # Contact name
+  "con_mail": <string>,       # Contact email
+  "date_add": <datetime>,     # Date added
+  "open_count": <integer>,    # Number of open requests (RELATIONAL)
+  "open_list": [ <open> ],    # List of open requests (RELATIONAL)
+  "closed_count": <integer>,  # Number of closed requests (RELATIONAL)
+  "closed_list": [ <closed> ] # List of closed requests (RELATIONAL)
 }
 ```
 
 Feature request `<req>`:
 ```
 {
-  "id": <uuidstring>,			# Request ID
-  "title": <string>,			# Request title (128 chars max)
-  "desc": <string>,				# Request description
-  "ref_url": <urlstring>,		# Reference URL (254 chars max)
-  "prod_area": <prodarea>,		# Product area
-  "date_cr": <datetime>,		# Date created
-  "user_cr": <string>,			# Username created
-  "date_up": <datetime>,		# Date last updated
-  "user_up": <string>,			# Username last updated
-  "open_list": [ <open> ],		# List of open requests (RELATIONAL)
-  "closed_list": [ <closed> ]	# List of closed requests (RELATIONAL)
+  "id": <uuidstring>,         # Request ID
+  "title": <string>,          # Request title (128 chars max)
+  "desc": <string>,           # Request description
+  "ref_url": <urlstring>,     # Reference URL (254 chars max)
+  "prod_area": <prodarea>,    # Product area
+  "date_cr": <datetime>,      # Date created
+  "user_cr": <string>,        # Username created
+  "date_up": <datetime>,      # Date last updated
+  "user_up": <string>,        # Username last updated
+  "open_list": [ <open> ],    # List of open requests (RELATIONAL)
+  "closed_list": [ <closed> ] # List of closed requests (RELATIONAL)
 }
 ```
 
 Open request `<open>`:
 ```
 {
-  "client_id": <uuidstring>,	# Client ID (RELATIONAL)
-  "priority": <priority>,		# Client priority
-  "date_tgt": <datetime>,		# Target completion date
-  "opened_at": <datetime>,		# Date opened
-  "opened_by": <string>,		# Username opened
-  "req": <req>					# Request details (RELATIONAL)
+  "client_id": <uuidstring>,  # Client ID (RELATIONAL)
+  "priority": <priority>,     # Client priority
+  "date_tgt": <datetime>,     # Target completion date
+  "opened_at": <datetime>,    # Date opened
+  "opened_by": <string>,      # Username opened
+  "req": <req>                # Request details (RELATIONAL)
 }
 ```
 
 Closed request `<closed>`:
 ```
 {
-  "client_id": <uuidstring>,,	# Client ID (RELATIONAL)
-  "priority": <priority>,		# Client priority
-  "date_tgt": <datetime>,		# Target completion date
-  "opened_at": <datetime>,		# Date opened
-  "opened_by": <string>,		# Username opened
-  "closed_at": <datetime>,		# Date closed
-  "closed_by": <string>,		# Username closed
-  "status": <status>,			# Closed status
-  "reason": <string>,			# Reason for closing
-  "req": <req>					# Request details (RELATIONAL)
+  "client_id": <uuidstring>,  # Client ID (RELATIONAL)
+  "priority": <priority>,     # Client priority
+  "date_tgt": <datetime>,     # Target completion date
+  "opened_at": <datetime>,    # Date opened
+  "opened_by": <string>,      # Username opened
+  "closed_at": <datetime>,    # Date closed
+  "closed_by": <string>,      # Username closed
+  "status": <status>,         # Closed status
+  "reason": <string>,         # Reason for closing
+  "req": <req>                # Request details (RELATIONAL)
 }
 ```
 
@@ -182,8 +190,8 @@ Return value, status code 200:
 Create new client:
 ```
 {
- "action": "create",	# Required
- "name": <string>,		# Required
+ "action": "create",    # Required
+ "name": <string>,      # Required
  "con_name": <string>,
  "con_mail": <string>
 }
@@ -217,7 +225,7 @@ Return value, status code 200:
 Update client:
 ```
 {
- "action": "update",	# Required
+ "action": "update",    # Required
  "name": <string>,
  "con_name": <string>,
  "con_mail": <string>
@@ -260,8 +268,8 @@ Return value, status code 200:
 Open a request:
 ```
 {
- "action": "open",			# Required
- "req_id": <uuidstring>,	# Required
+ "action": "open",        # Required
+ "req_id": <uuidstring>,  # Required
  "priority": <priority>,
  "date_tgt": <datetime>
 }
@@ -273,8 +281,8 @@ Return value, status code 200:
 Update an open request:
 ```
 {
- "action": "update",		# Required
- "req_id": <uuidstring>,	# Required
+ "action": "update",      # Required
+ "req_id": <uuidstring>,  # Required
  "priority": <priority>,
  "date_tgt": <datetime>
 }
@@ -286,10 +294,10 @@ Return value, status code 200:
 Close an open request:
 ```
 {
- "action": "close",			# Required
- "req_id": <uuidstring>,	# Required
- "status": <status>,		# Default "Complete"
- "reason": <string>			# Default "Request completed"
+ "action": "close",       # Required
+ "req_id": <uuidstring>,  # Required
+ "status": <status>,      # Default "Complete"
+ "reason": <string>       # Default "Request completed"
 }
 ```
 
@@ -399,12 +407,12 @@ Return value, status code 200:
 Create new request:
 ```
 {
- "action": "create",		# Required
+ "action": "create",      # Required
  "id": <uuidstring>,
- "title": <string>,			# Required
- "desc": <string>,			# Required
+ "title": <string>,       # Required
+ "desc": <string>,        # Required
  "ref_url": <urlstring>,
- "prod_area": <prodarea>,	# Default "Policies"
+ "prod_area": <prodarea>, # Default "Policies"
 }
 ```
 
@@ -502,7 +510,7 @@ Return value, status code 200:
 Update request:
 ```
 {
- "action": "update",		# Required
+ "action": "update",      # Required
  "title": <string>,
  "desc": <string>,
  "ref_url": <urlstring>,
@@ -530,7 +538,7 @@ Return value, status code 200:
   "id": <req id>,
   "open_list": [
    {
-   	"client_id": <client id>,
+    "client_id": <client id>,
     "priority": <open priority>,
     "date_tgt": <open date_tgt>,
     "opened_at": <open opened_at>,
@@ -557,7 +565,7 @@ Return value, status code 200:
   "id": <req id>,
   "closed_list": [
    {
-   	"client_id": <client id>,
+    "client_id": <client id>,
     "priority": <closed priority>,
     "date_tgt": <closed date_tgt>,
     "opened_at": <closed opened_at>,
@@ -588,7 +596,7 @@ Return value, status code 200:
   "id": <req id>,
   "open_list": [
    {
-   	"client_id": <client id>,
+    "client_id": <client id>,
     "priority": <open priority>,
     "date_tgt": <open date_tgt>,
     "opened_at": <open opened_at>,
@@ -597,7 +605,7 @@ Return value, status code 200:
   ]
   "closed_list": [
    {
-   	"client_id": <client id>,
+    "client_id": <client id>,
     "priority": <closed priority>,
     "date_tgt": <closed date_tgt>,
     "opened_at": <closed opened_at>,
@@ -617,8 +625,8 @@ Return value, status code 200:
 Open a request:
 ```
 {
- "action": "open",			# Required
- "client_id": <uuidstring>,	# Required
+ "action": "open",          # Required
+ "client_id": <uuidstring>, # Required
  "priority": <priority>,
  "date_tgt": <datetime>
 }
@@ -630,10 +638,10 @@ Return value, status code 200:
 Close an open request:
 ```
 {
- "action": "close",			# Required
- "client_id": <uuidstring>,	# If omitted, will close for all clients
- "status": <status>,		# Default "Complete"
- "reason": <string>			# Default "Request completed"
+ "action": "close",         # Required
+ "client_id": <uuidstring>, # If omitted, will close for all clients
+ "status": <status>,        # Default "Complete"
+ "reason": <string>         # Default "Request completed"
 }
 ```
 
