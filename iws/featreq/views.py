@@ -365,7 +365,7 @@ def _basicresp(request):
         ])
         return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
     else:
-        histr = 'Logged in:{0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
+        histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
             loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
         return HttpResponse(histr)
 
