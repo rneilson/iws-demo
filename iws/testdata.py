@@ -237,6 +237,7 @@ if __name__ == "__main__":
     # TODO: command-line option for username
     parser = argparse.ArgumentParser(description='List and build test data')
     parser.add_argument('-b', '--build-data', action='store_true', dest='builddata', help='build test data')
+    parser.add_argument('-f', '--full', action='store_true', help='print feature requests per client')
     args = parser.parse_args()
 
     # Django environment setup
@@ -266,27 +267,30 @@ if __name__ == "__main__":
     cllist = listclients(cl)
     cllist.sort(key=lambda x: x['name'].lower())
 
-    printrows([ (c['name'], c['id']) for c in cllist ], ('Client name', 'Client ID'))
+    printrows(
+        [ (c['name'], c['open_count'], c['closed_count'], c['id']) for c in cllist ],
+        ('Client name', 'Open', 'Closed', 'Client ID'))
     print()
 
     # Store for later
     cldict = OrderedDict((c['id'], c) for c in cllist)
 
-    # Get featreqs
-    frdict = { fr['id']:fr for fr in listreqs(cl) }
+    if args.full:
+        # Get featreqs
+        frdict = { fr['id']:fr for fr in listreqs(cl) }
 
-    # Get and print open featreq list per client
-    for c in cldict.values():
-        frlist = listreqsbyclient(cl, c['id'])
-        frlist.sort(key=lambda x: x['priority'])
+        # Get and print open featreq list per client
+        for c in cldict.values():
+            frlist = listreqsbyclient(cl, c['id'])
+            frlist.sort(key=lambda x: x['priority'])
 
-        # Per-client header
-        headstr = '{0} open requests:\n'.format(c['name'])
-        print(headstr)
+            # Per-client header
+            headstr = '{0} open requests:\n'.format(c['name'])
+            print(headstr)
 
-        # Have to make list of lists, since pulling in title
-        printlist = [ [ fr['priority'], frdict[fr['req']['id']]['title'], fr['req']['id'] ] for fr in frlist ]
+            # Have to make list of lists, since pulling in title
+            printlist = [ [ fr['priority'], frdict[fr['req']['id']]['title'], fr['req']['id'] ] for fr in frlist ]
 
-        # Now print
-        printrows(printlist, ('Priority', 'Title', 'Request ID'))
-        print()
+            # Now print
+            printrows(printlist, ('Priority', 'Title', 'Request ID'))
+            print()
