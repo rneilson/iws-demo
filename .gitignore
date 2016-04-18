@@ -9,6 +9,7 @@
 # Local configs
 secretkey.txt
 allowhosts.txt
+tmp/
 
 # Static
 static/
