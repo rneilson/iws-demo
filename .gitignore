@@ -7,6 +7,7 @@
 *.pyc
 
 # Local configs
+iws/iws/settings.py
 secretkey.txt
 allowhosts.txt
 tmp/

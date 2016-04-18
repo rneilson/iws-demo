@@ -61,7 +61,7 @@ If using uWSGI, a default .ini file will be created with the `-u` or `--uwsgi-co
 ./setup.py -u
 ```
 
-The setup script will run, initializing the database, creating the default `iws-admin` superuser, and writing site-specific files required by the default IWS-Demo configuration. If the `-u` option was specified, a uWSGI .ini file will be created at `/path/to/iws-demo/iws_uwsgi.ini`, including the virtualenv path detected or specified during setup. 
+The setup script will run, creating the Django settings file from defaults, initializing the database, creating the default `iws-admin` superuser, and writing site-specific files required by the default IWS-Demo configuration. If the `-u` option was specified, a uWSGI .ini file will be created at `/path/to/iws-demo/iws_uwsgi.ini`, including the virtualenv path detected or specified during setup. 
 
 ### Usage
 

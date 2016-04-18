@@ -3,6 +3,8 @@
 import os, sys, errno, random, string, argparse
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
+SETTINGS_FILENAME = 'iws/settings.py'
+SETTINGS_DEFAULT = 'iws/settings.py.default'
 SECRET_KEY_FILENAME = 'secretkey.txt'
 SESSION_DIRNAME = 'tmp'
 ALLOWED_HOSTS_FILENAME = 'allowhosts.txt'
@@ -11,6 +13,35 @@ ROOTPATH = os.path.dirname(BASEPATH)
 UWSGI_SAMPLE_FILENAME = 'uwsgi/example_uwsgi.ini'
 UWSGI_DEST_FILENAME = 'iws_uwsgi.ini'
 UWSGI_LOG_FILENAME = 'log/iws.log'
+
+def copysettings(filename=None):
+    # Default to current dir
+    if not filename:
+        filename = os.path.join(BASEPATH, SETTINGS_FILENAME)
+
+    # Attempt exclusive open of file for writing
+    # Do nothing if file exists
+    try:
+        f = open(filename, 'x')
+    except FileExistsError as e:
+        sys.stdout.write('Settings file {0} already exists, skipping creation\n'.format(filename))
+    except Exception as e:
+        # Something else happened, re-raise
+        raise
+    else:
+        # Read default settings
+        defaultfile = os.path.join(BASEPATH, SETTINGS_DEFAULT)
+        try:
+            g = open(defaultfile, 'r')
+        except OSError as e:
+            sys.stdout.write("Couldn't open default settings file at {0}, error: {1}\n".format(defaultfile, str(e)))
+            raise
+        else:
+            defset = g.read()
+            g.close()
+            f.write(defset)
+            f.close()
+            sys.stdout.write('Created settings file {0}\n'.format(filename))
 
 def makesecretkey(filename=None):
     # Default to current dir
@@ -219,6 +250,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # First check/create required files
+    copysettings()
     makesessiondir()
     makesecretkey()
     allowedhosts()
