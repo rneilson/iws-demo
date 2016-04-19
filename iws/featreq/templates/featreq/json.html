@@ -13,7 +13,7 @@
 <div id="container">
   <div id="header">
       <div id="branding">
-          <h1 id="site-name"><a href="{{ request.path }}"><strong>{{ request.method }}</strong> {{ request.path }}</a></h1>
+          <h1 id="site-name"><a href="{{ request.get_full_path }}"><strong>{{ request.method }}</strong> {{ request.get_full_path }}</a></h1>
       </div>
   </div>
   <div id="content">
