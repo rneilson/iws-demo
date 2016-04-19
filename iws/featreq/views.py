@@ -24,6 +24,7 @@ SESSION_EXPIRY = 86400
 json404 = OrderedDict([('status_code', 404), ('error', 'Resource not found')])
 json404str = json.dumps(json404, indent=1) + '\n'
 json_contype = 'application/json'
+plain_contype = 'text/plain'
 
 # OpenReq and ClosedReq modified fields and qset_vals_tojsonlist partials
 openreq_byreq_fields = OpenReq.fields.copy()
@@ -68,6 +69,12 @@ def req_is_json(request):
     else:
         return False
 
+def req_is_plain(request):
+    if request.META.get('HTTP_ACCEPT', '').lower() == plain_contype:
+        return True
+    else:
+        return False
+
 def getusername(request):
     '''Extracts username from request, or provides default.'''
     unknown_user = 'UNKNOWN'
@@ -85,7 +92,14 @@ def getusername(request):
 def badrequest(request, errormsg, field=None):
     '''Constructs 400 Bad Request response with given error message.'''
 
-    if req_is_json(request):
+    if req_is_plain(request):
+        if field:
+            respstr = 'Status code: 400\nError in field: {0}\nError message: {1}\n'.format(field, str(errormsg))
+        else:
+            respstr = 'Status code: 400\nError message: {0}\n'.format(str(errormsg))
+        return HttpResponseBadRequest(respstr, content_type=plain_contype)
+    # if req_is_json(request):
+    else:
         # Create reponse payload
         errordict = OrderedDict([
             ('status_code', 400),
@@ -96,24 +110,19 @@ def badrequest(request, errormsg, field=None):
             errordict.move_to_end('error')
         jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
         return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
-    else:
-        if field:
-            respstr = 'Status code: 400\nError in field: {0}\nError message: {1}\n'.format(field, str(errormsg))
-        else:
-            respstr = 'Status code: 400\nError message: {0}\n'.format(str(errormsg))
-        return HttpResponseBadRequest(respstr)
 
 def forbidden(request, errormsg='Not authorized'):
     '''Constructs 403 Forbidden response with given error message.'''
 
-    if req_is_json(request):
+    if req_is_plain(request):
+        errorstr = 'Status code: 403\nError message: {0}\n'.format(errormsg)
+        return HttpResponseForbidden(errorstr, content_type=plain_contype)
+    # if req_is_json(request):
+    else:
         errordict = OrderedDict([
             ('status_code', 403),
             ('error', errormsg)])
         return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
-    else:
-        errorstr = 'Status code: 403\nError message: {0}\n'.format(errormsg)
-        return HttpResponseForbidden(errorstr)
 
 def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=None):
     '''Extracts ordered dict of arguments from POST request. Requests with
@@ -302,6 +311,8 @@ def getfieldsfromget(
 
     return fields
 
+def prettifyjson(request, response):
+    return render(request, 'featreq/json.html', {'response': response})
 
 ## Decorators
 
@@ -343,9 +354,27 @@ def auth_required(f):
             return forbidden(request, 'Not logged in or session expired')
     return wrapped
 
+def makepretty(f):
+    '''Decorator for views. Checks for redirect response, and if not,
+    returns either raw JSON or the prettified version.
+    '''
+    def wrapped(request, *args, **kwargs):
+        if req_is_json(request):
+            return f(request, *args, **kwargs)
+        else:
+            resp = f(request, *args, **kwargs)
+            # Return redirects without modification
+            if (resp.status_code >= 300 and resp.status_code < 400) or \
+                resp['Content-Type'] == 'text/plain':
+                return resp
+            else:
+                return prettifyjson(request, resp)
+    return wrapped
+
 
 ## View funcs
 
+@makepretty
 def _basicresp(request):
     # Check for 'next' field
     nexturl = getfieldsfromget(request, empty=[], fieldsep=None, fieldname='next', allfieldname=None)
@@ -361,7 +390,14 @@ def _basicresp(request):
             fullname = '[anonymous]'.format(username)
         if not fullname:
             fullname = '[user {0}]'.format(username)
-        if req_is_json(request):
+
+        # Check for text/plain
+        reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
+        if (reqfmt and reqfmt[0] == 'plain') or req_is_plain(request):
+            histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
+                loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
+            return HttpResponse(histr, content_type='text/plain')
+        else:
             respdict = OrderedDict([
                 ('logged_in', loggedin),
                 ('username', username),
@@ -370,13 +406,8 @@ def _basicresp(request):
                 ('session_expiry', request.session.get_expiry_age()),
             ])
             return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-        else:
-            histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
-                loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
-            return HttpResponse(histr, content_type='text/plain')
 
-@ensure_csrf_cookie
-@requires_csrf_token
+@makepretty
 @allow_methods(['GET'])
 def index(request):
     if not request.user.is_authenticated():
@@ -393,17 +424,17 @@ def index(request):
             fullname = '[user {0}]'.format(username)
         if not fullname:
             fullname = '[user {0}]'.format(username)
-        if req_is_json(request):
-            respdict = OrderedDict([
-                ('username', username),
-                ('full_name', fullname),
-                ('session_expiry', request.session.get_expiry_age())
-            ])
-            return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-        else:
-            histr = 'Hello, {0}.\nYour session expires in {1}s\n'.format(
-                fullname, request.session.get_expiry_age())
-            return HttpResponse(histr, content_type='text/plain')
+        # if req_is_json(request):
+        respdict = OrderedDict([
+            ('username', username),
+            ('full_name', fullname),
+            ('session_expiry', request.session.get_expiry_age())
+        ])
+        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        # else:
+        #     histr = 'Hello, {0}.\nYour session expires in {1}s\n'.format(
+        #         fullname, request.session.get_expiry_age())
+        #     return HttpResponse(histr, content_type='text/plain')
 
 @ensure_csrf_cookie
 @requires_csrf_token
@@ -466,6 +497,7 @@ def apiauth(request):
         else:
             return badrequest(request, 'Invalid action: {0}'.format(action), 'action')
 
+@makepretty
 @auth_required
 @allow_methods(['GET', 'POST'])
 def reqindex(request):
@@ -517,6 +549,7 @@ def reqindex(request):
         else:
             return badrequest(request, 'Invalid action "{0}"'.format(action), field='action')
 
+@makepretty
 @auth_required
 @allow_methods(['GET'])
 def reqindex_ext(request, tolist):
@@ -615,6 +648,7 @@ def reqindex_ext(request, tolist):
         return _getindex(request, listopen=True, listclosed=True)
         # return _allindex(request)
 
+@makepretty
 @auth_required
 @allow_methods(['GET', 'POST'])
 def reqbyid(request, req_id):
@@ -658,6 +692,7 @@ def reqbyid(request, req_id):
             else:
                 return badrequest(request, 'Invalid action "{0}"'.format(action), field='action')
 
+@makepretty
 @auth_required
 def reqbyid_ext(request, req_id, tolist):
 
@@ -812,6 +847,7 @@ def reqredir(request, req_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
+@makepretty
 @auth_required
 @allow_methods(['GET', 'POST'])
 def clientindex(request):
@@ -863,6 +899,7 @@ def clientindex(request):
             return badrequest(request, 'Invalid action "{0}"'.format(action), field='action')
 
 
+@makepretty
 @auth_required
 @allow_methods(['GET', 'POST'])
 def clientbyid(request, client_id):
@@ -913,6 +950,7 @@ def clientredir(request, client_id):
     else:
         return HttpResponseNotFound(json404str, content_type=json_contype)
 
+@makepretty
 @auth_required
 def clientreqindex(request, client_id, tolist):
 
