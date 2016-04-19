@@ -3,13 +3,13 @@
 <html lang="en-us" >
 <head>
 <title>IWS-Demo</title>
-<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
-<link rel="stylesheet" type="text/css" href="/static/admin/css/login.css" />
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/base.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/login.css' %}" />
 <meta name="robots" content="NONE,NOARCHIVE" />
 </head>
 
 
-<body class=" login" data-admin-utc-offset="0">
+<body class=" login" data-admin-utc-offset="{% now "Z" %}">
 
 <div id="container">
   <div id="header">
@@ -36,9 +36,9 @@
         </div>
         <div class="form-row">
           <label class="required" for="id_password">Password:</label> <input id="id_password" name="password" type="password" />
-          <input type="hidden" name="action" value="login" />
         </div>
         <div class="submit-row">
+          <input type="hidden" name="action" value="login" />
           <label>&nbsp;</label><input type="submit" value="Log in" />
         </div>
       </form>
