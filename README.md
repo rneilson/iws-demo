@@ -182,6 +182,10 @@ For POST requests, reading JSON-formatted data from stdin, eg:
 ./iws-curl post https://iws.example.com/featreq/req/
 ```
 
+#### Authentication web view
+
+A simple HTML login page is available at `/featreq/login/`. An optional `?next=` query parameter allows redirection after successful login.
+
 #### Authentication "by hand" walkthrough
 
 Assuming the following:
