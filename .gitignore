@@ -13,7 +13,7 @@ allowhosts.txt
 tmp/
 
 # Static
-static/
+/iws/static/
 
 # uwsgi files
 log/

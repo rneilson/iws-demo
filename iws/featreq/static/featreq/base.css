@@ -1,0 +1,41 @@
+/* featreq base styles */
+
+@import url('fonts.css');
+
+body {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    color: #333;
+    background: #fff;
+}
+
+#header {
+	background: #417690;
+	line-height: 40px;
+    height: auto;
+    padding: 5px 16px;
+}
+
+#header h1 {
+	font-weight: 300;
+    font-size: 18px;
+}
+
+#header h1 a {
+    color: #fff;
+}
+
+#branding {
+	font-weight: 300;
+	padding: 0px 4px;
+}
+
+#branding h1 {
+	margin: 0px;
+}
+
+a:link {
+	text-decoration: none;
+}

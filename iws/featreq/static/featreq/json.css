@@ -1,0 +1,19 @@
+/* JSON prettifier */
+
+.json #container {
+	margin: 20px;
+}
+
+.json #content {
+	padding: 4px 20px;
+	background: #f8f8f8;
+}
+
+.json #response-code {
+	font-size: 16px;
+}
+
+.json #response-body pre {
+	font-family: 'Droid Sans Mono', ;
+	font-size: 12px;
+}
