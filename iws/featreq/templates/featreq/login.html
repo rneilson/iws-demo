@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<html lang="en-us" >
+<head>
+<title>IWS-Demo</title>
+<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
+<link rel="stylesheet" type="text/css" href="/static/admin/css/login.css" />
+<meta name="robots" content="NONE,NOARCHIVE" />
+</head>
+
+
+<body class=" login" data-admin-utc-offset="0">
+
+<div id="container">
+  <div id="header">
+      <div id="branding">
+          <h1 id="site-name"><a href="{% url 'featreq-login' %}">IWS-Demo login</a></h1>
+      </div>
+  </div>
+  <div id="content" class="colM">
+    <div id="content-main">
+
+    {% if user.is_authenticated %}
+      <p>Logged in as <strong>{{ user.get_username }}</strong></p>
+      <form action="{% url 'featreq-auth' %}?next={% url 'featreq-login' %}" method="post" id="login-form">{% csrf_token %}
+        <div class="submit-row">
+          <input type="hidden" name="action" value="logout" />
+          <input type="hidden" name="username" value="{{ user.get_username }}" />
+          <label>&nbsp;</label><input type="submit" value="Log out" />
+        </div>
+      </form>
+    {% else %}
+      <form action="{% url 'featreq-auth' %}{% if nexturl %}?next={{ nexturl }}{% endif %}" method="post" id="login-form">{% csrf_token %}
+        <div class="form-row">
+          <label class="required" for="id_username">Username:</label> <input id="id_username" maxlength="254" name="username" type="text" />
+        </div>
+        <div class="form-row">
+          <label class="required" for="id_password">Password:</label> <input id="id_password" name="password" type="password" />
+          <input type="hidden" name="action" value="login" />
+        </div>
+        <div class="submit-row">
+          <label>&nbsp;</label><input type="submit" value="Log in" />
+        </div>
+      </form>
+      <script type="text/javascript">
+        document.getElementById('id_username').focus()
+      </script>
+    {% endif %}
+
+    </div>
+    <br class="clear" />
+  </div>
+  <div id="footer"></div>
+</div>
+
+</body>
+</html>

@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanen
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 from django.db.models import Count
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt, requires_csrf_token
 from django.middleware.csrf import get_token as csrf_get_token
 from django.contrib.auth import authenticate, login, logout
@@ -262,7 +262,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
 def getfieldsfromget(
     request, empty=None, allfields=None, allowed=None,
     fieldsep=',', fieldname='fields', allfieldname='all'):
-    '''Get field values from query string in request.
+    '''Get field values from query string in request. Returns list of values.
 
     If there are no fields of fieldname in the query, will return value of
     param empty.
@@ -347,34 +347,44 @@ def auth_required(f):
 ## View funcs
 
 def _basicresp(request):
-    loggedin = request.user.is_authenticated()
-    username = request.user.get_username()
-    try:
-        fullname = request.user.get_full_name()
-    except AttributeError:
-        fullname = '[anonymous]'.format(username)
-    if not fullname:
-        fullname = '[user {0}]'.format(username)
-    if req_is_json(request):
-        respdict = OrderedDict([
-            ('logged_in', loggedin),
-            ('username', username),
-            ('full_name', fullname),
-            ('csrf_token', csrf_get_token(request)),
-            ('session_expiry', request.session.get_expiry_age())
-        ])
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+    # Check for 'next' field
+    nexturl = getfieldsfromget(request, empty=[], fieldsep=None, fieldname='next', allfieldname=None)
+
+    if nexturl:
+        return HttpResponseRedirect(nexturl[0])
     else:
-        histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
-            loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
-        return HttpResponse(histr, content_type='text/plain')
+        loggedin = request.user.is_authenticated()
+        username = request.user.get_username()
+        try:
+            fullname = request.user.get_full_name()
+        except AttributeError:
+            fullname = '[anonymous]'.format(username)
+        if not fullname:
+            fullname = '[user {0}]'.format(username)
+        if req_is_json(request):
+            respdict = OrderedDict([
+                ('logged_in', loggedin),
+                ('username', username),
+                ('full_name', fullname),
+                ('csrf_token', csrf_get_token(request)),
+                ('session_expiry', request.session.get_expiry_age()),
+            ])
+            return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        else:
+            histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
+                loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
+            return HttpResponse(histr, content_type='text/plain')
 
 @ensure_csrf_cookie
 @requires_csrf_token
 @allow_methods(['GET'])
 def index(request):
     if not request.user.is_authenticated():
-        return HttpResponseRedirect(urlreverse('featreq-auth'))
+        if req_is_json(request):
+            return HttpResponseRedirect(urlreverse('featreq-auth'))
+        else:
+            nexturl = urlreverse('featreq-login') + '?next=' + urlreverse('featreq-index')
+            return HttpResponseRedirect(nexturl)
     else:
         username = request.user.get_username()
         try:
@@ -394,6 +404,18 @@ def index(request):
             histr = 'Hello, {0}.\nYour session expires in {1}s\n'.format(
                 fullname, request.session.get_expiry_age())
             return HttpResponse(histr, content_type='text/plain')
+
+@ensure_csrf_cookie
+@requires_csrf_token
+@allow_methods(['GET'])
+def weblogin(request):
+    # Check for 'next' field
+    nexturl = getfieldsfromget(request, empty=None, fieldsep=None, fieldname='next', allfieldname=None)
+    # Get first value
+    if nexturl:
+        nexturl = nexturl[0]
+    # Render template and return
+    return render(request, 'featreq/login.html', {'nexturl': nexturl})
 
 @ensure_csrf_cookie
 @requires_csrf_token
