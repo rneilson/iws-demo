@@ -26,10 +26,11 @@ fi
 REQTYPE=$1
 REQURL=$2
 BASEURL=$(echo $REQURL | sed -r 's@(https?)://([0-9a-zA-Z.\-]+):?[0-9]*/.*@\1://\2/@')
+FQDN=$(echo $REQURL | sed -r 's@https?://([0-9a-zA-Z.\-]+):?[0-9]*/.*@\1@')
 
 BASECMD=("curl" "-L" "-b" "$COOKIEJAR" "-c" "$COOKIEJAR" "-e" "$BASEURL")
 JSONCMD=("${BASECMD[@]}" "-H" "\"Accept: application/json\"")
-CSRF=$(grep 'csrftoken' $COOKIEJAR | cut -f 7)
+CSRF=$(grep 'csrftoken' $COOKIEJAR | grep $FQDN | cut -f 7)
 POSTCMD=("-H" "\"Content-Type: application/json\"" "-H" "\"X-CSRFToken: $CSRF\"" "--data-binary" '@-')
 
 case $REQTYPE in
