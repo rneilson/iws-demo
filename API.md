@@ -123,9 +123,9 @@ Methods: GET, POST
 
 **GET**
 
-Show current authentication details.
+Show current authentication details. Content type of response varies with value of "Accept:" header.
 
-Return value, status code 200:
+Return value, "Accept: application/json" header set, status code 200:
 ```
 {
  "logged_in": <boolean>,
@@ -134,6 +134,15 @@ Return value, status code 200:
  "csrf_token": <string>,      # CSRF token string matching cookie "csrftoken"
  "session_expiry": <integer>  # Time until session expires, in seconds
 }
+```
+
+Return value, other value of "Accept:" header, status code 200:
+```
+Logged in:  <boolean>,
+Username:  <string>,        # Current username, empty if not logged in
+Full name:  <string>,       # Full name of user, [anonymous] if not logged in
+CSRF token:  <string>,      # CSRF token string matching cookie "csrftoken"
+Session expiry:  <integer>  # Time until session expires, in seconds
 ```
 
 **POST**
