@@ -414,6 +414,8 @@ def weblogin(request):
     # Get first value
     if nexturl:
         nexturl = nexturl[0]
+    else:
+        nexturl = urlreverse('featreq-login')
     # Render template and return
     return render(request, 'featreq/login.html', {'nexturl': nexturl})
 
