@@ -63,8 +63,9 @@ del closedreq_byclient_fields['client_id']
 ## Shortcut funcs
 
 def req_is_json(request):
-    if request.META.get('CONTENT_TYPE', '').lower() == json_contype or\
-        request.META.get('HTTP_ACCEPT', '').lower() == json_contype:
+    accept = [ acc.strip() for acc in request.META.get('HTTP_ACCEPT', '').split(',') ]
+    if json_contype in accept or \
+        request.META.get('CONTENT_TYPE', '').lower() == json_contype:
         return True
     else:
         return False
