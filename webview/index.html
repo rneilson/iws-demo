@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width">
+		<link rel="stylesheet" type="text/css" href="webview.css">
+		<link rel="canonical" href="">
+		<link rel="alternate" type="application/rss+xml" title="" href="">
+		<script type="text/javascript" src="angular.min.js.gz"></script>
+		<script type="text/javascript" src="webview.js"></script>
+		<title>IWS Webview Testbed</title>
+	</head>
+	<body>
+		<div id="main" ng-app="iws-webview">
+			<div id="sidebar" class="leftside">
+				<div id="clientlist" class="noborder" ng-controller="ClientListController">
+					<table>
+						<colgroup>
+							<col class="clientname"></col>
+							<col class="count"></col>
+							<col class="count"></col>
+						</colgroup>
+						<thead>
+							<tr>
+								<th>Client Name</th><th>Open</th><th>Closed</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat"client in client_list">
+								<td>{{ client.name }}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div id="container" class="rightside">
+				<div id="nav">
+					<div class="tabnav"><a href="#clientdetails">Client details</a></div><div class="tabnav">
+					<a href="#clientopen">Open requests</a></div><div class="tabnav">
+					<a href="#clientclosed">Closed requests</a></div><div class="tabnav">
+					<a href="#">None</a></div>
+				</div>
+				<div id="clientdetails" class="panel">
+					<p>This is panel one.</p>
+					<p><a href="#clientopen">Go to panel two.</a></p>
+				</div>
+				<div id="clientopen" class="panel">
+					<p>This is panel two.</p>
+					<p><a href="#clientdetails">Go to panel one.</a></p>
+					<p><a href="#clientclosed">Go to panel three.</a></p>
+				</div>
+				<div id="clientclosed" class="panel">
+					<p>This is panel three.</p>
+					<p><a href="#clientopen">Go to panel two.</a></p>
+				</div>
+			</div>
+			<div id="footer", class="footer"></div>
+		</div>
+	</body>
+</html>

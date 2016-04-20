@@ -1,0 +1,103 @@
+/* IWS webview base CSS */
+
+* {
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	/*-webkit-transition: 250ms linear 0s;*/
+	/*-moz-transition: 250ms linear 0s;*/
+	/*-o-transition: 250ms linear 0s;*/
+	/*transition: 250ms linear 0s;*/
+}
+body {
+	background-color: #171616;
+	color: #D4D2CF;
+	font-family: Verdana, sans-serif;
+	font-size: 10pt;
+}
+a {
+	color: #4d6ad8;
+	text-decoration: none;
+}
+a:hover {
+	text-shadow: 0 0 16px #4d6ad8;
+	/*text-decoration: underline;*/
+}
+div {
+	border-style: solid;
+	border-width: 1px;
+	padding: 4px;
+	margin: 4px;
+}
+div.leftside {
+	width: 300px;
+	float: left;
+	display: inline-block;
+}
+div.rightside {
+	width: calc(100% - 316px);
+	float: left;
+	display: inline-block;
+}
+div.footer {
+	clear: both;
+	padding: 0px;
+	margin: 0px;
+	border: none;
+}
+div.noborder {
+	border-width: 0px;
+	padding: 0px;
+	margin: 0px;
+}
+div.tabnav {
+	display: inline-block;
+	border-width: 1px 1px 0px 0px;
+	margin: 0px;
+	/*padding-bottom: 0px;*/
+}
+div.tabnav:nth-child(1) {
+	border-width: 1px 1px 0px 1px;
+}
+.panel {
+	display: none;
+}
+.panel:target {
+	display: block;
+	margin-top: 0px;
+	border-top: none;
+}
+col.clientname {
+	width: 160px;
+}
+col.count {
+	width: 80px;
+}
+table {
+	border-collapse: collapse;
+	/*width: 100%;*/
+	margin: 4px;
+}
+th, td {
+	text-align: right;
+}
+tbody tr:hover {
+	background-color: #272626;
+}
+tr th:nth-child(1), td:nth-child(1) {
+	text-align: left;
+}
+#container {
+	margin: 0px;
+	padding: 0px;
+	border: none;
+}
+#nav {
+	line-height: 24px;
+	margin-bottom: 0px;
+	padding: 0px;
+	border-width: 0px 0px 1px 0px;
+	/*padding-left: 8px;*/
+	/*border-bottom: none;*/
+}
+
