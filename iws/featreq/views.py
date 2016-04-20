@@ -312,7 +312,10 @@ def getfieldsfromget(
     return fields
 
 def prettifyjson(request, response):
-    return render(request, 'featreq/json.html', {'response': response})
+    resp = render(request, 'featreq/json.html', {'response': response})
+    resp.status_code = response.status_code
+    resp.reason_phrase = response.reason_phrase
+    return resp
 
 ## Decorators
 
