@@ -48,10 +48,14 @@ iwsApp.factory('clientListService', ['authService', '$http', function (authServi
 	var clienturl = '/featreq/client/';
 	var getclients = function () {
 		return $http.get(clienturl).then(function (response) {
-			return response.data.client_list.sort(
-				function(a, b) {
-					return a.name.localeCompare(b.name);
-			});
+			client_list = response.data.client_list;
+			if (client_list) {
+				client_list.sort(
+					function(a, b) {
+						return a.name.localeCompare(b.name);
+				});
+			}
+			return client_list;
 		});
 	};
 	return {
@@ -87,10 +91,14 @@ iwsApp.factory('clientOpenService', ['$http', function ($http) {
 		return $http.get(baseurl + client_id + suffix).then(function (response) {
 			newclient = response.data.client;
 			client.id = newclient.id;
-			var newlist = newclient.open_list.sort(
-				function (a, b) {
-					return a.priority - b.priority;
-				});
+			var newlist = newclient.open_list;
+			if (newlist) {
+				newlist.sort(
+					function (a, b) {
+						return a.priority - b.priority;
+					}
+				);
+			}
 			open_list = []
 			for (var i = 0; i < newlist.length; i++) {
 				oreq = newlist[i];
