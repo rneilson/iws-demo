@@ -205,3 +205,12 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
+iwsApp.controller('TabController', ['$scope', 
+	function ($scope) {
+		$scope.tab = 1;
+		this.select = function (tabnum) {
+			$scope.tab = tabnum;
+		};
+	}
+]);
+

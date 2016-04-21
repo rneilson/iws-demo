@@ -89,15 +89,19 @@ div.tabnav {
 	display: inline-block;
 	border-width: 1px 1px 0px 0px;
 	margin: 0px;
+	background-color: #c0c0c0;
 	/*padding: 6px;*/
+}
+#nav > .selected {
+    background: #fff;
 }
 div.tabnav:nth-child(1) {
 	border-width: 1px 1px 0px 1px;
 }
-.panel {
+div.panel {
 	display: none;
 }
-.panel:target {
+div.open {
 	display: block;
 	margin-top: 0px;
 	border-top: none;
@@ -112,6 +116,10 @@ th, td {
 }
 tbody tr:hover {
 	background-color: #c0c0c0;
+}
+tbody tr.selected {
+    color: #fff;
+	background: #417690;
 }
 th:nth-child(1), td:nth-child(1) {
 	text-align: left;

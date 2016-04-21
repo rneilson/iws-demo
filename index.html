@@ -48,12 +48,12 @@
 					<p>Date added:<br/>{{client.date_add}}</p>
 				</div>
 			</div>
-			<div id="container" class="rightside">
+			<div id="container" class="rightside" ng-controller="TabController as tabcon">
 				<div id="nav">
-					<div class="tabnav"><a href="#clientopen">Open requests</a></div><div class="tabnav">
-					<a href="#clientclosed">Closed requests</a></div>
+					<div class="tabnav" ng-class="{selected: tab==1}" ng-click="tabcon.select(1)">Open requests
+					</div><div class="tabnav" ng-class="{selected: tab==2}" ng-click="tabcon.select(2)">Closed requests</div>
 				</div>
-				<div id="clientopen" class="panel" ng-controller="ClientOpenController as cocon">
+				<div id="clientopen" class="panel" ng-class="{open: tab==1}" ng-controller="ClientOpenController as cocon">
 					<table class="opentable">
 						<thead>
 							<tr>
@@ -75,7 +75,7 @@
 						</tbody>
 					</table>
 				</div>
-				<div id="clientclosed" class="panel">
+				<div id="clientclosed" class="panel" ng-class="{open: tab==2}">
 					<p>Closed requests...</p>
 				</div>
 				<div id="reqdetails" ng-controller="ReqDetailController as rdcon">
