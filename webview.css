@@ -54,6 +54,7 @@ div.topright {
 	float: right;
 	display: inline-block;
 	text-align: right;
+	line-height: 28px;
 }
 div.clientheader {
 	margin-bottom: 0px;
@@ -91,9 +92,6 @@ div.tabnav {
 	margin: 0px;
 	background-color: #c0c0c0;
 	/*padding: 6px;*/
-}
-#nav > .selected {
-    background: #fff;
 }
 div.tabnav:nth-child(1) {
 	border-width: 1px 1px 0px 1px;
@@ -146,7 +144,6 @@ td.user, th.user {
 	width: 100px;
 	/*min-width: 80px;*/
 }
-
 #container {
 	margin: 0px;
 	padding: 0px;
@@ -160,6 +157,12 @@ td.user, th.user {
 	/*padding-left: 8px;*/
 	/*border-bottom: none;*/
 }
+#nav > .selected {
+    background: #fff;
+}
 #clientdetails {
 	margin-top: 8px;
+}
+.hidden {
+	display: none !important;
 }

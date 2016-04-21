@@ -171,6 +171,7 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 		$scope.client_id = "";
 		clientListService.getclients().then(function (client_list) {
 			$scope.client_list = client_list;
+			// $scope.client_id = client_list[0].id;
 		});
 		this.selectclient = function (client_id) {
 			if (client_id != $scope.client_id) {
