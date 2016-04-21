@@ -54,7 +54,7 @@ div.tabnav {
 	display: inline-block;
 	border-width: 1px 1px 0px 0px;
 	margin: 0px;
-	/*padding-bottom: 0px;*/
+	padding: 6px;
 }
 div.tabnav:nth-child(1) {
 	border-width: 1px 1px 0px 1px;
