@@ -173,8 +173,10 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 			$scope.client_list = client_list;
 		});
 		this.selectclient = function (client_id) {
-			$scope.client_id = client_id;
-			$scope.$broadcast('client_select', client_id);
+			if (client_id != $scope.client_id) {
+				$scope.client_id = client_id;
+				$scope.$broadcast('client_select', client_id);
+			}
 		};
 	}
 ]);

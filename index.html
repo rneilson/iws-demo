@@ -20,7 +20,7 @@
 			</div>
 			<div id="sidebar" class="leftside noborder">
 				<div id="clientlist" class="noborder">
-					<div class="clientheader">Client list</div>
+					<div class="header clientheader">Client list</div>
 					<div class="clienttable">
 						<table>
 							<colgroup>
@@ -34,7 +34,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
+								<tr ng-class="{selected: client.id == client_id}" ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
 									<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
 								</tr>
 							</tbody>
@@ -65,7 +65,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
+							<tr ng-class="{selected: oreq.id == req_id}" ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
 								<td class="count">{{oreq.priority}}</td>
 								<td class="reqtitle">{{oreq.title}}</td>
 								<td class="date">{{oreq.date_tgt}}</td>
@@ -80,8 +80,10 @@
 				</div>
 				<div id="reqdetails" ng-controller="ReqDetailController as rdcon">
 					<p><strong>{{req.title}}</strong></p>
-					<p>Product Area: {{req.prod_area}}</p>
-					<p>Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a></p>
+					<p>
+						Product Area: <strong>{{req.prod_area}}</strong><br/>
+						Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a>
+					</p>
 					<p>Description:<br/>{{req.desc}}</p>
 				</div>
 			</div>
