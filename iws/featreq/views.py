@@ -18,6 +18,7 @@ from .utils import approxnow, tojsondict, qset_vals_tojsonlist
 # Default session exipiry time
 # 24h for testing purposes at present
 SESSION_EXPIRY = 86400
+WEBVIEW_URL = '/webview/'
 
 # Default 404 JSON response dict
 # Views may add extra information, or JSONify and send as-is
@@ -416,29 +417,29 @@ def _basicresp(request):
 def index(request):
     if not request.user.is_authenticated():
         if req_is_json(request):
-            return HttpResponseRedirect(urlreverse('featreq-auth'))
+            nexturl = urlreverse('featreq-auth') + '?next=' + urlreverse('featreq-index')
+            return HttpResponseRedirect(nexturl)
         else:
-            nexturl = urlreverse('featreq-login') + '?next=' + urlreverse('featreq-index')
+            nexturl = urlreverse('featreq-login') + '?next=' + WEBVIEW_URL
             return HttpResponseRedirect(nexturl)
     else:
-        username = request.user.get_username()
-        try:
-            fullname = request.user.get_full_name()
-        except AttributeError:
-            fullname = '[user {0}]'.format(username)
-        if not fullname:
-            fullname = '[user {0}]'.format(username)
-        # if req_is_json(request):
-        respdict = OrderedDict([
-            ('username', username),
-            ('full_name', fullname),
-            ('session_expiry', request.session.get_expiry_age())
-        ])
-        return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-        # else:
-        #     histr = 'Hello, {0}.\nYour session expires in {1}s\n'.format(
-        #         fullname, request.session.get_expiry_age())
-        #     return HttpResponse(histr, content_type='text/plain')
+        if req_is_json(request):
+            username = request.user.get_username()
+            try:
+                fullname = request.user.get_full_name()
+            except AttributeError:
+                fullname = '[user {0}]'.format(username)
+            if not fullname:
+                fullname = '[user {0}]'.format(username)
+            # if req_is_json(request):
+            respdict = OrderedDict([
+                ('username', username),
+                ('full_name', fullname),
+                ('session_expiry', request.session.get_expiry_age())
+            ])
+            return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+        else:
+            return HttpResponseRedirect(WEBVIEW_URL)
 
 @ensure_csrf_cookie
 @requires_csrf_token
