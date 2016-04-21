@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width">
+		<link rel="stylesheet" type="text/css" href="webview.css">
+		<link rel="canonical" href="">
+		<link rel="alternate" type="application/rss+xml" title="" href="">
+		<script type="text/javascript" src="angular.min.js"></script>
+		<script type="text/javascript" src="webview.js"></script>
+		<title>IWS Webview Testbed</title>
+	</head>
+	<body ng-app="iws-webview">
+		<div id="main" ng-controller="ClientListController as clcon">
+			<div id="header" class="header">
+				<div class="noborder topleft"><h1>IWS Demo</h1></div>
+				<div class="noborder topright" ng-controller="AuthController as aucon">
+					Logged in as <strong>{{status.username}}</strong></div>
+				<div class="footer"></div>
+			</div>
+			<div id="sidebar" class="leftside noborder">
+				<div id="clientlist" class="noborder">
+					<div class="header clientheader">Client list</div>
+					<div class="clienttable">
+						<table>
+							<colgroup>
+								<col class="clientname"></col>
+								<col class="count"></col>
+								<col class="count"></col>
+							</colgroup>
+							<thead>
+								<tr>
+									<th>Client Name</th><th>Open</th><th>Closed</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr ng-class="{selected: client.id == client_id}" ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
+									<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !client_id}">
+					<p><strong>{{client.name}}</strong></p>
+					<p>Contact name:<br/>{{client.con_name}}</p>
+					<p>Contact email:<br/><a href="mailto:{{client.con_mail}}">{{client.con_mail}}</a></p>
+					<p>Date added:<br/>{{client.date_add}}</p>
+				</div>
+			</div>
+			<div id="container" class="rightside" ng-controller="TabController as tabcon">
+				<div id="nav">
+					<div class="tabnav" ng-class="{selected: tab=='open'}" ng-click="tabcon.select('open')">Open requests
+					</div><div class="tabnav" ng-class="{selected: tab=='closed'}" ng-click="tabcon.select('closed')">Closed requests</div>
+				</div>
+				<div id="clientopen" class="panel" ng-class="{open: tab=='open'}" ng-controller="ClientOpenController as cocon">
+					<table class="opentable">
+						<thead>
+							<tr>
+								<th class="count">Priority</th>
+								<th class="reqtitle">Title</th>
+								<th class="date">Target Date</th>
+								<th class="date">Open Date</th>
+								<th class="user">Opened By</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-class="{selected: oreq.id == req_id}" ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
+								<td class="count">{{oreq.priority}}</td>
+								<td class="reqtitle">{{oreq.title}}</td>
+								<td class="date">{{oreq.date_tgt}}</td>
+								<td class="date">{{oreq.opened_at}}</td>
+								<td class="user">{{oreq.opened_by}}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div id="clientclosed" class="panel" ng-class="{open: tab=='closed'}">
+					<p>Closed requests...</p>
+				</div>
+				<div id="reqdetails" ng-controller="ReqDetailController as rdcon" ng-class="{hidden: !req.id}">
+					<p><strong>{{req.title}}</strong></p>
+					<p>
+						Product Area: <strong>{{req.prod_area}}</strong><br/>
+						Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a>
+					</p>
+					<p>Description:<br/>{{req.desc}}</p>
+				</div>
+			</div>
+			<div id="footer", class="footer"></div>
+		</div>
+	</body>
+</html>
