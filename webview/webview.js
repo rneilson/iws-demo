@@ -48,7 +48,10 @@ iwsApp.factory('clientListService', ['authService', '$http', function (authServi
 	var clienturl = '/featreq/client/';
 	var getclients = function () {
 		return $http.get(clienturl).then(function (response) {
-			return response.data.client_list;
+			return response.data.client_list.sort(
+				function(a, b) {
+					return a.name.localeCompare(b.name);
+			});
 		});
 	};
 	return {
@@ -58,7 +61,7 @@ iwsApp.factory('clientListService', ['authService', '$http', function (authServi
 
 iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/client/';
-	var client = {}
+	var client = {};
 	var getdetails = function (client_id) {
 		return $http.get(baseurl + client_id).then(function (response) {
 			newclient = response.data.client;
@@ -75,12 +78,38 @@ iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	};
 }]);
 
-iwsApp.factory('selectService', function () {
+iwsApp.factory('clientOpenService', ['$http', function ($http) {
+	var baseurl = '/featreq/client/';
+	var suffix = '/open/?fields=id,title';
+	var client = {}
+	var getopen = function (client_id) {
+		return $http.get(baseurl + client_id + suffix).then(function (response) {
+			newclient = response.data.client;
+			client.id = newclient.id;
+			var newlist = newclient.open_list.sort(
+				function (a, b) {
+					return a.priority - b.priority;
+				});
+			open_list = []
+			for (var i = 0; i < newlist.length; i++) {
+				oreq = newlist[i];
+				open_list.push({
+					priority: oreq.priority,
+					date_tgt: new Date(oreq.date_tgt).toDateString(),
+					opened_at: new Date(oreq.opened_at).toDateString(),
+					id: oreq.req.id,
+					title: oreq.req.title
+				});
+			};
+			client.open_list = open_list;
+			return client;
+		});
+	}
 	return {
-		client_id: "",
-		req_id: ""
+		client: client,
+		getopen: getopen
 	};
-});
+}]);
 
 iwsApp.controller('AuthController', ['$scope', 'authService', 
 	function ($scope, authService) {
@@ -92,13 +121,14 @@ iwsApp.controller('AuthController', ['$scope', 'authService',
 	}
 ]);
 
-iwsApp.controller('ClientListController', ['$scope', 'clientListService', 'clientDetailService',
-	function ($scope, clientListService, clientDetailService) {
+iwsApp.controller('ClientListController', ['$scope', 'clientListService', 'clientDetailService', 'clientOpenService',
+	function ($scope, clientListService, clientDetailService, clientOpenService) {
 		clientListService.getclients().then(function (client_list) {
 			$scope.client_list = client_list;
 		});
 		this.selectclient = function (client_id) {
 			clientDetailService.getdetails(client_id);
+			clientOpenService.getopen(client_id);
 		};
 	}
 ]);
@@ -106,5 +136,11 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService', 'clien
 iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	function ($scope, clientDetailService) {
 		$scope.client = clientDetailService.client;
+	}
+]);
+
+iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService',
+	function ($scope, clientOpenService) {
+		$scope.client = clientOpenService.client;
 	}
 ]);

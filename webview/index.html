@@ -16,9 +16,9 @@
 				<div class="noborder topright" ng-controller="AuthController">Logged in as <strong>{{status.username}}</strong></div>
 				<div class="footer"></div>
 			</div>
-			<div id="sidebar" class="leftside">
-				<div id="clientlist" class="noborder" ng-controller="ClientListController as clcon">
-					<table>
+			<div id="sidebar" class="leftside noborder">
+				<div id="clientlist" ng-controller="ClientListController as clcon">
+					<table class="clienttable">
 						<colgroup>
 							<col class="clientname"></col>
 							<col class="count"></col>
@@ -36,24 +36,37 @@
 						</tbody>
 					</table>
 				</div>
+				<div id="clientdetails" ng-controller="ClientDetailController as cdcon">
+					<strong>{{client.name}}</strong><br/>
+					<p>Contact name:<br/>{{client.con_name}}</p>
+					<p>Contact email:<br/>{{client.con_mail}}</p>
+					<p>Date added:<br/>{{client.date_add}}</p>
+				</div>
 			</div>
 			<div id="container" class="rightside">
 				<div id="nav">
-					<div class="tabnav"><a href="#clientdetails">Client details</a></div><div class="tabnav">
-					<a href="#clientopen">Open requests</a></div><div class="tabnav">
-					<a href="#clientclosed">Closed requests</a></div><div class="tabnav">
-					<a href="#">None</a></div>
+					<div class="tabnav"><a href="#clientopen">Open requests</a></div><div class="tabnav">
+					<a href="#clientclosed">Closed requests</a></div>
 				</div>
-				<div id="clientdetails" class="panel" ng-controller="ClientDetailController as cdcon">
-					<strong>{{client.name}}</strong><br/>
-					Contact name: {{client.con_name}}<br/>
-					Contact email: {{client.con_mail}}<br/>
-					Date added: {{client.date_add}}
-				</div>
-				<div id="clientopen" class="panel">
-					<p>This is panel two.</p>
-					<p><a href="#clientdetails">Go to panel one.</a></p>
-					<p><a href="#clientclosed">Go to panel three.</a></p>
+				<div id="clientopen" class="panel" ng-controller="ClientOpenController as cocon">
+					<table class="opentable">
+						<thead>
+							<tr>
+								<th class="count">Priority</th>
+								<th class="reqtitle">Title</th>
+								<th class="date">Open Date</th>
+								<th class="date">Target Date</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="oreq in client.open_list">
+								<td class="count">{{oreq.priority}}</td>
+								<td class="reqtitle">{{oreq.title}}</td>
+								<td class="date">{{oreq.opened_at}}</td>
+								<td class="date">{{oreq.date_tgt}}</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 				<div id="clientclosed" class="panel">
 					<p>This is panel three.</p>

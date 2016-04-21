@@ -35,7 +35,7 @@ div.leftside {
 	display: inline-block;
 }
 div.rightside {
-	width: calc(100% - 316px);
+	width: calc(100% - 300px);
 	float: left;
 	display: inline-block;
 }
@@ -78,6 +78,18 @@ col.clientname {
 col.count {
 	width: 80px;
 }
+td.count, th.count {
+	width: 80px;
+}
+td.reqtitle, th.reqtitle {
+	text-align: left;
+	width: 280px;
+	min-width: 280px;
+}
+td.date, th.date {
+	width: 140px;
+	min-width: 120px;
+}
 table {
 	border-collapse: collapse;
 	/*width: 100%;*/
@@ -89,7 +101,7 @@ th, td {
 tbody tr:hover {
 	background-color: #272626;
 }
-tr th:nth-child(1), td:nth-child(1) {
+th:nth-child(1), td:nth-child(1) {
 	text-align: left;
 }
 #container {
