@@ -116,7 +116,7 @@ iwsApp.factory('clientOpenService', ['$http', function ($http) {
 
 iwsApp.factory('reqDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/req/';
-	var req = {id: ""};
+	var req = {};
 	var getdetails = function (req_id) {
 		return $http.get(baseurl + req_id).then(function (response) {
 			newreq = response.data.req;
@@ -132,9 +132,22 @@ iwsApp.factory('reqDetailService', ['$http', function ($http) {
 			return req;
 		});
 	};
+	var clearreq = function () {
+		req.id = "";
+		req.title = "";
+		req.desc = "";
+		req.ref_url = "";
+		req.prod_area = "";
+		req.date_cr = "";
+		req.date_up = "";
+		req.user_cr = "";
+		req.user_up = "";
+	}
+	clearreq();
 	return {
 		req: req,
-		getdetails: getdetails
+		getdetails: getdetails,
+		clearreq: clearreq
 	};
 }]);
 
@@ -186,11 +199,9 @@ iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService', 'reqDe
 iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	function ($scope, reqDetailService) {
 		$scope.req = reqDetailService.req;
-		/*
-		$scope.$on('req_select', function (event, req_id) {
-			reqDetailService.getdetails(req_id);
+		$scope.$on('client_select', function (event, client_id) {
+			reqDetailService.clearreq();
 		});
-		*/
 	}
 ]);
 
