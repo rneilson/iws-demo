@@ -10,34 +10,39 @@
 		<script type="text/javascript" src="webview.js"></script>
 		<title>IWS Webview Testbed</title>
 	</head>
-	<body>
-		<div id="main" ng-app="iws-webview">
+	<body ng-app="iws-webview">
+		<div id="main" ng-controller="ClientListController as clcon">
 			<div id="header" class="header">
-				<div class="noborder topright" ng-controller="AuthController">Logged in as <strong>{{status.username}}</strong></div>
+				<div class="noborder topleft"><strong>IWS Demo</strong></div>
+				<div class="noborder topright" ng-controller="AuthController as aucon">
+					Logged in as <strong>{{status.username}}</strong></div>
 				<div class="footer"></div>
 			</div>
 			<div id="sidebar" class="leftside noborder">
-				<div id="clientlist" ng-controller="ClientListController as clcon">
-					<table class="clienttable">
-						<colgroup>
-							<col class="clientname"></col>
-							<col class="count"></col>
-							<col class="count"></col>
-						</colgroup>
-						<thead>
-							<tr>
-								<th>Client Name</th><th>Open</th><th>Closed</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
-								<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
-							</tr>
-						</tbody>
-					</table>
+				<div id="clientlist" class="noborder">
+					<div class="clientheader">Client list</div>
+					<div class="clienttable">
+						<table>
+							<colgroup>
+								<col class="clientname"></col>
+								<col class="count"></col>
+								<col class="count"></col>
+							</colgroup>
+							<thead>
+								<tr>
+									<th>Client Name</th><th>Open</th><th>Closed</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
+									<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 				</div>
 				<div id="clientdetails" ng-controller="ClientDetailController as cdcon">
-					<strong>{{client.name}}</strong><br/>
+					<p><strong>{{client.name}}</strong></p>
 					<p>Contact name:<br/>{{client.con_name}}</p>
 					<p>Contact email:<br/>{{client.con_mail}}</p>
 					<p>Date added:<br/>{{client.date_add}}</p>

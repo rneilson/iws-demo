@@ -39,10 +39,21 @@ div.rightside {
 	float: left;
 	display: inline-block;
 }
+div.topleft {
+	float: left;
+	display: inline-block;
+}
 div.topright {
 	float: right;
 	display: inline-block;
 	text-align: right;
+}
+div.clientheader {
+	margin-bottom: 0px;
+	border-bottom: 0px;
+}
+div.clienttable {
+	margin-top: 0px;
 }
 div.footer {
 	clear: both;
@@ -59,7 +70,7 @@ div.tabnav {
 	display: inline-block;
 	border-width: 1px 1px 0px 0px;
 	margin: 0px;
-	padding: 6px;
+	/*padding: 6px;*/
 }
 div.tabnav:nth-child(1) {
 	border-width: 1px 1px 0px 1px;
@@ -114,7 +125,7 @@ td.user, th.user {
 	border: none;
 }
 #nav {
-	line-height: 24px;
+	/*line-height: 24px;*/
 	margin-bottom: 0px;
 	padding: 0px;
 	border-width: 0px 0px 1px 0px;
