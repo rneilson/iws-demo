@@ -122,14 +122,15 @@ iwsApp.controller('AuthController', ['$scope', 'authService',
 	}
 ]);
 
-iwsApp.controller('ClientListController', ['$scope', 'clientListService', 'clientDetailService', 'clientOpenService',
-	function ($scope, clientListService, clientDetailService, clientOpenService) {
+iwsApp.controller('ClientListController', ['$scope', 'clientListService',
+	function ($scope, clientListService) {
+		$scope.client_id = "";
 		clientListService.getclients().then(function (client_list) {
 			$scope.client_list = client_list;
 		});
 		this.selectclient = function (client_id) {
-			clientDetailService.getdetails(client_id);
-			clientOpenService.getopen(client_id);
+			$scope.client_id = client_id;
+			$scope.$broadcast('client_select', client_id);
 		};
 	}
 ]);
@@ -137,11 +138,17 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService', 'clien
 iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	function ($scope, clientDetailService) {
 		$scope.client = clientDetailService.client;
+		$scope.$on('client_select', function (event, client_id) {
+			clientDetailService.getdetails(client_id);
+		});
 	}
 ]);
 
 iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService',
 	function ($scope, clientOpenService) {
 		$scope.client = clientOpenService.client;
+		$scope.$on('client_select', function (event, client_id) {
+			clientOpenService.getopen(client_id);
+		});
 	}
 ]);
