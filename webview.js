@@ -108,9 +108,14 @@ iwsApp.factory('clientOpenService', ['$http', function ($http) {
 			return client;
 		});
 	}
+	var clearopen = function () {
+		client.id = "";
+		client.open_list = [];
+	}
 	return {
 		client: client,
-		getopen: getopen
+		getopen: getopen,
+		clearopen: clearopen
 	};
 }]);
 
@@ -187,7 +192,15 @@ iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService', 'reqDe
 	function ($scope, clientOpenService, reqDetailService) {
 		$scope.client = clientOpenService.client;
 		$scope.$on('client_select', function (event, client_id) {
+			if ($scope.tab == 'open') {
+				clientOpenService.getopen(client_id);
+			};
+		});
+		$scope.$on('select_open', function (event, client_id) {
 			clientOpenService.getopen(client_id);
+		});
+		$scope.$on('select_closed', function (event, client_id) {
+			clientOpenService.clearopen();
 		});
 		this.selectreq = function (req_id) {
 			$scope.req_id = req_id;
@@ -207,9 +220,14 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 
 iwsApp.controller('TabController', ['$scope', 
 	function ($scope) {
-		$scope.tab = 1;
-		this.select = function (tabnum) {
-			$scope.tab = tabnum;
+		events = {
+			open: 'select_open',
+			closed: 'select_closed'
+		};
+		$scope.tab = 'open';
+		this.select = function (seltab) {
+			$scope.tab = seltab;
+			$scope.$broadcast(events[seltab], $scope.client_id);
 		};
 	}
 ]);
