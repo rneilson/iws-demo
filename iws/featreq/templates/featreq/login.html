@@ -23,7 +23,8 @@
 
     {% if user.is_authenticated %}
       <p>Logged in as <strong>{{ user.get_username }}</strong></p>
-      <form action="{% url 'featreq-auth' %}?next={% url 'featreq-login' %}" method="post" id="login-form">{% csrf_token %}
+      <form action="{% url 'featreq-auth' %}{% if nexturl %}?next={{ nexturl }}{% endif %}" method="post" id="login-form">
+        {% csrf_token %}
         <div class="submit-row">
           <input type="hidden" name="action" value="logout" />
           <input type="hidden" name="username" value="{{ user.get_username }}" />
@@ -31,7 +32,8 @@
         </div>
       </form>
     {% else %}
-      <form action="{% url 'featreq-auth' %}{% if nexturl %}?next={{ nexturl }}{% endif %}" method="post" id="login-form">{% csrf_token %}
+      <form action="{% url 'featreq-auth' %}{% if nexturl %}?next={{ nexturl }}{% endif %}" method="post" id="login-form">
+        {% csrf_token %}
         <div class="form-row">
           <label class="required" for="id_username">Username:</label> <input id="id_username" maxlength="254" name="username" type="text" />
         </div>

@@ -113,8 +113,11 @@ def badrequest(request, errormsg, field=None):
         jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
         return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
 
-def forbidden(request, errormsg='Not authorized'):
-    '''Constructs 403 Forbidden response with given error message.'''
+def forbidden(request, errormsg='Not authorized', adderr=None):
+    '''Constructs 403 Forbidden response with given error message.
+    If given, adderr must be a dict of additional fields to append to the
+    error response.
+    '''
 
     if req_is_plain(request):
         errorstr = 'Status code: 403\nError message: {0}\n'.format(errormsg)
@@ -124,6 +127,8 @@ def forbidden(request, errormsg='Not authorized'):
         errordict = OrderedDict([
             ('status_code', 403),
             ('error', errormsg)])
+        if adderr:
+            errordict.update(adderr)
         return HttpResponseForbidden(json.dumps(errordict, indent=1)+'\n', content_type=json_contype)
 
 def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=None):
@@ -380,39 +385,6 @@ def makepretty(f):
 ## View funcs
 
 @makepretty
-def _basicresp(request):
-    # Check for 'next' field
-    nexturl = getfieldsfromget(request, empty=[], fieldsep=None, fieldname='next', allfieldname=None)
-
-    if nexturl:
-        return HttpResponseRedirect(nexturl[0])
-    else:
-        loggedin = request.user.is_authenticated()
-        username = request.user.get_username()
-        try:
-            fullname = request.user.get_full_name()
-        except AttributeError:
-            fullname = '[anonymous]'.format(username)
-        if not fullname:
-            fullname = '[user {0}]'.format(username)
-
-        # Check for text/plain
-        reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
-        if (reqfmt and reqfmt[0] == 'plain') or req_is_plain(request):
-            histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
-                loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
-            return HttpResponse(histr, content_type='text/plain')
-        else:
-            respdict = OrderedDict([
-                ('logged_in', loggedin),
-                ('username', username),
-                ('full_name', fullname),
-                ('csrf_token', csrf_get_token(request)),
-                ('session_expiry', request.session.get_expiry_age()),
-            ])
-            return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
-
-@makepretty
 @allow_methods(['GET'])
 def index(request):
     if not request.user.is_authenticated():
@@ -460,8 +432,48 @@ def weblogin(request):
 @allow_methods(['GET', 'POST'])
 def apiauth(request):
 
+    @makepretty
+    def _authresp(request):
+        # Check for 'next' field
+        nexturl = getfieldsfromget(request, empty=[], fieldsep=None, fieldname='next', allfieldname=None)
+
+        if nexturl:
+            if request.user.is_authenticated():
+                return HttpResponseRedirect(nexturl[0])
+            else:
+                if req_is_json(request):
+                    return forbidden(request, 'Not logged in or session expired', {'next': nexturl[0]})
+                else:
+                    redir = urlreverse('featreq-login') + '?next=' + nexturl[0]
+                    return HttpResponseRedirect(redir)
+        else:
+            loggedin = request.user.is_authenticated()
+            username = request.user.get_username()
+            try:
+                fullname = request.user.get_full_name()
+            except AttributeError:
+                fullname = '[anonymous]'.format(username)
+            if not fullname:
+                fullname = '[user {0}]'.format(username)
+
+            # Check for text/plain
+            reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
+            if (reqfmt and reqfmt[0] == 'plain') or req_is_plain(request):
+                histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
+                    loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
+                return HttpResponse(histr, content_type='text/plain')
+            else:
+                respdict = OrderedDict([
+                    ('logged_in', loggedin),
+                    ('username', username),
+                    ('full_name', fullname),
+                    ('csrf_token', csrf_get_token(request)),
+                    ('session_expiry', request.session.get_expiry_age()),
+                ])
+                return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
+
     if request.method == 'GET':
-        return _basicresp(request)
+        return _authresp(request)
 
     elif request.method == 'POST':
         # Get login args
@@ -486,7 +498,7 @@ def apiauth(request):
                     login(request, user)
                     request.session.set_expiry(SESSION_EXPIRY)
                     # TODO: return something directly?
-                    return _basicresp(request)
+                    return _authresp(request)
                 else:
                     # TODO: is this a security hole? Should we just return "Login failed"?
                     return forbidden(request, 'User {0} is disabled'.format(user.get_username()))
@@ -495,10 +507,11 @@ def apiauth(request):
         elif action == 'logout':
             # Make sure usernames (given and stored) match
             if postargs['username'] != request.user.get_username():
-                return badrequest(request, 'Given username does not match current user', 'username')
+                return forbidden(request, 'Given username does not match current user',
+                    {'username': postargs['username']})
             # Log out user
             logout(request)
-            return _basicresp(request)
+            return _authresp(request)
         else:
             return badrequest(request, 'Invalid action: {0}'.format(action), 'action')
 
