@@ -44,7 +44,7 @@
 				<div id="clientdetails" ng-controller="ClientDetailController as cdcon">
 					<p><strong>{{client.name}}</strong></p>
 					<p>Contact name:<br/>{{client.con_name}}</p>
-					<p>Contact email:<br/>{{client.con_mail}}</p>
+					<p>Contact email:<br/><a href="mailto:{{client.con_mail}}">{{client.con_mail}}</a></p>
 					<p>Date added:<br/>{{client.date_add}}</p>
 				</div>
 			</div>
@@ -65,7 +65,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr ng-repeat="oreq in client.open_list">
+							<tr ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
 								<td class="count">{{oreq.priority}}</td>
 								<td class="reqtitle">{{oreq.title}}</td>
 								<td class="date">{{oreq.date_tgt}}</td>
@@ -76,8 +76,13 @@
 					</table>
 				</div>
 				<div id="clientclosed" class="panel">
-					<p>This is panel three.</p>
-					<p><a href="#clientopen">Go to panel two.</a></p>
+					<p>Closed requests...</p>
+				</div>
+				<div id="reqdetails" ng-controller="ReqDetailController as rdcon">
+					<p><strong>{{req.title}}</strong></p>
+					<p>Product Area: {{req.prod_area}}</p>
+					<p>Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a></p>
+					<p>Description:<br/>{{req.desc}}</p>
 				</div>
 			</div>
 			<div id="footer", class="footer"></div>
