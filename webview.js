@@ -196,11 +196,13 @@ iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService', 'reqDe
 				clientOpenService.getopen(client_id);
 			};
 		});
-		$scope.$on('select_open', function (event, client_id) {
-			clientOpenService.getopen(client_id);
-		});
-		$scope.$on('select_closed', function (event, client_id) {
-			clientOpenService.clearopen();
+		$scope.$on('tab_select', function (event, seltab) {
+			if (seltab == 'open') {
+				clientOpenService.getopen($scope.client_id);
+			}
+			else {
+				clientOpenService.clearopen();
+			}
 		});
 		this.selectreq = function (req_id) {
 			$scope.req_id = req_id;
@@ -220,14 +222,10 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 
 iwsApp.controller('TabController', ['$scope', 
 	function ($scope) {
-		events = {
-			open: 'select_open',
-			closed: 'select_closed'
-		};
 		$scope.tab = 'open';
 		this.select = function (seltab) {
 			$scope.tab = seltab;
-			$scope.$broadcast(events[seltab], $scope.client_id);
+			$scope.$broadcast('tab_select', seltab);
 		};
 	}
 ]);
