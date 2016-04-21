@@ -54,16 +54,18 @@
 							<tr>
 								<th class="count">Priority</th>
 								<th class="reqtitle">Title</th>
-								<th class="date">Open Date</th>
 								<th class="date">Target Date</th>
+								<th class="date">Open Date</th>
+								<th class="user">Opened By</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr ng-repeat="oreq in client.open_list">
 								<td class="count">{{oreq.priority}}</td>
 								<td class="reqtitle">{{oreq.title}}</td>
-								<td class="date">{{oreq.opened_at}}</td>
 								<td class="date">{{oreq.date_tgt}}</td>
+								<td class="date">{{oreq.opened_at}}</td>
+								<td class="user">{{oreq.opened_by}}</td>
 							</tr>
 						</tbody>
 					</table>

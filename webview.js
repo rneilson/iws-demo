@@ -97,6 +97,7 @@ iwsApp.factory('clientOpenService', ['$http', function ($http) {
 					priority: oreq.priority,
 					date_tgt: new Date(oreq.date_tgt).toDateString(),
 					opened_at: new Date(oreq.opened_at).toDateString(),
+					opened_by: oreq.opened_by,
 					id: oreq.req.id,
 					title: oreq.req.title
 				});
