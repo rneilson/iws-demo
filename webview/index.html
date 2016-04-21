@@ -12,8 +12,12 @@
 	</head>
 	<body>
 		<div id="main" ng-app="iws-webview">
+			<div id="header" class="header">
+				<div class="noborder topright" ng-controller="AuthController">Logged in as <strong>{{status.username}}</strong></div>
+				<div class="footer"></div>
+			</div>
 			<div id="sidebar" class="leftside">
-				<div id="clientlist" class="noborder" ng-controller="ClientListController">
+				<div id="clientlist" class="noborder" ng-controller="ClientListController as clcon">
 					<table>
 						<colgroup>
 							<col class="clientname"></col>
@@ -26,7 +30,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr ng-repeat="client in client_list">
+							<tr ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
 								<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
 							</tr>
 						</tbody>
@@ -40,9 +44,11 @@
 					<a href="#clientclosed">Closed requests</a></div><div class="tabnav">
 					<a href="#">None</a></div>
 				</div>
-				<div id="clientdetails" class="panel">
-					<p>This is panel one.</p>
-					<p><a href="#clientopen">Go to panel two.</a></p>
+				<div id="clientdetails" class="panel" ng-controller="ClientDetailController as cdcon">
+					<strong>{{client.name}}</strong><br/>
+					Contact name: {{client.con_name}}<br/>
+					Contact email: {{client.con_mail}}<br/>
+					Date added: {{client.date_add}}
 				</div>
 				<div id="clientopen" class="panel">
 					<p>This is panel two.</p>

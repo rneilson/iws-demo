@@ -39,6 +39,11 @@ div.rightside {
 	float: left;
 	display: inline-block;
 }
+div.topright {
+	float: right;
+	display: inline-block;
+	text-align: right;
+}
 div.footer {
 	clear: both;
 	padding: 0px;
