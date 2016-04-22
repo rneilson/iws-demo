@@ -60,7 +60,7 @@ div.header {
 	background: #417690;
 	position: relative;
     color: #fff;
-    border-width: 0px;
+	border-color: #333;
 }
 div.header a {
     color: #fff;
