@@ -83,26 +83,23 @@ iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	};
 }]);
 
-iwsApp.factory('clientOpenService', ['$http', function ($http) {
+iwsApp.factory('reqListService', ['$http', function ($http) {
 	var baseurl = '/featreq/client/';
-	var suffix = '/open/?fields=id,title,prod_area';
-	var client = {}
+	var openurl = '/open/?fields=id,title,prod_area';
+	var closedurl = '/closed/?fields=id,title,prod_area';
 	var getopen = function (client_id) {
-		return $http.get(baseurl + client_id + suffix).then(function (response) {
-			newclient = response.data.client;
-			client.id = newclient.id;
-			var newlist = newclient.open_list;
-			if (newlist) {
-				newlist.sort(
+		return $http.get(baseurl + client_id + openurl).then(function (response) {
+			var open_list = response.data.client.open_list;
+			if (open_list) {
+				open_list.sort(
 					function (a, b) {
 						return a.priority - b.priority;
 					}
 				);
 			}
-			open_list = []
-			for (var i = 0; i < newlist.length; i++) {
-				oreq = newlist[i];
-				open_list.push({
+			for (var i = 0; i < open_list.length; i++) {
+				oreq = open_list[i];
+				open_list[i] = {
 					priority: oreq.priority,
 					date_tgt: new Date(oreq.date_tgt).toDateString(),
 					opened_at: new Date(oreq.opened_at).toDateString(),
@@ -110,57 +107,29 @@ iwsApp.factory('clientOpenService', ['$http', function ($http) {
 					id: oreq.req.id,
 					title: oreq.req.title,
 					prod_area: oreq.req.prod_area
-				});
+				};
 			};
-			client.open_list = open_list;
-			return client;
+			return open_list;
 		});
 	}
-	var clearopen = function () {
-		client.id = "";
-		client.open_list = [];
-	}
 	return {
-		client: client,
 		getopen: getopen,
-		clearopen: clearopen
 	};
 }]);
 
 iwsApp.factory('reqDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/req/';
-	var req = {};
 	var getdetails = function (req_id) {
+		// TODO: Get open/closed as well
 		return $http.get(baseurl + req_id).then(function (response) {
-			newreq = response.data.req;
-			req.id = newreq.id;
-			req.title = newreq.title;
-			req.desc = newreq.desc;
-			req.ref_url = newreq.ref_url;
-			req.prod_area = newreq.prod_area;
-			req.date_cr = new Date(newreq.date_cr).toDateString();
-			req.date_up = new Date(newreq.date_up).toDateString();
-			req.user_cr = newreq.user_cr;
-			req.user_up = newreq.user_up;
+			req = response.data.req;
+			req.date_cr = new Date(req.date_cr).toDateString();
+			req.date_up = new Date(req.date_up).toDateString();
 			return req;
 		});
 	};
-	var clearreq = function () {
-		req.id = "";
-		req.title = "";
-		req.desc = "";
-		req.ref_url = "";
-		req.prod_area = "";
-		req.date_cr = "";
-		req.date_up = "";
-		req.user_cr = "";
-		req.user_up = "";
-	}
-	clearreq();
 	return {
-		req: req,
 		getdetails: getdetails,
-		clearreq: clearreq
 	};
 }]);
 
@@ -199,45 +168,69 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	}
 ]);
 
-iwsApp.controller('ClientOpenController', ['$scope', 'clientOpenService', 'reqDetailService',
-	function ($scope, clientOpenService, reqDetailService) {
-		$scope.client = clientOpenService.client;
+iwsApp.controller('ReqListController', ['$scope', 'reqListService',
+	function ($scope, reqListService) {
+		$scope.client = {};
+		$scope.tab = 'open';
+		$scope.req_id = {
+			open: "",
+			closed: ""
+		};
 		$scope.$on('client_select', function (event, client_id) {
 			if ($scope.tab == 'open') {
-				clientOpenService.getopen(client_id);
-			};
-		});
-		$scope.$on('tab_select', function (event, seltab) {
-			if (seltab == 'open') {
-				clientOpenService.getopen($scope.client_id);
+				reqListService.getopen(client_id).then(
+					function (open_list) {
+						$scope.client.open_list = open_list;
+					}
+				);
 			}
-			else {
-				clientOpenService.clearopen();
+			else if ($scope.tab == 'closed') {
+				// TODO: closed list
 			}
 		});
+		this.selecttab = function (seltab) {
+			if ($scope.tab != seltab) {
+				$scope.tab = seltab;
+				if (seltab == 'open') {
+					reqListService.getopen($scope.client_id);
+				}
+				else if ($scope.tab == 'closed') {
+					// TODO: closed list
+				}
+				$scope.$broadcast('tab_select', seltab);
+			}
+		};
 		this.selectreq = function (req_id) {
-			$scope.req_id = req_id;
-			reqDetailService.getdetails(req_id);
+			if ($scope.req_id[$scope.tab] != req_id) {
+				$scope.req_id[$scope.tab] = req_id;
+				$scope.$broadcast('req_select', req_id);
+			}
 		};
 	}
 ]);
 
 iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	function ($scope, reqDetailService) {
-		$scope.req = reqDetailService.req;
+		$scope.req = {};
 		$scope.$on('client_select', function (event, client_id) {
-			reqDetailService.clearreq();
+			$scope.req = {};
 		});
-	}
-]);
-
-iwsApp.controller('TabController', ['$scope', 
-	function ($scope) {
-		$scope.tab = 'open';
-		this.select = function (seltab) {
-			$scope.tab = seltab;
-			$scope.$broadcast('tab_select', seltab);
-		};
+		$scope.$on('req_select', function (event, req_id) {
+			reqDetailService.getdetails(req_id).then(function(req) {
+				$scope.req = req;
+			});
+		});
+		$scope.$on('tab_select', function (event, seltab) {
+			req_id = $scope.req_id[seltab];
+			if (req_id) {
+				reqDetailService.getdetails(req_id).then(function(req) {
+					$scope.req = req;
+				});
+			}
+			else {
+				$scope.req = {};
+			}
+		});
 	}
 ]);
 

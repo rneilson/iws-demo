@@ -49,12 +49,12 @@
 					<p>Date added:<br/>{{client.date_add}}</p>
 				</div>
 			</div>
-			<div id="container" class="rightside" ng-controller="TabController as tabcon">
+			<div id="container" class="rightside" ng-controller="ReqListController as rlcon">
 				<div id="nav">
-					<div class="tabnav" ng-class="{selected: tab=='open'}" ng-click="tabcon.select('open')">Open requests
-					</div><div class="tabnav" ng-class="{selected: tab=='closed'}" ng-click="tabcon.select('closed')">Closed requests</div>
+					<div class="tabnav" ng-class="{selected: tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
+					</div><div class="tabnav" ng-class="{selected: tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>
 				</div>
-				<div id="clientopen" class="panel" ng-class="{open: tab=='open'}" ng-controller="ClientOpenController as cocon">
+				<div id="clientopen" class="panel" ng-class="{open: tab=='open'}">
 					<table class="opentable">
 						<thead>
 							<tr>
@@ -67,7 +67,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr ng-class="{selected: oreq.id == req_id}" ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
+							<tr ng-repeat="oreq in client.open_list" ng-class="{selected: oreq.id == req_id.open}" ng-click="rlcon.selectreq(oreq.id)">
 								<td class="count">{{oreq.priority}}</td>
 								<td class="reqtitle">{{oreq.title}}</td>
 								<td class="area">{{oreq.prod_area}}</td>
