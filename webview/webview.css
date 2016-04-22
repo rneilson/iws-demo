@@ -168,6 +168,9 @@ pre.desc {
 	padding: 0px;
 	border: none;
 }
+#header {
+	padding: 4px 8px;
+}
 #nav {
 	/*line-height: 24px;*/
 	margin-bottom: 0px;
@@ -177,7 +180,9 @@ pre.desc {
 	/*border-bottom: none;*/
 }
 #nav > .selected {
-    background: #fff;
+    color: #fff;
+	background: #417690;
+	border-color: #333;
 }
 #clientdetails {
 	/*margin-top: 8px;*/
