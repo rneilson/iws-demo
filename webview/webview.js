@@ -7,6 +7,8 @@ iwsApp.run()
 iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 	var authurl = '/featreq/auth/';
 	var status = {
+		refreshing: false,
+		login_msg: "",
 		logged_in: false,
 		username: "",
 		full_name: "",
@@ -18,6 +20,15 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 		status.username = response.data.username;
 		status.full_name = response.data.full_name;
 		status.csrf_token = response.data.csrf_token;
+		if (status.refreshing) {
+			status.refreshing = false;
+			if (status.logged_in) {
+				status.login_msg = "Logged in";
+			}
+			else {
+				status.login_msg = "Please log in"
+			}
+		}
 		// Update default POST header
 		$http.defaults.headers.post['X-CSRFToken'] = status.csrf_token;
 		return status;
@@ -27,6 +38,8 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 		return reason.data;
 	}
 	var refresh = function () {
+		status.refreshing = true;
+		status.login_msg = "Getting login status...";
 		return $http.get(authurl).then(update, failed);
 	};
 	var login = function (username, password) {
@@ -36,7 +49,11 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 			password: password
 		}).then(update, failed);
 	};
-	refresh();
+	var loginfailed = function (reason) {
+		status.login_msg = reason.data.error;
+		return;
+	}
+	// refresh();
 	return {
 		status: status,
 		refresh: refresh,
@@ -163,16 +180,24 @@ iwsApp.controller('AuthController', ['$scope', 'authService',
 			// $scope.username = status.username;
 		// });
 		$scope.status = authService.status;
+		authService.refresh();
 		// TODO: add refresh timer, login func
 	}
 ]);
 
 iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 	function ($scope, clientListService) {
+		var getclients = function () {
+			clientListService.getclients().then(function (client_list) {
+				$scope.client_list = client_list;
+				// $scope.client_id = client_list[0].id;
+			});
+		};
 		$scope.client_id = "";
-		clientListService.getclients().then(function (client_list) {
-			$scope.client_list = client_list;
-			// $scope.client_id = client_list[0].id;
+		$scope.$watch('status.logged_in', function(newValue, oldValue) {
+			if ((newValue) && (!oldValue)) {
+				getclients();
+			}
 		});
 		this.selectclient = function (client_id) {
 			if (client_id != $scope.client_id) {
