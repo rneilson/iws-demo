@@ -13,14 +13,14 @@
 	<body ng-app="iws-webview">
 		<div id="main" ng-controller="ClientListController as clcon">
 			<div id="header" class="header">
-				<div class="noborder topleft"><h1>IWS Demo</h1></div>
-				<div class="noborder topright" ng-controller="AuthController as aucon">
+				<div class="nopadding noborder topleft"><h1>IWS Demo</h1></div>
+				<div class="nopadding noborder topright" ng-controller="AuthController as aucon">
 					<strong>{{status.username}}</strong> / <a href="/featreq/login/?next=/webview/">Log out</a>
 				</div>
 				<div class="footer"></div>
 			</div>
-			<div id="sidebar" class="leftside noborder">
-				<div id="clientlist" class="noborder">
+			<div id="sidebar" class="leftside nopadding noborder">
+				<div id="clientlist" class="nopadding noborder">
 					<div class="header clientheader">Client list</div>
 					<div class="clienttable">
 						<table>
@@ -31,7 +31,7 @@
 							</colgroup>
 							<thead>
 								<tr>
-									<th>Client Name</th><th>Open</th><th>Closed</th>
+									<th>Name</th><th>Open</th><th>Closed</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -60,7 +60,7 @@
 							<tr>
 								<th class="count">Priority</th>
 								<th class="reqtitle">Title</th>
-								<th class="short">Product Area</th>
+								<th class="short">Area</th>
 								<th class="date">Target Date</th>
 								<th class="date">Open Date</th>
 								<th class="user">Opened By</th>
@@ -84,7 +84,7 @@
 							<tr>
 								<th class="short">Status</th>
 								<th class="reqtitle">Title</th>
-								<th class="short">Product Area</th>
+								<th class="short">Area</th>
 								<th class="date">Target Date</th>
 								<th class="date">Closed On</th>
 								<th class="user">Closed By</th>
@@ -107,12 +107,13 @@
 					</table>
 				</div>
 				<div id="reqdetails" ng-controller="ReqDetailController as rdcon" ng-class="{hidden: !req.id}">
-					<p><span class="sectitle">{{req.title}}</span></p>
-					<p>
-						Product Area: <strong>{{req.prod_area}}</strong><br/>
-						Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a>
-					</p>
-					<p>Description:<br/>{{req.desc}}</p>
+					<div class="noborder">
+						<p><span class="sectitle">{{req.title}}</span></p>
+						<p>
+							Product Area: <strong>{{req.prod_area}}</strong><br/>
+							Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a>
+						</p>Description:<br/><pre class="desc">{{req.desc}}</pre>
+					</div>
 				</div>
 			</div>
 			<div id="footer", class="footer"></div>

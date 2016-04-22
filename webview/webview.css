@@ -37,12 +37,12 @@ div {
 	margin: 4px;
 }
 div.leftside {
-	width: 300px;
+	width: 240px;
 	float: left;
 	display: inline-block;
 }
 div.rightside {
-	width: calc(100% - 300px);
+	width: calc(100% - 240px);
 	float: left;
 	display: inline-block;
 }
@@ -56,18 +56,11 @@ div.topright {
 	text-align: right;
 	line-height: 30px;
 }
-div.clientheader {
-	margin-bottom: 0px;
-	border-bottom: 0px;
-	border-color: #333;
-}
-div.clienttable {
-	margin-top: 0px;
-}
 div.header {
 	background: #417690;
 	position: relative;
     color: #fff;
+    border-width: 0px;
 }
 div.header a {
     color: #fff;
@@ -88,10 +81,21 @@ div.footer {
 	margin: 0px;
 	border: none;
 }
+div.clientheader {
+	margin-bottom: 0px;
+	border-bottom: 0px;
+	border-color: #333;
+	border-width: 1px;
+}
+div.clienttable {
+	margin-top: 0px;
+}
 div.noborder {
 	border-width: 0px;
-	padding: 0px;
 	margin: 0px;
+}
+div.nopadding {
+	padding: 0px;
 }
 div.tabnav {
 	display: inline-block;
@@ -144,13 +148,20 @@ td.reqtitle, th.reqtitle {
 }
 td.short, th.short {
 	text-align: left;
-	width: 90px;
+	width: 80px;
 }
 td.date, th.date {
 	width: 120px;
 }
 td.user, th.user {
-	width: 90px;
+	width: 80px;
+}
+pre.desc {
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    color: #333;
+    /*background: #ddd;*/
+	font-size: 10pt;
+	margin: 0px 0px 0.5em;
 }
 #container {
 	margin: 0px;
