@@ -65,20 +65,15 @@ iwsApp.factory('clientListService', ['authService', '$http', function (authServi
 
 iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/client/';
-	var client = {};
 	var getdetails = function (client_id) {
 		return $http.get(baseurl + client_id).then(function (response) {
-			newclient = response.data.client;
-			client.id = newclient.id;
-			client.name = newclient.name;
-			client.con_name = newclient.con_name;
-			client.con_mail = newclient.con_mail;
-			client.date_add = new Date(newclient.date_add).toDateString();
+			var client = response.data.client;
+			client.date_add = new Date(client.date_add);
+			client.date_add_str = client.date_add.toDateString();
 			return client;
 		});
 	};
 	return {
-		client: client,
 		getdetails: getdetails
 	};
 }]);
@@ -88,23 +83,18 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 	var openurl = '/open/?fields=id,title,prod_area';
 	var closedurl = '/closed/?fields=id,title,prod_area';
 	var getopen = function (client_id) {
+		// TODO: cache list
 		return $http.get(baseurl + client_id + openurl).then(function (response) {
 			var open_list = response.data.client.open_list;
 			if (open_list) {
-				for (var i = 0; i < open_list.length; i++) {
-					oreq = open_list[i];
-					open_list[i] = {
-						priority: oreq.priority,
-						date_tgt: new Date(oreq.date_tgt),
-						opened_at: new Date(oreq.opened_at),
-						opened_by: oreq.opened_by,
-						id: oreq.req.id,
-						title: oreq.req.title,
-						prod_area: oreq.req.prod_area
-					};
+				for (var i = open_list.length - 1; i >= 0; i--) {
+					// Replace list entry
+					open_list[i] = iwsUtil.oreqproc(open_list[i]);
 				};
 				open_list.sort(
 					function (a, b) {
+						// Sort by priority if both present, open date (descending) if neither
+						// Request with priority always sorted higher than one without
 						if (a.priority) {
 							if (b.priority) {
 								return a.priority - b.priority;
@@ -113,7 +103,9 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 						}
 						else {
 							if (b.priority) {return -1;}
-							else {return 0;}
+							else {
+								return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
+							}
 						}
 					}
 				);
@@ -122,27 +114,17 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 		});
 	}
 	var getclosed = function (client_id) {
+		// TODO: cache list
 		return $http.get(baseurl + client_id + closedurl).then(function (response) {
 			var closed_list = response.data.client.closed_list;
 			if (closed_list) {
-				for (var i = 0; i < closed_list.length; i++) {
-					creq = closed_list[i];
-					closed_list[i] = {
-						priority: creq.priority,
-						date_tgt: new Date(creq.date_tgt),
-						opened_at: new Date(creq.opened_at),
-						opened_by: creq.opened_by,
-						closed_at: new Date(creq.closed_at),
-						closed_by: creq.closed_by,
-						status: creq.status,
-						reason: creq.reason,
-						id: creq.req.id,
-						title: creq.req.title,
-						prod_area: creq.req.prod_area
-					};
+				for (var i = closed_list.length - 1; i >= 0; i--) {
+					// Replace list entry
+					closed_list[i] = iwsUtil.creqproc(closed_list[i]);
 				};
 				closed_list.sort(
 					function (a, b) {
+						// Sort by closed date, descending
 						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
 					}
 				);
@@ -162,8 +144,11 @@ iwsApp.factory('reqDetailService', ['$http', function ($http) {
 		// TODO: Get open/closed as well
 		return $http.get(baseurl + req_id).then(function (response) {
 			req = response.data.req;
-			req.date_cr = new Date(req.date_cr).toDateString();
-			req.date_up = new Date(req.date_up).toDateString();
+			// Process dates
+			req.date_cr = new Date(req.date_cr);
+			req.date_cr_str = req.date_cr.toDateString();
+			req.date_up = new Date(req.date_up);
+			req.date_up_str = req.date_up.toDateString();
 			return req;
 		});
 	};
@@ -200,9 +185,10 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	function ($scope, clientDetailService) {
-		$scope.client = clientDetailService.client;
 		$scope.$on('client_select', function (event, client_id) {
-			clientDetailService.getdetails(client_id);
+			clientDetailService.getdetails(client_id).then(function (client) {
+				$scope.client = client;
+			});
 		});
 	}
 ]);
@@ -244,13 +230,15 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 		this.selecttab = function (seltab) {
 			if ($scope.tab != seltab) {
 				$scope.tab = seltab;
-				if (seltab == 'open') {
-					// TODO: cache
-					getopen($scope.client_id);
-				}
-				else if ($scope.tab == 'closed') {
-					// TODO: cache
-					getclosed($scope.client_id);
+				if ($scope.client_id) {
+					if (seltab == 'open') {
+						// TODO: cache
+						getopen($scope.client_id);
+					}
+					else if ($scope.tab == 'closed') {
+						// TODO: cache
+						getclosed($scope.client_id);
+					}
 				}
 				$scope.$broadcast('tab_select', seltab);
 			}
@@ -289,3 +277,43 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
+/* Utility functions */
+
+// TODO: change to prototype instead?
+var iwsUtil = {
+	oreqproc: function oreqproc(oreq) {
+		// Process received data into new object
+		newreq = {};
+		newreq.priority = oreq.priority;
+		newreq.date_tgt = oreq.date_tgt ? new Date(oreq.date_tgt) : null;
+		newreq.date_tgt_str = newreq.date_tgt ? newreq.date_tgt.toDateString() : "";
+		newreq.opened_at = new Date(oreq.opened_at);
+		newreq.opened_at_str = newreq.opened_at ? newreq.opened_at.toDateString() : "";
+		newreq.opened_by = oreq.opened_by;
+		if (oreq.req) {
+			// TODO: add request processing?
+			newreq.req = oreq.req;
+		}
+		return newreq;
+	},
+	creqproc: function creqproc(creq) {
+		// Process received data into new object
+		newreq = {};
+		newreq.priority = creq.priority;
+		newreq.date_tgt = creq.date_tgt ? new Date(creq.date_tgt) : null;
+		newreq.date_tgt_str = newreq.date_tgt ? newreq.date_tgt.toDateString() : "";
+		newreq.opened_at = new Date(creq.opened_at);
+		newreq.opened_at_str = newreq.opened_at ? newreq.opened_at.toDateString() : "";
+		newreq.opened_by = creq.opened_by;
+		newreq.closed_at = new Date(creq.closed_at);
+		newreq.closed_at_str = newreq.closed_at ? newreq.closed_at.toDateString() : "";
+		newreq.closed_by = creq.closed_by;
+		newreq.status = creq.status;
+		newreq.reason = creq.reason;
+		if (creq.req) {
+			// TODO: add request processing?
+			newreq.req = creq.req;
+		}
+		return newreq;
+	}
+};
