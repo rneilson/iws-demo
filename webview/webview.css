@@ -136,18 +136,18 @@ col.count {
 	width: 80px;
 }
 td.count, th.count {
-	width: 80px;
+	width: 60px;
 }
 td.reqtitle, th.reqtitle {
 	text-align: left;
-	width: 200px;
+	width: 160px;
 }
-td.area, th.area {
+td.short, th.short {
 	text-align: left;
 	width: 90px;
 }
 td.date, th.date {
-	width: 130px;
+	width: 120px;
 }
 td.user, th.user {
 	width: 90px;
@@ -174,4 +174,8 @@ td.user, th.user {
 }
 .hidden {
 	display: none !important;
+}
+.sectitle {
+	text-decoration: underline;
+	font-weight: 700;
 }

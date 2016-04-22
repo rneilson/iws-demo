@@ -91,29 +91,68 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 		return $http.get(baseurl + client_id + openurl).then(function (response) {
 			var open_list = response.data.client.open_list;
 			if (open_list) {
+				for (var i = 0; i < open_list.length; i++) {
+					oreq = open_list[i];
+					open_list[i] = {
+						priority: oreq.priority,
+						date_tgt: new Date(oreq.date_tgt),
+						opened_at: new Date(oreq.opened_at),
+						opened_by: oreq.opened_by,
+						id: oreq.req.id,
+						title: oreq.req.title,
+						prod_area: oreq.req.prod_area
+					};
+				};
 				open_list.sort(
 					function (a, b) {
-						return a.priority - b.priority;
+						if (a.priority) {
+							if (b.priority) {
+								return a.priority - b.priority;
+							}
+							else {return 1;}
+						}
+						else {
+							if (b.priority) {return -1;}
+							else {return 0;}
+						}
 					}
 				);
 			}
-			for (var i = 0; i < open_list.length; i++) {
-				oreq = open_list[i];
-				open_list[i] = {
-					priority: oreq.priority,
-					date_tgt: new Date(oreq.date_tgt).toDateString(),
-					opened_at: new Date(oreq.opened_at).toDateString(),
-					opened_by: oreq.opened_by,
-					id: oreq.req.id,
-					title: oreq.req.title,
-					prod_area: oreq.req.prod_area
-				};
-			};
 			return open_list;
+		});
+	}
+	var getclosed = function (client_id) {
+		return $http.get(baseurl + client_id + closedurl).then(function (response) {
+			var closed_list = response.data.client.closed_list;
+			if (closed_list) {
+				for (var i = 0; i < closed_list.length; i++) {
+					creq = closed_list[i];
+					closed_list[i] = {
+						priority: creq.priority,
+						date_tgt: new Date(creq.date_tgt),
+						opened_at: new Date(creq.opened_at),
+						opened_by: creq.opened_by,
+						closed_at: new Date(creq.closed_at),
+						closed_by: creq.closed_by,
+						status: creq.status,
+						reason: creq.reason,
+						id: creq.req.id,
+						title: creq.req.title,
+						prod_area: creq.req.prod_area
+					};
+				};
+				closed_list.sort(
+					function (a, b) {
+						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
+					}
+				);
+			}
+			return closed_list;
 		});
 	}
 	return {
 		getopen: getopen,
+		getclosed: getclosed
 	};
 }]);
 
@@ -176,26 +215,42 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 			open: "",
 			closed: ""
 		};
+		var getopen = function (client_id) {
+			reqListService.getopen(client_id).then(
+				function (open_list) {
+					$scope.client.open_list = open_list;
+				}
+			);
+		};
+		var getclosed = function (client_id) {
+			reqListService.getclosed(client_id).then(
+				function (closed_list) {
+					$scope.client.closed_list = closed_list;
+				}
+			);
+		};
 		$scope.$on('client_select', function (event, client_id) {
+			$scope.req_id = {
+				open: "",
+				closed: ""
+			};
 			if ($scope.tab == 'open') {
-				reqListService.getopen(client_id).then(
-					function (open_list) {
-						$scope.client.open_list = open_list;
-					}
-				);
+				getopen(client_id);
 			}
 			else if ($scope.tab == 'closed') {
-				// TODO: closed list
+				getclosed(client_id);
 			}
 		});
 		this.selecttab = function (seltab) {
 			if ($scope.tab != seltab) {
 				$scope.tab = seltab;
 				if (seltab == 'open') {
-					reqListService.getopen($scope.client_id);
+					// TODO: cache
+					getopen($scope.client_id);
 				}
 				else if ($scope.tab == 'closed') {
-					// TODO: closed list
+					// TODO: cache
+					getclosed($scope.client_id);
 				}
 				$scope.$broadcast('tab_select', seltab);
 			}
