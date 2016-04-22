@@ -141,15 +141,16 @@ td.count, th.count {
 td.reqtitle, th.reqtitle {
 	text-align: left;
 	width: 200px;
-	/*min-width: 240px;*/
+}
+td.area, th.area {
+	text-align: left;
+	width: 90px;
 }
 td.date, th.date {
-	width: 140px;
-	/*min-width: 120px;*/
+	width: 130px;
 }
 td.user, th.user {
-	width: 100px;
-	/*min-width: 80px;*/
+	width: 90px;
 }
 #container {
 	margin: 0px;
@@ -168,7 +169,8 @@ td.user, th.user {
     background: #fff;
 }
 #clientdetails {
-	margin-top: 8px;
+	/*margin-top: 8px;*/
+	padding: 8px;
 }
 .hidden {
 	display: none !important;

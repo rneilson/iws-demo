@@ -60,6 +60,7 @@
 							<tr>
 								<th class="count">Priority</th>
 								<th class="reqtitle">Title</th>
+								<th class="area">Product Area</th>
 								<th class="date">Target Date</th>
 								<th class="date">Open Date</th>
 								<th class="user">Opened By</th>
@@ -69,6 +70,7 @@
 							<tr ng-class="{selected: oreq.id == req_id}" ng-repeat="oreq in client.open_list" ng-click="cocon.selectreq(oreq.id)">
 								<td class="count">{{oreq.priority}}</td>
 								<td class="reqtitle">{{oreq.title}}</td>
+								<td class="area">{{oreq.prod_area}}</td>
 								<td class="date">{{oreq.date_tgt}}</td>
 								<td class="date">{{oreq.opened_at}}</td>
 								<td class="user">{{oreq.opened_by}}</td>
