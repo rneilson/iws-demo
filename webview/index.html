@@ -11,17 +11,17 @@
 		<title>IWS Demo Webview</title>
 	</head>
 	<body ng-app="iws-webview">
-		<div id="outer" class="noborder nopadding" ng-controller="AuthController as aucon">
-			<div id="header" class="header">
+		<div id="outer" class="noborder nopadding">
+			<div id="header" class="header" ng-controller="HeaderController as hdcon">
 				<div class="nopadding noborder topleft"><h1>IWS Demo</h1></div>
 				<div class="nopadding noborder topright">
-					<span ng-class="{hidden: !status.logged_in}">
-						<strong>{{status.username}}</strong> / <a href="/featreq/login/?next=/webview/">Log out</a>
+					<span ng-class="{hidden: !hdcon.auth.logged_in}">
+						<strong>{{hdcon.auth.full_name}}</strong> / <a ng-click="hdcon.logout()">Log out</a>
 					</span>
 				</div>
 				<div class="footer"></div>
 			</div>
-			<div id="main" class="noborder nopadding" ng-class="{hidden: !status.logged_in}" ng-controller="ClientListController as clcon">
+			<div id="main" class="noborder nopadding" ng-class="{hidden: !clcon.logged_in}" ng-controller="ClientListController as clcon">
 				<div id="sidebar" class="leftside nopadding noborder">
 					<div id="clientlist" class="nopadding noborder">
 						<div class="header perchheader">Client list</div>
@@ -121,17 +121,24 @@
 				</div>
 				<div id="footer", class="footer"></div>
 			</div>
-			<div id="login" ng-class="{hidden: status.logged_in}">
+			<div id="login" ng-class="{hidden: lgcon.auth.logged_in}" ng-controller="LoginController as lgcon">
 				<div id="login-msg" class="header">
-					{{status.login_msg}}
+					{{lgcon.login_msg}}
 				</div>
-				<div id="login-form" ng-class="{hidden: (status.refreshing)}">
-					<div class="form-row">
-					  <label class="required" for="id_username">Username:</label> <input id="id_username" maxlength="254" name="username" type="text" />
-					</div>
-					<div class="form-row">
-					  <label class="required" for="id_password">Password:</label> <input id="id_password" name="password" type="password" />
-					</div>
+				<div id="login-form" ng-class="{hidden: !lgcon.login_req}">
+					<form name="lgcon.login_form" novalidate>
+						<div class="form-row">
+						  <label for="id_username">Username:
+						  </label><input id="id_username" maxlength="254" name="username" type="text" ng-model="lgcon.username" required/>
+						</div>
+						<div class="form-row">
+						  <label for="id_password">Password:
+						  </label><input id="id_password" name="password" type="password" ng-model="lgcon.password" required/>
+						</div>
+						<div class="submit-row">
+							<input type="submit" value="Log in" ng-click="lgcon.login()"/>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div>

@@ -194,13 +194,15 @@ pre.desc {
 	width: 300px;
 }
 #login .form-row {
+    padding: 4px 1.3em 4px 0;
+    border: 0px;
+    text-align: right;
+}
+#login .submit-row {
     padding-top: 4px;
     padding-bottom: 4px;
-    padding-left: auto;
-    padding-right: auto;
-    /*float: left;*/
-    /*width: 100%;*/
     border: 0px;
+    text-align: center;
 }
 #login .form-row label {
     padding: 0 0.5em;
@@ -208,11 +210,6 @@ pre.desc {
     font-size: 1em;
     /*clear: both;*/
     color: #333;
-}
-#login .form-row #id_username, #login .form-row #id_password {
-    /*clear: both;*/
-    padding: 4px;
-    /*width: 100%;*/
 }
 #login-msg {
 	text-align: center;

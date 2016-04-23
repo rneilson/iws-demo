@@ -7,58 +7,54 @@ iwsApp.run()
 iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 	var authurl = '/featreq/auth/';
 	var status = {
-		refreshing: false,
-		login_msg: "",
 		logged_in: false,
 		username: "",
 		full_name: "",
 		csrf_token: "",
 	};
-	var update = function (response) {
+
+	return {
+		status: status,
+		refresh: refresh,
+		login: login,
+		logout: logout
+	};
+
+	function refresh () {
+		return $http.get(authurl).then(update, failed);
+	}
+
+	function login (username, password) {
+		return $http.post(authurl, {
+			"action": "login",
+			"username": username,
+			"password": password
+		}).then(update, failed);
+	}
+
+	function logout () {
+		return $http.post(authurl, {
+			"action": "logout",
+			"username": status.username
+		}).then(update, failed);
+	}
+
+	function update (response) {
+		// TODO: emit login/logout events
 		// Update auth status
 		status.logged_in = response.data.logged_in;
 		status.username = response.data.username;
 		status.full_name = response.data.full_name;
 		status.csrf_token = response.data.csrf_token;
-		if (status.refreshing) {
-			status.refreshing = false;
-			if (status.logged_in) {
-				status.login_msg = "Logged in";
-			}
-			else {
-				status.login_msg = "Please log in"
-			}
-		}
 		// Update default POST header
 		$http.defaults.headers.post['X-CSRFToken'] = status.csrf_token;
 		return status;
 	}
-	var failed = function (reason) {
-		// TODO: show error message
-		return reason.data;
+
+	function failed (reason) {
+		// console.log(reason)
+		return $q.reject(reason.data);
 	}
-	var refresh = function () {
-		status.refreshing = true;
-		status.login_msg = "Getting login status...";
-		return $http.get(authurl).then(update, failed);
-	};
-	var login = function (username, password) {
-		return $http.post(authurl, {
-			action: "login",
-			username: username,
-			password: password
-		}).then(update, failed);
-	};
-	var loginfailed = function (reason) {
-		status.login_msg = reason.data.error;
-		return;
-	}
-	// refresh();
-	return {
-		status: status,
-		refresh: refresh,
-		login: login
-	};
 }]);
 
 iwsApp.factory('clientListService', ['authService', '$http', function (authService, $http) {
@@ -174,37 +170,114 @@ iwsApp.factory('reqDetailService', ['$http', function ($http) {
 	};
 }]);
 
-iwsApp.controller('AuthController', ['$scope', 'authService', 
-	function ($scope, authService) {
-		// authService.refresh().then(function(status) {
-			// $scope.username = status.username;
-		// });
-		$scope.status = authService.status;
-		authService.refresh();
-		// TODO: add refresh timer, login func
+iwsApp.controller('HeaderController', ['$rootScope', 'authService', 
+	function ($rootScope, authService) {
+		var vm = this;
+		vm.auth = authService.status;
+		// TODO: add refresh timer
+
+		function logout () {
+			authService.logout().then(
+				function (auth) {
+					$rootScope.$broadcast('logged_out', auth);
+				},
+				function (reason) {
+					console.log(reason);
+				}
+			);
+		}
+	}
+]);
+
+iwsApp.controller('LoginController', ['$rootScope', 'authService', 
+	function ($rootScope, authService) {
+
+		// Initial state
+		var vm = this;
+		vm.auth = authService.status;
+		vm.login_req = false;
+		vm.login_msg = "Retrieving login status...";
+		vm.username = "";
+		vm.password = "";
+		vm.login = login;
+
+		$rootScope.$on('logged_out', function (auth) {
+			logged_out();
+		});
+
+		// Get initial auth status
+		authService.refresh().then(function (auth) {
+			if (auth.logged_in) {
+				login_success(auth);
+			}
+			else {
+				logged_out();
+			}
+		});
+
+		function login_success (auth) {
+			vm.login_msg = "Logged in";
+			$rootScope.$broadcast('login_success', auth);
+		}
+
+		function logged_out () {
+			vm.login_req = true;
+			vm.login_msg = "Please log in";
+		}
+
+		function login () {
+			vm.login_req = false;
+			vm.login_msg = "Logging in...";
+			authService.login(vm.username, vm.password).then(
+				function (auth) {
+					if (auth.logged_in) {
+						vm.password = "";
+						login_success(auth);
+					}
+					else {
+						vm.password = "";
+						vm.login_req = true;
+						vm.login_msg = "Login failed";
+					}
+				},
+				function (reason) {
+					vm.password = "";
+					vm.login_req = true;
+					if (reason.error) {
+						vm.login_msg = reason.error;
+					}
+					else {
+						vm.login_msg = "Error logging in";
+					}
+				}
+			);
+		}
 	}
 ]);
 
 iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 	function ($scope, clientListService) {
-		var getclients = function () {
+
+		function getclients () {
 			clientListService.getclients().then(function (client_list) {
 				$scope.client_list = client_list;
 				// $scope.client_id = client_list[0].id;
 			});
 		};
-		$scope.client_id = "";
-		$scope.$watch('status.logged_in', function(newValue, oldValue) {
-			if ((newValue) && (!oldValue)) {
-				getclients();
-			}
-		});
-		this.selectclient = function (client_id) {
+
+		var vm = this;
+		vm.logged_in = false;
+		vm.selectclient = function (client_id) {
 			if (client_id != $scope.client_id) {
 				$scope.client_id = client_id;
 				$scope.$broadcast('client_select', client_id);
 			}
 		};
+		$scope.client_id = "";
+		$scope.$on('login_success', function(event, auth) {
+			vm.logged_in = true;
+			getclients();
+		});
 	}
 ]);
 
