@@ -64,9 +64,8 @@ del closedreq_byclient_fields['client_id']
 ## Shortcut funcs
 
 def req_is_json(request):
-    accept = [ acc.strip() for acc in request.META.get('HTTP_ACCEPT', '').split(',') ]
-    if json_contype in accept or \
-        request.META.get('CONTENT_TYPE', '').lower() == json_contype:
+    if json_contype in request.META.get('HTTP_ACCEPT', '').lower() or\
+        json_contype in request.META.get('CONTENT_TYPE', '').lower():
         return True
     else:
         return False
@@ -91,7 +90,7 @@ def getusername(request):
             username = unknown_user
     return username
 
-def badrequest(request, errormsg, field=None):
+def badrequest(request, errormsg, field=None, adderr=None):
     '''Constructs 400 Bad Request response with given error message.'''
 
     if req_is_plain(request):
@@ -109,7 +108,8 @@ def badrequest(request, errormsg, field=None):
         ])
         if field:
             errordict['field'] = str(field)
-            errordict.move_to_end('error')
+        if adderr:
+            errordict.update(adderr)
         jsonbytes = (json.dumps(errordict, indent=1) + '\n').encode('utf-8')
         return HttpResponseBadRequest(jsonbytes, content_type=json_contype)
 
@@ -153,7 +153,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
     caught will be re-raised as ValueError with the fieldname in the
     exception message.
     '''
-    if request.META['CONTENT_TYPE'].lower() == json_contype:
+    if json_contype in request.META.get('CONTENT_TYPE', '').lower():
         # Specific codepath for JSON, since we can decode into the form
         # of our own choosing
 
@@ -210,12 +210,12 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
                         try:
                             fv = [ int(v) for v in fv ]
                         except (ValueError, TypeError) as e:
-                            raise ValueError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
+                            raise TypeError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
                     else:
                         try:
                             fv = int(fv)
                         except (ValueError, TypeError) as e:
-                            raise ValueError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
+                            raise TypeError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
                     respdict[fn] = fv
 
         # Now we can return the final product
@@ -256,7 +256,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
                         try:
                             fv = [ int(v) for v in fv ]
                         except (ValueError, TypeError) as e:
-                            raise ValueError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
+                            raise TypeError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
                 else:
                     # Get the single item form
                     fv = request.POST.get(fn)
@@ -265,7 +265,7 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
                         try:
                             fv = int(fv)
                         except (ValueError, TypeError) as e:
-                            raise ValueError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
+                            raise TypeError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
                 # Add final form to response
                 respdict[fn] = fv
 
@@ -477,12 +477,21 @@ def apiauth(request):
 
     elif request.method == 'POST':
         # Get login args
-        postargs = getargsfrompost(
-            request,
-            fieldnames=('action', 'username', 'password'),
-            required={'action', 'username'}
-        )
+        try:
+            postargs = getargsfrompost(
+                request,
+                fieldnames=('action', 'username', 'password'),
+                required={'action', 'username'}
+            )
+        except ValueError as e:
+            if 'CONTENT_TYPE' in request.META:
+                adderr = {'content_type': request.META['CONTENT_TYPE']}
+            else:
+                adderr = None
+            return badrequest(request, e, adderr=adderr)
+
         action = postargs['action'].lower()
+
         if action == 'login':
             # Ensure password supplied
             if 'password' not in postargs:
