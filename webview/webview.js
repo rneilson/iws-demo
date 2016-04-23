@@ -53,11 +53,12 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 
 	function failed (reason) {
 		// console.log(reason)
-		return $q.reject(reason.data);
+		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		return $q.reject(msg);
 	}
 }]);
 
-iwsApp.factory('clientListService', ['authService', '$http', function (authService, $http) {
+iwsApp.factory('clientListService', ['$http', function ($http) {
 	var clienturl = '/featreq/client/';
 	return {
 		getclients: getclients
@@ -249,12 +250,7 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 				function (reason) {
 					vm.password = "";
 					vm.login_req = true;
-					if (reason.error) {
-						vm.login_msg = reason.error;
-					}
-					else {
-						vm.login_msg = "Error logging in";
-					}
+					vm.login_msg = reason.error || reason || "Error logging in";
 				}
 			);
 		}
