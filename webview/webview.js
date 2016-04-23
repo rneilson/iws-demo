@@ -266,9 +266,9 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		var vm = this;
 		vm.logged_in = false;
+		vm.client_list = [];
 		vm.selectclient = selectclient;
 
-		$scope.client_list = [];
 		$scope.client_id = "";
 
 		$scope.$on('login_success', function(event, auth) {
@@ -278,7 +278,7 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		$scope.$on('logged_out', function (event, auth) {
 			vm.logged_in = false;
-			$scope.client_list = [];
+			vm.client_list = [];
 			$scope.client_id = "";
 		});
 
@@ -291,7 +291,7 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		function getclients () {
 			clientListService.getclients().then(function (client_list) {
-				$scope.client_list = client_list;
+				vm.client_list = client_list;
 			});
 		}
 

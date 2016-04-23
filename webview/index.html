@@ -38,7 +38,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr ng-class="{selected: client.id == client_id}" ng-repeat="client in client_list" ng-click="clcon.selectclient(client.id)">
+									<tr ng-class="{selected: client.id == client_id}" ng-repeat="client in clcon.client_list" ng-click="clcon.selectclient(client.id)">
 										<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
 									</tr>
 								</tbody>
