@@ -56,6 +56,9 @@ div.topright {
 	text-align: right;
 	line-height: 30px;
 }
+div.topright a:hover {
+	cursor: pointer;
+}
 div.header {
 	background: #417690;
 	position: relative;

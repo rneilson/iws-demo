@@ -21,8 +21,8 @@
 				</div>
 				<div class="footer"></div>
 			</div>
-			<div id="main" class="noborder nopadding" ng-class="{hidden: !clcon.logged_in}" ng-controller="ClientListController as clcon">
-				<div id="sidebar" class="leftside nopadding noborder">
+			<div id="main" class="noborder nopadding" ng-controller="ClientListController as clcon">
+				<div id="sidebar" class="leftside nopadding noborder" ng-if="clcon.logged_in">
 					<div id="clientlist" class="nopadding noborder">
 						<div class="header perchheader">Client list</div>
 						<div class="clienttable">
@@ -52,7 +52,7 @@
 						<p>Date added:<br/>{{client.date_add_str}}</p>
 					</div>
 				</div>
-				<div id="container" class="rightside" ng-controller="ReqListController as rlcon">
+				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
 					<div id="nav">
 						<div class="tabnav" ng-class="{selected: tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
 						</div><div class="tabnav" ng-class="{selected: tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>

@@ -174,6 +174,7 @@ iwsApp.controller('HeaderController', ['$rootScope', 'authService',
 	function ($rootScope, authService) {
 		var vm = this;
 		vm.auth = authService.status;
+		vm.logout = logout;
 		// TODO: add refresh timer
 
 		function logout () {
@@ -277,6 +278,11 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 		$scope.$on('login_success', function(event, auth) {
 			vm.logged_in = true;
 			getclients();
+		});
+		$scope.$on('logged_out', function (event, auth) {
+			vm.logged_in = false;
+			$scope.client_list = [];
+			$scope.client_id = "";
 		});
 	}
 ]);
