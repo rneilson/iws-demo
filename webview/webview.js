@@ -59,7 +59,11 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('clientListService', ['authService', '$http', function (authService, $http) {
 	var clienturl = '/featreq/client/';
-	var getclients = function () {
+	return {
+		getclients: getclients
+	};
+
+	function getclients () {
 		return $http.get(clienturl).then(function (response) {
 			client_list = response.data.client_list;
 			if (client_list) {
@@ -70,32 +74,35 @@ iwsApp.factory('clientListService', ['authService', '$http', function (authServi
 			}
 			return client_list;
 		});
-	};
-	return {
-		getclients: getclients
-	};
+	}
 }]);
 
 iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/client/';
-	var getdetails = function (client_id) {
+	return {
+		getdetails: getdetails
+	};
+
+	function getdetails (client_id) {
 		return $http.get(baseurl + client_id).then(function (response) {
 			var client = response.data.client;
 			client.date_add = new Date(client.date_add);
 			client.date_add_str = client.date_add.toDateString();
 			return client;
 		});
-	};
-	return {
-		getdetails: getdetails
-	};
+	}
 }]);
 
 iwsApp.factory('reqListService', ['$http', function ($http) {
 	var baseurl = '/featreq/client/';
 	var openurl = '/open/?fields=id,title,prod_area';
 	var closedurl = '/closed/?fields=id,title,prod_area';
-	var getopen = function (client_id) {
+	return {
+		getopen: getopen,
+		getclosed: getclosed
+	};
+
+	function getopen (client_id) {
 		// TODO: cache list
 		return $http.get(baseurl + client_id + openurl).then(function (response) {
 			var open_list = response.data.client.open_list;
@@ -126,7 +133,8 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 			return open_list;
 		});
 	}
-	var getclosed = function (client_id) {
+
+	function getclosed (client_id) {
 		// TODO: cache list
 		return $http.get(baseurl + client_id + closedurl).then(function (response) {
 			var closed_list = response.data.client.closed_list;
@@ -145,15 +153,15 @@ iwsApp.factory('reqListService', ['$http', function ($http) {
 			return closed_list;
 		});
 	}
-	return {
-		getopen: getopen,
-		getclosed: getclosed
-	};
 }]);
 
 iwsApp.factory('reqDetailService', ['$http', function ($http) {
 	var baseurl = '/featreq/req/';
-	var getdetails = function (req_id) {
+	return {
+		getdetails: getdetails,
+	};
+
+	function getdetails (req_id) {
 		// TODO: Get open/closed as well
 		return $http.get(baseurl + req_id).then(function (response) {
 			req = response.data.req;
@@ -164,10 +172,7 @@ iwsApp.factory('reqDetailService', ['$http', function ($http) {
 			req.date_up_str = req.date_up.toDateString();
 			return req;
 		});
-	};
-	return {
-		getdetails: getdetails,
-	};
+	}
 }]);
 
 iwsApp.controller('HeaderController', ['$rootScope', 'authService', 
@@ -259,123 +264,150 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 	function ($scope, clientListService) {
 
-		function getclients () {
-			clientListService.getclients().then(function (client_list) {
-				$scope.client_list = client_list;
-				// $scope.client_id = client_list[0].id;
-			});
-		};
-
 		var vm = this;
 		vm.logged_in = false;
-		vm.selectclient = function (client_id) {
-			if (client_id != $scope.client_id) {
-				$scope.client_id = client_id;
-				$scope.$broadcast('client_select', client_id);
-			}
-		};
+		vm.selectclient = selectclient;
+
+		$scope.client_list = [];
 		$scope.client_id = "";
+
 		$scope.$on('login_success', function(event, auth) {
 			vm.logged_in = true;
 			getclients();
 		});
+
 		$scope.$on('logged_out', function (event, auth) {
 			vm.logged_in = false;
 			$scope.client_list = [];
 			$scope.client_id = "";
 		});
+
+		function selectclient (client_id) {
+			if (client_id != $scope.client_id) {
+				$scope.client_id = client_id;
+				$scope.$broadcast('client_select', client_id);
+			}
+		}
+
+		function getclients () {
+			clientListService.getclients().then(function (client_list) {
+				$scope.client_list = client_list;
+			});
+		}
+
 	}
+
 ]);
 
 iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	function ($scope, clientDetailService) {
+		var vm = this;
+		vm.client = {};
+
 		$scope.$on('client_select', function (event, client_id) {
-			clientDetailService.getdetails(client_id).then(function (client) {
-				$scope.client = client;
-			});
+			if (client_id) {
+				clientDetailService.getdetails(client_id).then(function (client) {
+					vm.client = client;
+				});
+			}
 		});
 	}
 ]);
 
 iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 	function ($scope, reqListService) {
-		$scope.client = {};
-		$scope.tab = 'open';
-		$scope.req_id = {
+		var vm = this;
+		vm.open_list = null;
+		vm.closed_list = null;
+		vm.tab = 'open';
+		vm.req = {
 			open: "",
 			closed: ""
 		};
-		var getopen = function (client_id) {
-			reqListService.getopen(client_id).then(
-				function (open_list) {
-					$scope.client.open_list = open_list;
-				}
-			);
-		};
-		var getclosed = function (client_id) {
-			reqListService.getclosed(client_id).then(
-				function (closed_list) {
-					$scope.client.closed_list = closed_list;
-				}
-			);
-		};
+		vm.selecttab = selecttab;
+		vm.selectreq = selectreq;
+
 		$scope.$on('client_select', function (event, client_id) {
-			$scope.req_id = {
+			vm.req_id = {
 				open: "",
 				closed: ""
 			};
-			if ($scope.tab == 'open') {
+			vm.open_list = null;
+			vm.closed_list = null;
+			if (vm.tab == 'open') {
 				getopen(client_id);
 			}
-			else if ($scope.tab == 'closed') {
+			else if (vm.tab == 'closed') {
 				getclosed(client_id);
 			}
 		});
-		this.selecttab = function (seltab) {
-			if ($scope.tab != seltab) {
-				$scope.tab = seltab;
+
+		function selecttab (seltab) {
+			if (vm.tab != seltab) {
+				vm.tab = seltab;
 				if ($scope.client_id) {
 					if (seltab == 'open') {
 						// TODO: cache
 						getopen($scope.client_id);
 					}
-					else if ($scope.tab == 'closed') {
+					else if (vm.tab == 'closed') {
 						// TODO: cache
 						getclosed($scope.client_id);
 					}
+					// Notify of new selection
+					selectreq(vm.req_id[seltab]);
 				}
-				$scope.$broadcast('tab_select', seltab);
+				// $scope.$broadcast('tab_select', seltab);
 			}
-		};
-		this.selectreq = function (req_id) {
-			if ($scope.req_id[$scope.tab] != req_id) {
-				$scope.req_id[$scope.tab] = req_id;
-				$scope.$broadcast('req_select', req_id);
+		}
+
+		function selectreq (req_id) {
+			if (vm.req_id[vm.tab] != req_id) {
+				vm.req_id[vm.tab] = req_id;
 			}
-		};
+			$scope.$broadcast('req_select', req_id);
+		}
+
+		function getopen (client_id) {
+			if (!vm.open_list) {
+				reqListService.getopen(client_id).then(
+					function (open_list) {
+						vm.open_list = open_list;
+					}
+				);
+			}
+		}
+
+		function getclosed (client_id) {
+			if (!vm.closed_list) {
+				reqListService.getclosed(client_id).then(
+					function (closed_list) {
+						vm.closed_list = closed_list;
+					}
+				);
+			}
+		}
+
 	}
 ]);
 
 iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	function ($scope, reqDetailService) {
-		$scope.req = {};
+		var vm = this;
+		vm.req = {};
+
 		$scope.$on('client_select', function (event, client_id) {
-			$scope.req = {};
+			vm.req = {};
 		});
+
 		$scope.$on('req_select', function (event, req_id) {
-			reqDetailService.getdetails(req_id).then(function(req) {
-				$scope.req = req;
-			});
-		});
-		$scope.$on('tab_select', function (event, seltab) {
-			req_id = $scope.req_id[seltab];
-			if (req_id) {
-				reqDetailService.getdetails(req_id).then(function(req) {
-					$scope.req = req;
-				});
+			if (!req_id) {
+				vm.req = {};
 			}
-			else {
-				$scope.req = {};
+			else if (req_id != vm.req.id) {
+				reqDetailService.getdetails(req_id).then(function(req) {
+					vm.req = req;
+				});
 			}
 		});
 	}

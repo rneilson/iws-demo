@@ -46,18 +46,18 @@
 						</div>
 					</div>
 					<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !client_id}">
-						<p><span class="sectitle">{{client.name}}</span></p>
-						<p>Contact name:<br/>{{client.con_name}}</p>
-						<p>Contact email:<br/><a href="mailto:{{client.con_mail}}">{{client.con_mail}}</a></p>
-						<p>Date added:<br/>{{client.date_add_str}}</p>
+						<p><span class="sectitle">{{cdcon.client.name}}</span></p>
+						<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
+						<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
+						<p>Date added:<br/>{{cdcon.client.date_add_str}}</p>
 					</div>
 				</div>
 				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
 					<div id="nav">
-						<div class="tabnav" ng-class="{selected: tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
-						</div><div class="tabnav" ng-class="{selected: tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>
+						<div class="tabnav" ng-class="{selected: rlcon.tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
+						</div><div class="tabnav" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>
 					</div>
-					<div id="clientopen" class="panel" ng-class="{open: tab=='open'}">
+					<div id="clientopen" class="panel" ng-class="{open: rlcon.tab == 'open'}">
 						<table>
 							<thead>
 								<tr>
@@ -70,7 +70,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="oreq in client.open_list" ng-class="{selected: oreq.req.id == req_id.open}" ng-click="rlcon.selectreq(oreq.req.id)">
+								<tr ng-repeat="oreq in rlcon.open_list" ng-class="{selected: oreq.req.id == rlcon.req_id.open}" ng-click="rlcon.selectreq(oreq.req.id)">
 									<td class="count">{{oreq.priority}}</td>
 									<td class="reqtitle">{{oreq.req.title}}</td>
 									<td class="short">{{oreq.req.prod_area}}</td>
@@ -81,7 +81,7 @@
 							</tbody>
 						</table>
 					</div>
-					<div id="clientclosed" class="panel" ng-class="{open: tab=='closed'}">
+					<div id="clientclosed" class="panel" ng-class="{open: rlcon.tab == 'closed'}">
 						<table>
 							<thead>
 								<tr>
@@ -96,7 +96,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="creq in client.closed_list" ng-class="{selected: creq.req.id == req_id.closed}" ng-click="rlcon.selectreq(creq.req.id)">
+								<tr ng-repeat="creq in rlcon.closed_list" ng-class="{selected: creq.req.id == rlcon.req_id.closed}" ng-click="rlcon.selectreq(creq.req.id)">
 									<td class="short">{{creq.status}}</td>
 									<td class="reqtitle">{{creq.req.title}}</td>
 									<td class="short">{{creq.req.prod_area}}</td>
@@ -109,13 +109,13 @@
 							</tbody>
 						</table>
 					</div>
-					<div id="reqdetails" ng-controller="ReqDetailController as rdcon" ng-class="{hidden: !req.id}">
+					<div id="reqdetails" ng-controller="ReqDetailController as rdcon" ng-class="{hidden: !rdcon.req.id}">
 						<div class="noborder">
-							<p><span class="sectitle">{{req.title}}</span></p>
+							<p><span class="sectitle">{{rdcon.req.title}}</span></p>
 							<p>
-								Product Area: <strong>{{req.prod_area}}</strong><br/>
-								Reference: <a href="{{req.ref_url}}">{{req.ref_url}}</a>
-							</p>Description:<br/><pre class="desc">{{req.desc}}</pre>
+								Product Area: <strong>{{rdcon.req.prod_area}}</strong><br/>
+								Reference: <a href="{{rdcon.req.ref_url}}">{{rdcon.req.ref_url}}</a>
+							</p>Description:<br/><pre class="desc">{{rdcon.req.desc}}</pre>
 						</div>
 					</div>
 				</div>
