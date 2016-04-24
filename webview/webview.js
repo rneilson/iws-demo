@@ -88,7 +88,6 @@ iwsApp.factory('clientDetailService', ['$http', function ($http) {
 		return $http.get(baseurl + client_id).then(function (response) {
 			var client = response.data.client;
 			client.date_add = new Date(client.date_add);
-			client.date_add_str = client.date_add.toDateString();
 			return client;
 		});
 	}
@@ -168,9 +167,7 @@ iwsApp.factory('reqDetailService', ['$http', function ($http) {
 			req = response.data.req;
 			// Process dates
 			req.date_cr = new Date(req.date_cr);
-			req.date_cr_str = req.date_cr.toDateString();
 			req.date_up = new Date(req.date_up);
-			req.date_up_str = req.date_up.toDateString();
 			return req;
 		});
 	}
@@ -353,7 +350,6 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 					// Notify of new selection
 					selectreq(vm.req_id[seltab]);
 				}
-				// $scope.$broadcast('tab_select', seltab);
 			}
 		}
 
@@ -418,9 +414,7 @@ var iwsUtil = {
 		newreq = {};
 		newreq.priority = oreq.priority;
 		newreq.date_tgt = oreq.date_tgt ? new Date(oreq.date_tgt) : null;
-		newreq.date_tgt_str = newreq.date_tgt ? newreq.date_tgt.toDateString() : "";
 		newreq.opened_at = new Date(oreq.opened_at);
-		newreq.opened_at_str = newreq.opened_at ? newreq.opened_at.toDateString() : "";
 		newreq.opened_by = oreq.opened_by;
 		if (oreq.req) {
 			// TODO: add request processing?
@@ -433,12 +427,9 @@ var iwsUtil = {
 		newreq = {};
 		newreq.priority = creq.priority;
 		newreq.date_tgt = creq.date_tgt ? new Date(creq.date_tgt) : null;
-		newreq.date_tgt_str = newreq.date_tgt ? newreq.date_tgt.toDateString() : "";
 		newreq.opened_at = new Date(creq.opened_at);
-		newreq.opened_at_str = newreq.opened_at ? newreq.opened_at.toDateString() : "";
 		newreq.opened_by = creq.opened_by;
 		newreq.closed_at = new Date(creq.closed_at);
-		newreq.closed_at_str = newreq.closed_at ? newreq.closed_at.toDateString() : "";
 		newreq.closed_by = creq.closed_by;
 		newreq.status = creq.status;
 		newreq.reason = creq.reason;

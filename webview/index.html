@@ -49,7 +49,7 @@
 						<p><span class="sectitle">{{cdcon.client.name}}</span></p>
 						<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
 						<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
-						<p>Date added:<br/>{{cdcon.client.date_add_str}}</p>
+						<p>Date added:<br/>{{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
 					</div>
 				</div>
 				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
@@ -74,8 +74,8 @@
 									<td class="count">{{oreq.priority}}</td>
 									<td class="reqtitle">{{oreq.req.title}}</td>
 									<td class="short">{{oreq.req.prod_area}}</td>
-									<td class="date">{{oreq.date_tgt_str}}</td>
-									<td class="date">{{oreq.opened_at_str}}</td>
+									<td class="date">{{oreq.date_tgt | date:'EEE dd MMM yy'}}</td>
+									<td class="date">{{oreq.opened_at | date:'EEE dd MMM yy'}}</td>
 									<td class="user">{{oreq.opened_by}}</td>
 								</tr>
 							</tbody>
@@ -100,10 +100,10 @@
 									<td class="short">{{creq.status}}</td>
 									<td class="reqtitle">{{creq.req.title}}</td>
 									<td class="short">{{creq.req.prod_area}}</td>
-									<td class="date">{{creq.date_tgt_str}}</td>
-									<td class="date">{{creq.closed_at_str}}</td>
+									<td class="date">{{creq.date_tgt | date:'EEE dd MMM yy'}}</td>
+									<td class="date">{{creq.closed_at | date:'EEE dd MMM yy'}}</td>
 									<td class="user">{{creq.closed_by}}</td>
-									<td class="date">{{creq.opened_at_str}}</td>
+									<td class="date">{{creq.opened_at | date:'EEE dd MMM yy'}}</td>
 									<td class="user">{{creq.opened_by}}</td>
 								</tr>
 							</tbody>

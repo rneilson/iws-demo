@@ -151,10 +151,10 @@ td.reqtitle, th.reqtitle {
 }
 td.short, th.short {
 	text-align: left;
-	width: 80px;
+	width: 70px;
 }
 td.date, th.date {
-	width: 120px;
+	width: 100px;
 }
 td.user, th.user {
 	width: 80px;
