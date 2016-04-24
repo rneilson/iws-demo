@@ -93,13 +93,15 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 
 iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/client/';
-	var upfields = ['con_mail', 'con_name', 'name'];
+	var fields = ['con_mail', 'con_name', 'name'];
 	var client = iwsUtil.emptyobj();
 
 	return {
 		client: client,
 		getdetails: getdetails,
-		updateclient: updateclient
+		updateclient: updateclient,
+		addclient: addclient,
+		emptyclient: emptyclient
 	};
 
 	function getdetails (client_id) {
@@ -113,32 +115,58 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 
 	function updateclient (update) {
 		// Get changed fields
-		upcli = {action: 'update'};
-		changed = false;
-		for (var i = upfields.length - 1; i >= 0; i--) {
-			field = upfields[i];
-			if (client[field] != update[field]) {
+		var upcli = {action: 'update'};
+		var changed = false;
+		for (var i = fields.length - 1; i >= 0; i--) {
+			var field = fields[i];
+			if ((iwsUtil.hasprop(update, field)) && (update[field] != client[field])) {
 				upcli[field] = update[field];
 				changed = true;
 			}
 		}
 		if (changed) {
-			return $http.post(baseurl + client.id, upcli).then(
-				function (response) {
-					angular.copy(response.data.client, client)
-					return client;
-				},
-				function (reason) {
-					var msg = reason.data || {status_code: reason.status, error: reason.statusText};
-					return $q.reject(msg);
-				}
-			);
+			return $http.post(baseurl + client.id, upcli)
+				.then(updatesuccess, updateerror);
 		}
 		else {
 			// TODO: return client regardless?
 			return $q.when(null);
 		}
+	}
 
+	function addclient (newcli) {
+		var addcli = {action: 'create'};
+		for (var i = fields.length - 1; i >= 0; i--) {
+			var field = fields[i];
+			if ((iwsUtil.hasprop(newcli, field)) && newcli[field]) {
+				addcli[field] = newcli[field];
+			}
+		}
+		if (!addcli.name) {
+			return $q.reject("Name required");
+		}
+		else {
+			return $http.post(baseurl, addcli)
+				.then(updatesuccess, updateerror);
+		}
+	}
+
+	function emptyclient () {
+		var newcli = iwsUtil.emptyobj();
+		for (var i = fields.length - 1; i >= 0; i--) {
+			newcli[fields[i]] = '';
+		}
+		return newcli;
+	}
+
+	function updatesuccess (response) {
+		angular.copy(response.data.client, client)
+		return client;
+	}
+
+	function updateerror (reason) {
+		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		return $q.reject(msg);
 	}
 }]);
 
@@ -413,37 +441,51 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 			}
 		});
 
-		function emptyclient () {
-			return Object.null
-		}
-
 		function edit (mode) {
 			vm.edit_mode = mode;
 			if (mode == 'update') {
 				angular.copy(vm.client, vm.edit_cli);
 			}
-			else {
-				vm.edit_cli = iwsUtil.emptyobj();
-			}
 		}
 
-		function update (mode) {
+		function update () {
 			if (vm.edit_form.$dirty) {
 				if (vm.edit_form.$valid) {
-					vm.edit_msg = 'Updating...';
-					vm.edit_err = '';
-					clientDetailService.updateclient(vm.edit_cli).then(
-						function (client) {
-							close();
-							// Emit so client list can be updated
-							// TODO: send to service instead?
-							$scope.$emit('client_updated', client);
-						},
-						function (reason) {
-							vm.edit_msg = '';
-							vm.edit_err = reason.error || reason || 'Update failed';
-						}
-					);
+					if (vm.edit_mode == 'update') {
+						vm.edit_msg = 'Updating...';
+						vm.edit_err = '';
+						clientDetailService.updateclient(vm.edit_cli).then(
+							function (client) {
+								close();
+								// Emit so client list can be updated
+								// TODO: send to service instead?
+								$scope.$emit('client_updated', client);
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Update failed';
+							}
+						);
+					}
+					else if (vm.edit_mode == 'create') {
+						vm.edit_msg = 'Creating...';
+						vm.edit_err = '';
+						clientDetailService.addclient(vm.edit_cli).then(
+							function (client) {
+								close();
+								// Emit so client list can be updated
+								// TODO: send to service instead?
+								$scope.$emit('client_updated', client);
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Creation failed';
+							}
+						);
+					}
+				}
+				else {
+					vm.edit_err = 'Please correct the error(s) above';
 				}
 			}
 			else {
@@ -455,7 +497,7 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 			vm.edit_mode = '';
 			vm.edit_msg = '';
 			vm.edit_err = '';
-			vm.edit_cli = iwsUtil.emptyobj();
+			vm.edit_cli = clientDetailService.emptyclient();
 		}
 	}
 ]);
@@ -567,5 +609,8 @@ var iwsUtil = {
 	},
 	emptyobj: function emptyobj() {
 		return Object.create(null);
+	},
+	hasprop: function hasprop(obj, propname) {
+		return Object.prototype.hasOwnProperty.call(obj, propname);
 	}
 };

@@ -119,10 +119,6 @@ div.open {
 	margin-top: 0px;
 	border-top: none;
 }
-div.error {
-	background-color: #ff9999;
-	color: #333;
-}
 table {
 	border-collapse: collapse;
 	/*width: 100%;*/
@@ -261,4 +257,15 @@ input.ng-dirty.ng-invalid:focus {
 	text-decoration: underline;
 	font-weight: 700;
 	/*line-height: 20px;*/
+}
+.error {
+	background-color: #ff9999;
+	color: #333;
+	text-align: center;
+}
+span.error {
+	padding-right: 4px;
+	padding-left: 4px;
+	color: #CC0000;
+	background-color: initial;
 }

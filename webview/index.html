@@ -53,26 +53,35 @@
 							<p>Date added: {{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
 							<div class="button-row">
 								<input ng-click="cdcon.edit('update')" type="button" value="Edit" />
+								<input ng-click="cdcon.edit('create')" type="button" value="New" />
 							</div>
 						</div>
 						<div class="noborder nopadding" ng-if="cdcon.edit_mode">
 							<form name="cdcon.edit_form" novalidate>
 								<div class="form-row">
-									<label>Client name:<br/><input ng-model="cdcon.edit_cli.name" name="name" type="text" required /></label>
+									<label>Client name: <span class="error" ng-class="{hidden: !cdcon.edit_form.name.$error.required}">Required</span><br/>
+									<input ng-model="cdcon.edit_cli.name" name="name" type="text" required /></label>
 								</div>
 								<div class="form-row">
-									<label>Contact name:<br/><input ng-model="cdcon.edit_cli.con_name" name="con_name" type="text" /></label>
+									<label>Contact name:<br/>
+									<input ng-model="cdcon.edit_cli.con_name" name="con_name" type="text" /></label>
 								</div>
 								<div class="form-row">
-									<label>Contact email:<br/><input ng-model="cdcon.edit_cli.con_mail" name="con_mail" type="email" /></label>
+									<label>Contact email: <span class="error" ng-class="{hidden: !cdcon.edit_form.con_mail.$error.email}">Invalid</span><br/>
+									<input ng-model="cdcon.edit_cli.con_mail" name="con_mail" type="email" /></label>
 								</div>
 								<div class="button-row">
-									<input ng-click="cdcon.update('update')" type="button" value="Save" ng-disabled="!cdcon.edit_form.$valid"/>
+									<!--
+									<input ng-click="cdcon.update()" type="button" value="Save" ng-disabled="!cdcon.edit_form.$valid" />
+									-->
+									<input ng-click="cdcon.update()" type="button" value="Save" />
 									<input ng-click="cdcon.close()" type="button" value="Cancel" />
 								</div>
 								<div class="noborder" ng-class="{hidden: !cdcon.edit_msg}">{{cdcon.edit_msg}}</div>
 								<div class="noborder error" ng-class="{hidden: !cdcon.edit_err}">{{cdcon.edit_err}}</div>
-								<div class="noborder error" ng-class="{hidden: cdcon.edit_form.$valid}">Please correct the error(s) above</div>
+								<!--
+								<div class="noborder error" ng-class="{hidden: (cdcon.edit_form.$pristine || cdcon.edit_form.$valid)}">Please correct the error(s) above</div>
+								-->
 							</form>
 						</div>
 					</div>
