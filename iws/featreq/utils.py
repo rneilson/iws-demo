@@ -28,7 +28,7 @@ def validuuid(uid, version=4):
 
 # Datetime string conversion
 # Uses same format as Django internal, except without subsecond resolution
-DATETIMEFMT = '%Y-%m-%dT%H:%M:%S'
+DATETIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 DATEONLYFMT = '%Y-%m-%d'
 
 def approxnow():
@@ -37,13 +37,13 @@ def approxnow():
 
 def approxnowfmt():
     '''Returns present datetime without microseconds as string,
-    formatted as '%Y-%m-%dT%H:%M:%S''
+    formatted as '%Y-%m-%dT%H:%M:%SZ''
     '''
     return approxnow().strftime(DATETIMEFMT)
 
 def approxdatefmt(date_val):
     '''Returns date_val without microseconds as string,
-    formatted as '%Y-%m-%dT%H:%M:%S'.
+    formatted as '%Y-%m-%dT%H:%M:%SZ'.
     Returns None if date_val is not a datetime instance.
     '''
     if isinstance(date_val, datetime.datetime):
@@ -58,7 +58,7 @@ def checkdatetgt(date_tgt):
     date_tgt is None (or any other value evaluating to False).
 
     date_tgt can be a specific datetime object, a timedelta object, or 
-    a datetime string in the format '%Y-%m-%dT%H:%M:%S' or '%Y-%m-%d'.
+    a datetime string in the format '%Y-%m-%dT%H:%M:%SZ' or '%Y-%m-%d'.
     Invalid datetimes will raise ValueError. Types other than the above
     will raise TypeError.
     '''

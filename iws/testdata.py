@@ -5,6 +5,7 @@ import datetime, time, json, getpass, argparse
 from collections import OrderedDict
 from django.test import Client
 from django.test.utils import override_settings
+from .utils import approxdatefmt
 
 # Defaults/globals
 
@@ -214,7 +215,7 @@ def buildtestdata(client):
         if toopen:
             sys.stderr.write('Opening {0} requests for client id {1}\n'.format(len(toopen), clid))
             for req_id, dt in zip(toopen, range(0, len(toopen))):
-                dtgt = (basedt + datetime.timedelta(days=dt)).strftime('%Y-%m-%d')
+                dtgt = approxdatefmt(basedt + datetime.timedelta(days=dt))
                 reqargs = {
                     'action': 'open',
                     'req_id': req_id,
