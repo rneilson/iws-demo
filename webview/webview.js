@@ -60,7 +60,13 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('clientListService', ['$http', function ($http) {
 	var clienturl = '/featreq/client/';
+	var client = {
+		list: [],
+		id: ""
+	};
+
 	return {
+		client: client,
 		getclients: getclients
 	};
 
@@ -73,6 +79,7 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 						return a.name.localeCompare(b.name);
 				});
 			}
+			client.list = client_list;
 			return client_list;
 		});
 	}
@@ -93,65 +100,123 @@ iwsApp.factory('clientDetailService', ['$http', function ($http) {
 	}
 }]);
 
-iwsApp.factory('reqListService', ['$http', function ($http) {
+iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/client/';
 	var openurl = '/open/?fields=id,title,prod_area';
 	var closedurl = '/closed/?fields=id,title,prod_area';
+	var client = {
+		id: "",
+		open_list: null,
+		closed_list: null
+	};
 	return {
+		client: client,
 		getopen: getopen,
 		getclosed: getclosed
 	};
 
 	function getopen (client_id) {
-		// TODO: cache list
-		return $http.get(baseurl + client_id + openurl).then(function (response) {
-			var open_list = response.data.client.open_list;
-			if (open_list) {
-				for (var i = open_list.length - 1; i >= 0; i--) {
-					// Replace list entry
-					open_list[i] = iwsUtil.oreqproc(open_list[i]);
-				};
-				open_list.sort(
-					function (a, b) {
-						// Sort by priority if both present, open date (descending) if neither
-						// Request with priority always sorted higher than one without
-						if (a.priority) {
-							if (b.priority) {
-								return a.priority - b.priority;
-							}
-							else {return 1;}
-						}
-						else {
-							if (b.priority) {return -1;}
-							else {
-								return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
-							}
-						}
-					}
-				);
+		if (client_id) {
+
+			if ((client_id == client.id) && (client.open_list !== null)) {
+				// Already have list, return (resolved) promise
+				return $q.when(client.open_list);
 			}
-			return open_list;
-		});
+
+			if (client_id != client.id) {
+				// Set new client id
+				client.id = client_id;
+				// Clear closed list from old client
+				client.closed_list = null;
+			}
+
+			// Get (promise of) list from server
+			// TODO: cache list?
+			return $http.get(baseurl + client_id + openurl).then(function (response) {
+				var open_list = response.data.client.open_list;
+				if (open_list) {
+					for (var i = open_list.length - 1; i >= 0; i--) {
+						// Replace list entry
+						open_list[i] = iwsUtil.oreqproc(open_list[i]);
+					};
+					open_list.sort(
+						function (a, b) {
+							// Sort by priority if both present, open date (descending) if neither
+							// Request with priority always sorted higher than one without
+							if (a.priority) {
+								if (b.priority) {
+									return a.priority - b.priority;
+								}
+								else {return 1;}
+							}
+							else {
+								if (b.priority) {return -1;}
+								else {
+									return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
+								}
+							}
+						}
+					);
+				}
+				client.open_list = open_list;
+				return open_list;
+			});
+		}
+		else {
+			// Set new (empty) client id
+			client.id = client_id;
+			// Clear lists
+			client.open_list = null;
+			client.closed_list = null;
+			// Return (resolved) promise of empty list
+			return $q.when(client.open_list);
+		}
 	}
 
 	function getclosed (client_id) {
-		// TODO: cache list
-		return $http.get(baseurl + client_id + closedurl).then(function (response) {
-			var closed_list = response.data.client.closed_list;
-			if (closed_list) {
-				for (var i = closed_list.length - 1; i >= 0; i--) {
-					// Replace list entry
-					closed_list[i] = iwsUtil.creqproc(closed_list[i]);
-				};
-				closed_list.sort(
-					function (a, b) {
-						// Sort by closed date, descending
-						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
-					}
-				);
+		if (client_id) {
+
+			if ((client_id == client.id) && (client.closed_list !== null)) {
+				// Already have list, return (resolved) promise
+				return $q.when(client.closed_list);
 			}
-			return closed_list;
-		});
+
+			if (client_id != client.id) {
+				// Set new client id
+				client.id = client_id;
+				// Clear closed list from old client
+				client.open_list = null;
+			}
+
+			// Get (promise of) list from server
+			// TODO: cache list?
+			return $http.get(baseurl + client_id + closedurl).then(function (response) {
+				var closed_list = response.data.client.closed_list;
+				if (closed_list) {
+					for (var i = closed_list.length - 1; i >= 0; i--) {
+						// Replace list entry
+						closed_list[i] = iwsUtil.creqproc(closed_list[i]);
+					};
+					closed_list.sort(
+						function (a, b) {
+							// Sort by closed date, descending
+							return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
+						}
+					);
+				}
+				client.closed_list = closed_list;
+				return closed_list;
+			});
+		}
+		else {
+			// Set new (empty) client id
+			client.id = client_id;
+			// Clear lists
+			client.open_list = null;
+			client.closed_list = null;
+			// Return (resolved) promise of empty list
+			return $q.when(client.closed_list);
+		}
 	}
 }]);
 
@@ -259,14 +324,14 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		var vm = this;
 		vm.logged_in = false;
-		vm.client_list = [];
+		vm.client = clientListService.client;
 		vm.selectclient = selectclient;
 
-		$scope.client_id = "";
+		// $scope.client_id = "";
 
 		$scope.$on('login_success', function(event, auth) {
 			vm.logged_in = true;
-			getclients();
+			clientListService.getclients();
 		});
 
 		$scope.$on('logged_out', function (event, auth) {
@@ -276,24 +341,16 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 		});
 
 		function selectclient (client_id) {
-			if (client_id != $scope.client_id) {
-				$scope.client_id = client_id;
+			if (client_id != vm.client.id) {
+				vm.client.id = client_id;
 				$scope.$broadcast('client_select', client_id);
 			}
 		}
-
-		function getclients () {
-			clientListService.getclients().then(function (client_list) {
-				vm.client_list = client_list;
-			});
-		}
-
 	}
-
 ]);
 
-iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
-	function ($scope, clientDetailService) {
+iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService', 'clientListService',
+	function ($scope, clientDetailService, clientListService) {
 		var vm = this;
 		vm.client = {};
 
@@ -317,67 +374,42 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 			open: "",
 			closed: ""
 		};
+		vm.client = reqListService.client;
 		vm.selecttab = selecttab;
 		vm.selectreq = selectreq;
 
 		$scope.$on('client_select', function (event, client_id) {
-			vm.req_id = {
-				open: "",
-				closed: ""
-			};
-			vm.open_list = null;
-			vm.closed_list = null;
+			vm.req.open = "";
+			vm.req.closed = "";
 			if (vm.tab == 'open') {
-				getopen(client_id);
+				reqListService.getopen(client_id);
 			}
 			else if (vm.tab == 'closed') {
-				getclosed(client_id);
+				reqListService.getclosed(client_id);
 			}
 		});
 
 		function selecttab (seltab) {
 			if (vm.tab != seltab) {
 				vm.tab = seltab;
-				if ($scope.client_id) {
+				if (vm.client.id) {
 					if (seltab == 'open') {
-						// TODO: cache
-						getopen($scope.client_id);
+						reqListService.getopen(vm.client.id);
 					}
 					else if (vm.tab == 'closed') {
-						// TODO: cache
-						getclosed($scope.client_id);
+						reqListService.getclosed(vm.client.id);
 					}
 					// Notify of new selection
-					selectreq(vm.req_id[seltab]);
+					selectreq(vm.req[seltab]);
 				}
 			}
 		}
 
 		function selectreq (req_id) {
-			if (vm.req_id[vm.tab] != req_id) {
-				vm.req_id[vm.tab] = req_id;
+			if (vm.req[vm.tab] != req_id) {
+				vm.req[vm.tab] = req_id;
 			}
 			$scope.$broadcast('req_select', req_id);
-		}
-
-		function getopen (client_id) {
-			if (!vm.open_list) {
-				reqListService.getopen(client_id).then(
-					function (open_list) {
-						vm.open_list = open_list;
-					}
-				);
-			}
-		}
-
-		function getclosed (client_id) {
-			if (!vm.closed_list) {
-				reqListService.getclosed(client_id).then(
-					function (closed_list) {
-						vm.closed_list = closed_list;
-					}
-				);
-			}
 		}
 
 	}

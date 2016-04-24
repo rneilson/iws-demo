@@ -38,14 +38,14 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr ng-class="{selected: client.id == client_id}" ng-repeat="client in clcon.client_list" ng-click="clcon.selectclient(client.id)">
-										<td>{{client.name}}</td><td>{{client.open_count}}</td><td>{{client.closed_count}}</td>
+									<tr ng-class="{selected: cli.id == clcon.client.id}" ng-repeat="cli in clcon.client.list" ng-click="clcon.selectclient(cli.id)">
+										<td>{{cli.name}}</td><td>{{cli.open_count}}</td><td>{{cli.closed_count}}</td>
 									</tr>
 								</tbody>
 							</table>
 						</div>
 					</div>
-					<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !client_id}">
+					<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !cdcon.client.id}">
 						<p><span class="sectitle">{{cdcon.client.name}}</span></p>
 						<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
 						<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
@@ -70,7 +70,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="oreq in rlcon.open_list" ng-class="{selected: oreq.req.id == rlcon.req_id.open}" ng-click="rlcon.selectreq(oreq.req.id)">
+								<tr ng-repeat="oreq in rlcon.client.open_list" ng-class="{selected: oreq.req.id == rlcon.req.open}" ng-click="rlcon.selectreq(oreq.req.id)">
 									<td class="count">{{oreq.priority}}</td>
 									<td class="reqtitle">{{oreq.req.title}}</td>
 									<td class="short">{{oreq.req.prod_area}}</td>
@@ -96,7 +96,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="creq in rlcon.closed_list" ng-class="{selected: creq.req.id == rlcon.req_id.closed}" ng-click="rlcon.selectreq(creq.req.id)">
+								<tr ng-repeat="creq in rlcon.client.closed_list" ng-class="{selected: creq.req.id == rlcon.req.closed}" ng-click="rlcon.selectreq(creq.req.id)">
 									<td class="short">{{creq.status}}</td>
 									<td class="reqtitle">{{creq.req.title}}</td>
 									<td class="short">{{creq.req.prod_area}}</td>
