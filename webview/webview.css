@@ -37,12 +37,12 @@ div {
 	margin: 4px;
 }
 div.leftside {
-	width: 240px;
+	width: 280px;
 	float: left;
 	display: inline-block;
 }
 div.rightside {
-	width: calc(100% - 240px);
+	width: calc(100% - 280px);
 	float: left;
 	display: inline-block;
 }
@@ -106,8 +106,9 @@ div.tabnav {
 	margin: 0px;
 	background-color: #c0c0c0;
 	/*padding: 6px;*/
+	cursor: pointer;
 }
-div.tabnav:nth-child(1) {
+div.tabnav:first-child {
 	border-width: 1px 1px 0px 1px;
 }
 div.panel {
@@ -117,6 +118,10 @@ div.open {
 	display: block;
 	margin-top: 0px;
 	border-top: none;
+}
+div.error {
+	background-color: #ff9999;
+	color: #333;
 }
 table {
 	border-collapse: collapse;
@@ -128,6 +133,7 @@ th, td {
 }
 tbody tr:hover {
 	background-color: #c0c0c0;
+	cursor: pointer;
 }
 tbody tr.selected {
     color: #fff;
@@ -166,6 +172,22 @@ pre.desc {
 	font-size: 10pt;
 	margin: 0px 0px 0.5em;
 }
+input {
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    color: #333;
+	font-size: 10pt;
+	/*-webkit-appearance: none;*/
+	/*-moz-appearance: none;*/
+}
+input.ng-dirty.ng-invalid {
+	border: 1px solid #CC0000;
+	padding: 2px 1px;
+}
+input.ng-dirty.ng-invalid:focus {
+	box-shadow: 0 0 2px 0px #CC0000;
+	outline-color: #CC0000;
+	/*outline-width: 1px;*/
+}
 #container {
 	margin: 0px;
 	padding: 0px;
@@ -190,6 +212,16 @@ pre.desc {
 #clientdetails {
 	/*margin-top: 8px;*/
 	padding: 8px;
+}
+#clientdetails .form-row {
+    padding: 4px 1.5em 4px 0;
+    margin: 0px 0px 4px;
+    border: 0px;
+}
+#clientdetails .button-row {
+    padding: 4px 1.5em 4px 0;
+    margin: 4px 0px;
+    border: 0px;
 }
 #login {
 	margin: auto;
@@ -228,4 +260,5 @@ pre.desc {
 .sectitle {
 	text-decoration: underline;
 	font-weight: 700;
+	/*line-height: 20px;*/
 }

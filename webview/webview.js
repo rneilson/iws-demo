@@ -91,18 +91,54 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 	}
 }]);
 
-iwsApp.factory('clientDetailService', ['$http', function ($http) {
+iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/client/';
+	var upfields = ['con_mail', 'con_name', 'name'];
+	var client = iwsUtil.emptyobj();
+
 	return {
-		getdetails: getdetails
+		client: client,
+		getdetails: getdetails,
+		updateclient: updateclient
 	};
 
 	function getdetails (client_id) {
 		return $http.get(baseurl + client_id).then(function (response) {
-			var client = response.data.client;
-			client.date_add = new Date(client.date_add);
+			var newclient = response.data.client;
+			newclient.date_add = new Date(newclient.date_add);
+			angular.copy(newclient, client)
 			return client;
 		});
+	}
+
+	function updateclient (update) {
+		// Get changed fields
+		upcli = {action: 'update'};
+		changed = false;
+		for (var i = upfields.length - 1; i >= 0; i--) {
+			field = upfields[i];
+			if (client[field] != update[field]) {
+				upcli[field] = update[field];
+				changed = true;
+			}
+		}
+		if (changed) {
+			return $http.post(baseurl + client.id, upcli).then(
+				function (response) {
+					angular.copy(response.data.client, client)
+					return client;
+				},
+				function (reason) {
+					var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+					return $q.reject(msg);
+				}
+			);
+		}
+		else {
+			// TODO: return client regardless?
+			return $q.when(null);
+		}
+
 	}
 }]);
 
@@ -343,6 +379,15 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 			clientListService.clearclients();
 		});
 
+		$scope.$on('client_updated', function (event, client) {
+			if (client) {
+				clientListService.getclients();
+				if (client.id != vm.clients.id) {
+					selectclient(client.id);
+				}
+			}
+		});
+
 		function selectclient (client_id) {
 			if (client_id != vm.clients.id) {
 				vm.clients.id = client_id;
@@ -352,26 +397,72 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 	}
 ]);
 
-iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService', 'clientListService',
-	function ($scope, clientDetailService, clientListService) {
+iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
+	function ($scope, clientDetailService) {
 		var vm = this;
-		vm.client = {};
+		vm.client = clientDetailService.client;
+		close(); // Shortcut to init edit* props
+		vm.edit = edit;
+		vm.update = update;
+		vm.close = close;
 
 		$scope.$on('client_select', function (event, client_id) {
 			if (client_id) {
-				clientDetailService.getdetails(client_id).then(function (client) {
-					vm.client = client;
-				});
+				close();
+				clientDetailService.getdetails(client_id);
 			}
 		});
+
+		function emptyclient () {
+			return Object.null
+		}
+
+		function edit (mode) {
+			vm.edit_mode = mode;
+			if (mode == 'update') {
+				angular.copy(vm.client, vm.edit_cli);
+			}
+			else {
+				vm.edit_cli = iwsUtil.emptyobj();
+			}
+		}
+
+		function update (mode) {
+			if (vm.edit_form.$dirty) {
+				if (vm.edit_form.$valid) {
+					vm.edit_msg = 'Updating...';
+					vm.edit_err = '';
+					clientDetailService.updateclient(vm.edit_cli).then(
+						function (client) {
+							close();
+							// Emit so client list can be updated
+							// TODO: send to service instead?
+							$scope.$emit('client_updated', client);
+						},
+						function (reason) {
+							vm.edit_msg = '';
+							vm.edit_err = reason.error || reason || 'Update failed';
+						}
+					);
+				}
+			}
+			else {
+				close();
+			}
+		}
+
+		function close () {
+			vm.edit_mode = '';
+			vm.edit_msg = '';
+			vm.edit_err = '';
+			vm.edit_cli = iwsUtil.emptyobj();
+		}
 	}
 ]);
 
 iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 	function ($scope, reqListService) {
 		var vm = this;
-		vm.open_list = null;
-		vm.closed_list = null;
 		vm.tab = 'open';
 		vm.req = {
 			open: "",
@@ -473,5 +564,8 @@ var iwsUtil = {
 			newreq.req = creq.req;
 		}
 		return newreq;
+	},
+	emptyobj: function emptyobj() {
+		return Object.create(null);
 	}
 };

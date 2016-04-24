@@ -46,10 +46,35 @@
 						</div>
 					</div>
 					<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !cdcon.client.id}">
-						<p><span class="sectitle">{{cdcon.client.name}}</span></p>
-						<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
-						<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
-						<p>Date added:<br/>{{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
+						<div class="noborder nopadding" ng-class="{hidden: cdcon.edit_mode}">
+							<p><span class="sectitle">{{cdcon.client.name}}</span></p>
+							<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
+							<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
+							<p>Date added: {{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
+							<div class="button-row">
+								<input ng-click="cdcon.edit('update')" type="button" value="Edit" />
+							</div>
+						</div>
+						<div class="noborder nopadding" ng-if="cdcon.edit_mode">
+							<form name="cdcon.edit_form" novalidate>
+								<div class="form-row">
+									<label>Client name:<br/><input ng-model="cdcon.edit_cli.name" name="name" type="text" required /></label>
+								</div>
+								<div class="form-row">
+									<label>Contact name:<br/><input ng-model="cdcon.edit_cli.con_name" name="con_name" type="text" /></label>
+								</div>
+								<div class="form-row">
+									<label>Contact email:<br/><input ng-model="cdcon.edit_cli.con_mail" name="con_mail" type="email" /></label>
+								</div>
+								<div class="button-row">
+									<input ng-click="cdcon.update('update')" type="button" value="Save" ng-disabled="!cdcon.edit_form.$valid"/>
+									<input ng-click="cdcon.close()" type="button" value="Cancel" />
+								</div>
+								<div class="noborder" ng-class="{hidden: !cdcon.edit_msg}">{{cdcon.edit_msg}}</div>
+								<div class="noborder error" ng-class="{hidden: !cdcon.edit_err}">{{cdcon.edit_err}}</div>
+								<div class="noborder error" ng-class="{hidden: cdcon.edit_form.$valid}">Please correct the error(s) above</div>
+							</form>
+						</div>
 					</div>
 				</div>
 				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
