@@ -60,14 +60,15 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('clientListService', ['$http', function ($http) {
 	var clienturl = '/featreq/client/';
-	var client = {
+	var clients = {
 		list: [],
 		id: ""
 	};
 
 	return {
-		client: client,
-		getclients: getclients
+		clients: clients,
+		getclients: getclients,
+		clearclients: clearclients
 	};
 
 	function getclients () {
@@ -79,9 +80,14 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 						return a.name.localeCompare(b.name);
 				});
 			}
-			client.list = client_list;
+			clients.list = client_list;
 			return client_list;
 		});
+	}
+
+	function clearclients () {
+		clients.list = [];
+		clients.id = "";
 	}
 }]);
 
@@ -324,10 +330,8 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		var vm = this;
 		vm.logged_in = false;
-		vm.client = clientListService.client;
+		vm.clients = clientListService.clients;
 		vm.selectclient = selectclient;
-
-		// $scope.client_id = "";
 
 		$scope.$on('login_success', function(event, auth) {
 			vm.logged_in = true;
@@ -336,13 +340,12 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 
 		$scope.$on('logged_out', function (event, auth) {
 			vm.logged_in = false;
-			vm.client_list = [];
-			$scope.client_id = "";
+			clientListService.clearclients();
 		});
 
 		function selectclient (client_id) {
-			if (client_id != vm.client.id) {
-				vm.client.id = client_id;
+			if (client_id != vm.clients.id) {
+				vm.clients.id = client_id;
 				$scope.$broadcast('client_select', client_id);
 			}
 		}
