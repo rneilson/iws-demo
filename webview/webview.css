@@ -26,6 +26,7 @@ a:hover {
 	/*text-decoration: underline;*/
 	color: #fff;
 	background-color: #417690;
+	cursor: pointer;
 }
 p {
 	margin-top: 4px;
@@ -55,9 +56,6 @@ div.topright {
 	display: inline-block;
 	text-align: right;
 	line-height: 30px;
-}
-div.topright a:hover {
-	cursor: pointer;
 }
 div.header {
 	background: #417690;
@@ -118,6 +116,57 @@ div.open {
 	display: block;
 	margin-top: 0px;
 	border-top: none;
+}
+div.oreq-row {
+	width: 100%;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+	line-height: 20px;
+}
+div.oreq-row > div {
+	display: inline-block;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+div.oreq-name {
+	width: 144px;
+}
+div.oreq-con {
+	width: 80px;
+	text-align: right;
+}
+div.oreq-pri {
+	width: 96px;
+}
+div.oreq-date {
+	width: 128px;
+}
+div.oreq-form {
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+div.oreq-form > input[type="number"] {
+	width: 56px;
+}
+div.oreq-form > input[type="date"] {
+	width: 132px;
+	float: right;
+}
+div.oreq-form > input[type="text"] {
+	width: 164px;
+	float: right;
+}
+div.oreq-form > select {
+	float: right;
+}
+div.oreq-close {
+	line-height: 20px;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
 }
 table {
 	border-collapse: collapse;
@@ -220,11 +269,12 @@ input.ng-dirty.ng-invalid:focus {
     border: 0px;
 }
 #reqdata {
-	width: 360px;
+	width: 350px;
 	display: inline-block;
 	vertical-align: top;
 }
 #reqlists {
+	width: 240px;
 	display: inline-block;
 	vertical-align: top;
 }
@@ -272,9 +322,19 @@ input.ng-dirty.ng-invalid:focus {
 	color: #333;
 	text-align: center;
 }
+.floatclear {
+	clear: both;
+	padding: 0px;
+	margin: 0px;
+	border-width: 0px;
+}
 span.error {
 	padding-right: 4px;
 	padding-left: 4px;
 	color: #CC0000;
 	background-color: initial;
+}
+span.textright {
+	text-align: right;
+	float: right;
 }

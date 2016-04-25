@@ -64,10 +64,12 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 		list: [],
 		id: ""
 	};
+	var clients_byid = iwsUtil.emptyobj();
 
 	return {
 		clients: clients,
 		getclients: getclients,
+		getclientbyid: getclientbyid,
 		clearclients: clearclients
 	};
 
@@ -81,13 +83,30 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 				});
 			}
 			clients.list = client_list;
+			clients_byid = iwsUtil.emptyobj();
+			for (var i = 0; i < client_list.length; i++) {
+				var cli = client_list[i];
+				clients_byid[cli.id] = cli;
+				// DEBUG
+				// console.log('Added ' + getclientbyid(cli.id).name);
+			}
 			return client_list;
 		});
+	}
+
+	function getclientbyid (client_id) {
+		if (client_id in clients_byid) {
+			return clients_byid[client_id];
+		}
+		else {
+			return null;
+		}
 	}
 
 	function clearclients () {
 		clients.list = [];
 		clients.id = "";
+		clients_byid = iwsUtil.emptyobj();
 	}
 }]);
 
@@ -297,8 +316,8 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	var extra = ['user_up', 'date_up', 'user_cr', 'date_cr'];
 	var detail = {
 		req: emptyreq(),
-		open: null,
-		closed: null
+		open: [],
+		closed: []
 	};
 
 	return {
@@ -312,7 +331,6 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		if (req_id == detail.req.id) {
 			return $q.when(detail);
 		}
-		// TODO: Get open/closed as well in same call?
 		var reqdetails = {
 			req: $http.get(baseurl + req_id).then(function (response) {
 				var newreq = response.data.req;
@@ -361,8 +379,8 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 
 	function clearreq () {
 		detail.req = emptyreq();
-		detail.open = null;
-		detail.closed = null;
+		detail.open = [];
+		detail.closed = [];
 	}
 }]);
 
@@ -629,13 +647,60 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
+iwsApp.controller('OpenReqController', ['clientListService',
+	function (clientListService) {
+		var vm = this;
+		vm.oreq = null;
+		vm.req_id = '';
+		vm.client_name = '';
+		close();
+		vm.status_list = ['Complete', 'Rejected', 'Deferred']
+		vm.setup = setup;
+		vm.update = update;
+		vm.close = close;
+
+		function setup (req_id, oreq) {
+			vm.oreq = oreq;
+			vm.req_id = req_id;
+			vm.client_name = clientListService.getclientbyid(oreq.client_id).name;
+			vm.today = new Date();
+		}
+
+		function update (mode) {
+			vm.edit_mode = mode;
+			if (mode == 'edit') {
+				vm.edit_oreq = {
+					priority: vm.oreq.priority,
+					date_tgt: vm.oreq.date_tgt
+				};
+			}
+			else if (mode == 'close') {
+				vm.edit_oreq = {
+					status: vm.status_list[0],
+					reason: 'Request complete'
+				};
+			}
+		}
+
+		function close () {
+			vm.edit_mode = '';
+			vm.edit_msg = '';
+			vm.edit_err = '';
+			vm.edit_oreq = iwsUtil.emptyobj();
+		}
+	}
+]);
+
 /* Utility functions */
 
 // TODO: change to prototype instead?
 var iwsUtil = {
 	oreqproc: function oreqproc(oreq) {
 		// Process received data into new object
-		newreq = {};
+		newreq = Object.create(null);
+		if (oreq.client_id) {
+			newreq.client_id = oreq.client_id;
+		}
 		newreq.priority = oreq.priority;
 		newreq.date_tgt = oreq.date_tgt ? new Date(oreq.date_tgt) : null;
 		newreq.opened_at = new Date(oreq.opened_at);
@@ -648,7 +713,10 @@ var iwsUtil = {
 	},
 	creqproc: function creqproc(creq) {
 		// Process received data into new object
-		newreq = {};
+		newreq = Object.create(null);
+		if (creq.client_id) {
+			newreq.client_id = creq.client_id;
+		}
 		newreq.priority = creq.priority;
 		newreq.date_tgt = creq.date_tgt ? new Date(creq.date_tgt) : null;
 		newreq.opened_at = new Date(creq.opened_at);
