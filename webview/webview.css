@@ -225,22 +225,22 @@ input.ng-dirty.ng-invalid:focus {
 	width: 300px;
 }
 #login .form-row {
-    padding: 4px 1.3em 4px 0;
+    padding: 4px 0.8em 4px 0;
     border: 0px;
     text-align: right;
+}
+#login .form-row label {
+    padding: 0 0.2em;
+    line-height: 2em;
+    font-size: 1em;
+    /*clear: both;*/
+    color: #333;
 }
 #login .submit-row {
     padding-top: 4px;
     padding-bottom: 4px;
     border: 0px;
     text-align: center;
-}
-#login .form-row label {
-    padding: 0 0.5em;
-    line-height: 2em;
-    font-size: 1em;
-    /*clear: both;*/
-    color: #333;
 }
 #login-msg {
 	text-align: center;
