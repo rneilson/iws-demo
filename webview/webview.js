@@ -290,21 +290,50 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	}
 }]);
 
-iwsApp.factory('reqDetailService', ['$http', function ($http) {
+iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/req/';
+	var fields = ['prod_area', 'ref_url', 'desc', 'title', 'id'];
+	var extra = ['user_up', 'date_up', 'user_cr', 'date_cr'];
+	var detail = {
+		req: emptyreq(),
+		open: null,
+		closed: null
+	};
+
 	return {
+		detail: detail,
 		getdetails: getdetails,
+		emptyreq: emptyreq,
+		clearreq: clearreq
 	};
 
 	function getdetails (req_id) {
+		if (req_id == detail.req.id) {
+			return $q.when(detail.req);
+		}
 		// TODO: Get open/closed as well
 		return $http.get(baseurl + req_id).then(function (response) {
-			req = response.data.req;
+			var newreq = response.data.req;
 			// Process dates
-			req.date_cr = new Date(req.date_cr);
-			req.date_up = new Date(req.date_up);
-			return req;
+			newreq.date_cr = new Date(newreq.date_cr);
+			newreq.date_up = new Date(newreq.date_up);
+			detail.req = newreq;
+			return newreq;
 		});
+	}
+
+	function emptyreq () {
+		var newreq = iwsUtil.emptyobj();
+		for (var i = fields.length - 1; i >= 0; i--) {
+			newreq[fields[i]] = '';
+		}
+		return newreq;
+	}
+
+	function clearreq () {
+		detail.req = emptyreq();
+		detail.open = null;
+		detail.closed = null;
 	}
 }]);
 
@@ -554,20 +583,18 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	function ($scope, reqDetailService) {
 		var vm = this;
-		vm.req = {};
+		vm.detail = reqDetailService.detail;
 
 		$scope.$on('client_select', function (event, client_id) {
-			vm.req = {};
+			reqDetailService.clearreq();
 		});
 
 		$scope.$on('req_select', function (event, req_id) {
 			if (!req_id) {
-				vm.req = {};
+				reqDetailService.clearreq();
 			}
-			else if (req_id != vm.req.id) {
-				reqDetailService.getdetails(req_id).then(function(req) {
-					vm.req = req;
-				});
+			else {
+				reqDetailService.getdetails(req_id);
 			}
 		});
 	}
