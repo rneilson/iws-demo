@@ -153,10 +153,8 @@
 								ng-init="orcon.setup(rdcon.detail.req.id, oreq)">
 									<div class="oreq-row">
 										<div class="oreq-name">{{orcon.client_name}}
-										</div><div class="oreq-con" ng-class="{hidden: orcon.edit_mode}"><a ng-click="orcon.update('edit')">Edit
-											</a>&nbsp;/&nbsp;<a ng-click="orcon.update('close')">Close</a>
-										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_mode}"><a>Save
-											</a>&nbsp;/&nbsp;<a ng-click="orcon.close()">Cancel</a>
+										</div><div class="oreq-con" ng-class="{hidden: orcon.edit_mode}"><a ng-click="orcon.update('edit')">Edit</a>&nbsp;/&nbsp;<a ng-click="orcon.update('close')">Close</a>
+										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_mode}"><a>Save</a>&nbsp;/&nbsp;<a ng-click="orcon.close()">Cancel</a>
 										</div>
 									</div>
 									<div class="oreq-row" ng-class="{hidden: orcon.edit_mode}">
@@ -169,10 +167,9 @@
 									</div>
 									<div class="oreq-close" ng-if="orcon.edit_mode == 'close'">
 										<div class="oreq-form">
-											Status: <select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status"></select><div class="floatclear"></div>
-										</div>
-										<div class="oreq-form">
-											Reason: <input type="text" ng-model="orcon.edit_oreq.reason" /><div class="floatclear"></div>
+											Reason:<span class="textright">Status: <select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status"></select></span>
+											<div class="floatclear"></div>
+											<input type="text" ng-model="orcon.edit_oreq.reason" /><div class="floatclear"></div>
 										</div>
 									</div>
 								</div>

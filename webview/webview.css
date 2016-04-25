@@ -155,18 +155,14 @@ div.oreq-form > input[type="date"] {
 	width: 132px;
 	float: right;
 }
-div.oreq-form > input[type="text"] {
-	width: 164px;
-	float: right;
-}
-div.oreq-form > select {
-	float: right;
-}
 div.oreq-close {
 	line-height: 20px;
 	border-width: 0px;
 	margin: 0px;
 	padding: 0px;
+}
+div.oreq-close input[type="text"] {
+	width: 100%;
 }
 table {
 	border-collapse: collapse;
