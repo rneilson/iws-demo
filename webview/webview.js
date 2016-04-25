@@ -332,39 +332,10 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 			return $q.when(detail);
 		}
 		var reqdetails = {
-			req: $http.get(baseurl + req_id).then(function (response) {
-				var newreq = response.data.req;
-				// Process dates
-				newreq.date_cr = new Date(newreq.date_cr);
-				newreq.date_up = new Date(newreq.date_up);
-				detail.req = newreq;
-				return newreq;
-			}),
-			lists: $http.get(baseurl + req_id + listurl).then(function (response) {
-				var open_list = response.data.req.open_list;
-				if (open_list) {
-					for (var i = open_list.length - 1; i >= 0; i--) {
-						// Replace list entry
-						open_list[i] = iwsUtil.oreqproc(open_list[i]);
-					}
-				}
-				var closed_list = response.data.req.closed_list;
-				if (closed_list) {
-					for (var i = closed_list.length - 1; i >= 0; i--) {
-						// Replace list entry
-						closed_list[i] = iwsUtil.creqproc(closed_list[i]);
-					}
-				}
-				return {
-					open: open_list,
-					closed: closed_list
-				};
-			})
+			req: $http.get(baseurl + req_id).then(procreq),
+			lists: $http.get(baseurl + req_id + listurl).then(proclists)
 		};
-		return $q.all(reqdetails).then(function(data) {
-			detail.req = data.req;
-			detail.open = data.lists.open;
-			detail.closed = data.lists.closed;
+		return $q.all(reqdetails).then(function() {
 			return detail;
 		});
 	}
@@ -381,6 +352,38 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		detail.req = emptyreq();
 		detail.open = [];
 		detail.closed = [];
+	}
+
+	function procreq (response) {
+		var newreq = response.data.req;
+		// Process dates
+		newreq.date_cr = new Date(newreq.date_cr);
+		newreq.date_up = new Date(newreq.date_up);
+		detail.req = newreq;
+		return newreq;
+	}
+
+	function proclists (response) {
+		var open_list = response.data.req.open_list;
+		if (open_list) {
+			for (var i = open_list.length - 1; i >= 0; i--) {
+				// Replace list entry
+				open_list[i] = iwsUtil.oreqproc(open_list[i]);
+			}
+		}
+		var closed_list = response.data.req.closed_list;
+		if (closed_list) {
+			for (var i = closed_list.length - 1; i >= 0; i--) {
+				// Replace list entry
+				closed_list[i] = iwsUtil.creqproc(closed_list[i]);
+			}
+		}
+		detail.open = open_list;
+		detail.closed = closed_list;
+		return {
+			open: open_list,
+			closed: closed_list
+		};
 	}
 }]);
 
@@ -647,8 +650,8 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
-iwsApp.controller('OpenReqController', ['clientListService',
-	function (clientListService) {
+iwsApp.controller('OpenReqController', ['clientListService', 'reqDetailService',
+	function (clientListService, reqDetailService) {
 		var vm = this;
 		vm.oreq = null;
 		vm.req_id = '';
@@ -656,6 +659,7 @@ iwsApp.controller('OpenReqController', ['clientListService',
 		close();
 		vm.status_list = ['Complete', 'Rejected', 'Deferred']
 		vm.setup = setup;
+		vm.edit = edit;
 		vm.update = update;
 		vm.close = close;
 
@@ -666,9 +670,9 @@ iwsApp.controller('OpenReqController', ['clientListService',
 			vm.today = new Date();
 		}
 
-		function update (mode) {
+		function edit (mode) {
 			vm.edit_mode = mode;
-			if (mode == 'edit') {
+			if (mode == 'update') {
 				vm.edit_oreq = {
 					priority: vm.oreq.priority,
 					date_tgt: vm.oreq.date_tgt
@@ -680,6 +684,10 @@ iwsApp.controller('OpenReqController', ['clientListService',
 					reason: 'Request complete'
 				};
 			}
+		}
+
+		function update () {
+
 		}
 
 		function close () {
