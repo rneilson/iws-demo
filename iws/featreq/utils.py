@@ -30,6 +30,7 @@ def validuuid(uid, version=4):
 # Uses same format as Django internal, except without subsecond resolution
 DATETIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 DATEONLYFMT = '%Y-%m-%d'
+DATEFULLFMT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 def approxnow():
     '''Returns present datetime without microseconds'''
@@ -79,7 +80,7 @@ def checkdatetgt(date_tgt):
             return dnow + date_tgt
         elif isinstance(date_tgt, str):
             # Create datetime from string and make UTC
-            # First try full date/time
+            # First try normal date/time
             try:
                 dt = datetime.datetime.strptime(date_tgt, DATETIMEFMT).replace(tzinfo=datetime.timezone.utc)
             except ValueError:
@@ -87,7 +88,11 @@ def checkdatetgt(date_tgt):
                 try:
                     dt = datetime.datetime.strptime(date_tgt, DATEONLYFMT).replace(tzinfo=datetime.timezone.utc)
                 except ValueError:
-                    raise ValueError('Invalid date string: {0}'.format(date_tgt))
+                    # Next try full-length date-only format
+                    try:
+                        dt = datetime.datetime.strptime(date_tgt, DATEFULLFMT).replace(tzinfo=datetime.timezone.utc)
+                    except ValueError:
+                        raise ValueError('Invalid date string: {0}'.format(date_tgt))
             return dt
         else:
             raise TypeError('Invalid date_tgt type: {0}'.format(type(date_tgt)))
