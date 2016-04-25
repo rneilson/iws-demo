@@ -292,6 +292,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/req/';
+	var listurl = '/all/';
 	var fields = ['prod_area', 'ref_url', 'desc', 'title', 'id'];
 	var extra = ['user_up', 'date_up', 'user_cr', 'date_cr'];
 	var detail = {
@@ -309,16 +310,44 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 
 	function getdetails (req_id) {
 		if (req_id == detail.req.id) {
-			return $q.when(detail.req);
+			return $q.when(detail);
 		}
-		// TODO: Get open/closed as well
-		return $http.get(baseurl + req_id).then(function (response) {
-			var newreq = response.data.req;
-			// Process dates
-			newreq.date_cr = new Date(newreq.date_cr);
-			newreq.date_up = new Date(newreq.date_up);
-			detail.req = newreq;
-			return newreq;
+		// TODO: Get open/closed as well in same call?
+		var reqdetails = {
+			req: $http.get(baseurl + req_id).then(function (response) {
+				var newreq = response.data.req;
+				// Process dates
+				newreq.date_cr = new Date(newreq.date_cr);
+				newreq.date_up = new Date(newreq.date_up);
+				detail.req = newreq;
+				return newreq;
+			}),
+			lists: $http.get(baseurl + req_id + listurl).then(function (response) {
+				var open_list = response.data.req.open_list;
+				if (open_list) {
+					for (var i = open_list.length - 1; i >= 0; i--) {
+						// Replace list entry
+						open_list[i] = iwsUtil.oreqproc(open_list[i]);
+					}
+				}
+				var closed_list = response.data.req.closed_list;
+				if (closed_list) {
+					for (var i = closed_list.length - 1; i >= 0; i--) {
+						// Replace list entry
+						closed_list[i] = iwsUtil.creqproc(closed_list[i]);
+					}
+				}
+				return {
+					open: open_list,
+					closed: closed_list
+				};
+			})
+		};
+		return $q.all(reqdetails).then(function(data) {
+			detail.req = data.req;
+			detail.open = data.lists.open;
+			detail.closed = data.lists.closed;
+			return detail;
 		});
 	}
 

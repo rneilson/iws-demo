@@ -219,6 +219,15 @@ input.ng-dirty.ng-invalid:focus {
     margin: 4px 0px;
     border: 0px;
 }
+#reqdata {
+	width: 360px;
+	display: inline-block;
+	vertical-align: top;
+}
+#reqlists {
+	display: inline-block;
+	vertical-align: top;
+}
 #login {
 	margin: auto;
 	border-width: 0px;
