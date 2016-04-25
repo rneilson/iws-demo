@@ -814,6 +814,36 @@ def reqbyid_ext(request, req_id, tolist):
                 # Return updated view
                 return _getext(request, featreq, listopen=True, listclosed=True)
 
+            elif action == 'update':
+                try:
+                    client_id = postargs.pop('client_id')
+                except KeyError:
+                    return badrequest(request, 'Action "update" requires field "client_id"', 'client_id')
+
+                # Check client_id is in open list for this req
+                try:
+                    oreq = OpenReq.objects.get(client_id=client_id, req_id=featreq.id)
+                except ObjectDoesNotExist:
+                    return badrequest(request, 'Request not open for client_id {0}'.format(client_id), 'client_id')
+
+                # Remove unsupported args
+                for fn in postargs:
+                    if fn not in {'priority', 'date_tgt'}:
+                        del postargs[fn]
+
+                # Add openreq
+                postargs['openreq'] = oreq
+
+                # Now attempt to update
+                try:
+                    OpenReq.objects.updatereq(**postargs)
+                except Exception as e:
+                    return badrequest(request, e)
+
+                # Made it this far, good to go
+                # Return updated view
+                return _getext(request, featreq, listopen=True, listclosed=True)
+
             elif action == 'close':
                 # Check if client specified
                 try:

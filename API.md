@@ -644,6 +644,19 @@ Open a request:
 Return value, status code 200:
 *As per GET*
 
+Update a request:
+```
+{
+ "action": "update",        # Required
+ "client_id": <uuidstring>, # Required
+ "priority": <priority>,
+ "date_tgt": <datetime>
+}
+```
+
+Return value, status code 200:
+*As per GET*
+
 Close an open request:
 ```
 {
