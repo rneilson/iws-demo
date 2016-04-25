@@ -311,7 +311,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/req/';
-	var listurl = '/all/';
+	var exturl = '/all/';
 	var fields = ['prod_area', 'ref_url', 'desc', 'title', 'id'];
 	var extra = ['user_up', 'date_up', 'user_cr', 'date_cr'];
 	var detail = {
@@ -323,6 +323,9 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	return {
 		detail: detail,
 		getdetails: getdetails,
+		updatereq: updatereq,
+		updateopen: updateopen,
+		closereq: closereq,
 		emptyreq: emptyreq,
 		clearreq: clearreq
 	};
@@ -333,11 +336,46 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		}
 		var reqdetails = {
 			req: $http.get(baseurl + req_id).then(procreq),
-			lists: $http.get(baseurl + req_id + listurl).then(proclists)
+			lists: $http.get(baseurl + req_id + exturl).then(proclists)
 		};
 		return $q.all(reqdetails).then(function() {
 			return detail;
 		});
+	}
+
+	function updatereq (req) {
+
+	}
+
+	function updateopen (oreq) {
+		var update = {action: 'update'};
+		var changed = false;
+		// Ensure client_id is present
+		if (!oreq.client_id) {
+			return $q.reject('Missing required client_id');
+		}
+		update.client_id = oreq.client_id;
+		if ('priority' in oreq) {
+			update.priority = oreq.priority;
+			changed = true;
+		}
+		if ('date_tgt' in oreq) {
+			update.date_tgt = oreq.date_tgt;
+			changed = true;
+		}
+
+		if (changed) {
+			return $http.post(baseurl + detail.req.id + exturl, update)
+				.then(opensuccess, updateerror);
+		}
+		else {
+			// TODO: return details anyways?
+			return $q.when(null);
+		}
+	}
+
+	function closereq (oreq) {
+
 	}
 
 	function emptyreq () {
@@ -384,6 +422,23 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 			open: open_list,
 			closed: closed_list
 		};
+	}
+
+	function reqsuccess (response) {
+		detail.req = response.data.req;
+		return detail;
+	}
+
+	function opensuccess (response) {
+		var req = response.data.req;
+		detail.open = req.open_list;
+		detail.closed = req.closed_list;
+		return detail;
+	}
+
+	function updateerror (reason) {
+		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		return $q.reject(msg);
 	}
 }]);
 
@@ -510,7 +565,7 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 		vm.client = clientDetailService.client;
 		close(); // Shortcut to init edit* props
 		vm.edit = edit;
-		vm.update = update;
+		vm.save = save;
 		vm.close = close;
 
 		$scope.$on('client_select', function (event, client_id) {
@@ -527,7 +582,7 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 			}
 		}
 
-		function update () {
+		function save () {
 			if (vm.edit_form.$dirty) {
 				if (vm.edit_form.$valid) {
 					if (vm.edit_mode == 'update') {
@@ -650,44 +705,96 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
-iwsApp.controller('OpenReqController', ['clientListService', 'reqDetailService',
-	function (clientListService, reqDetailService) {
+iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetailService',
+	function ($scope, clientListService, reqDetailService) {
 		var vm = this;
 		vm.oreq = null;
-		vm.req_id = '';
 		vm.client_name = '';
 		close();
 		vm.status_list = ['Complete', 'Rejected', 'Deferred']
 		vm.setup = setup;
 		vm.edit = edit;
-		vm.update = update;
+		vm.save = save;
 		vm.close = close;
 
-		function setup (req_id, oreq) {
+		function setup (oreq) {
 			vm.oreq = oreq;
-			vm.req_id = req_id;
 			vm.client_name = clientListService.getclientbyid(oreq.client_id).name;
 			vm.today = new Date();
 		}
 
 		function edit (mode) {
 			vm.edit_mode = mode;
+			vm.edit_oreq = {client_id: vm.oreq.client_id};
 			if (mode == 'update') {
-				vm.edit_oreq = {
-					priority: vm.oreq.priority,
-					date_tgt: vm.oreq.date_tgt
-				};
+				vm.edit_oreq.priority = vm.oreq.priority;
+				vm.edit_oreq.date_tgt = vm.oreq.date_tgt
 			}
 			else if (mode == 'close') {
-				vm.edit_oreq = {
-					status: vm.status_list[0],
-					reason: 'Request complete'
-				};
+				vm.edit_oreq.status = vm.status_list[0];
+				vm.edit_oreq.reason = 'Request complete';
 			}
 		}
 
-		function update () {
+		function save () {
+			if (vm.edit_form.$dirty) {
+				if (vm.edit_mode == 'update') {
+					// Have to check date_tgt specially -- leaving a past date intact is valid
+					if ((vm.edit_form.priority.$valid) && 
+						(vm.edit_form.date_tgt.$pristine || vm.edit_form.date_tgt.$valid)) {
 
+						// Both priority and date_tgt can be null (or can be *changed* to null),
+						// so for both we have to check if at least one of them is set on original
+						// or edit copy AND if they differ (bit of extra work here, sadly)
+						var update = {client_id: vm.oreq.client_id};
+						if ((vm.edit_oreq.priority || vm.oreq.priority) && 
+							(vm.edit_oreq.priority != vm.oreq.priority)) {
+							update.priority = vm.edit_oreq.priority;
+						}
+						if ((vm.edit_oreq.date_tgt || vm.oreq.date_tgt) && 
+							(vm.edit_oreq.date_tgt != vm.oreq.date_tgt)) {
+							update.date_tgt = vm.edit_oreq.date_tgt;
+						}
+
+						vm.edit_msg = 'Updating...';
+						vm.edit_err = '';
+						reqDetailService.updateopen(update).then(
+							function (response) {
+								if (response) {
+									// Emit so req list can be updated
+									$scope.$emit('oreq_updated', vm.edit_oreq.client_id);
+								}
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Update failed';
+							}
+						);
+					}
+					else {
+						vm.edit_err = 'Please correct the error(s) above';
+					}
+				}
+				else if (vm.edit_mode == 'close') {
+					if (vm.edit_form.$valid) {
+						vm.edit_msg = 'Closing...';
+						vm.edit_err = '';
+						reqDetailService.closereq(vm.edit_oreq).then(
+							function () {
+								// Emit so client list can be updated
+								$scope.$emit('oreq_closed', vm.edit_oreq.client_id);
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Closing failed';
+							}
+						);
+					}
+				}
+			}
+			else {
+				close();
+			}
 		}
 
 		function close () {

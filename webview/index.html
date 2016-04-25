@@ -150,32 +150,33 @@
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length">
 								<div class="noborder"><span class="sectitle">Open</span></div>
 								<div class="noborder" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
-								ng-init="orcon.setup(rdcon.detail.req.id, oreq)">
+								ng-init="orcon.setup(oreq)">
 									<div class="oreq-row">
 										<div class="oreq-name">{{orcon.client_name}}
-										</div><div class="oreq-con" ng-class="{hidden: orcon.edit_mode}"><a ng-click="orcon.edit('update')">Edit</a>&nbsp;/&nbsp;<a ng-click="orcon.edit('close')">Close</a>
-										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_mode}"><a>Save</a>&nbsp;/&nbsp;<a ng-click="orcon.close()">Cancel</a>
-										</div>
+										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}"><a ng-click="orcon.edit('update')">Edit</a>&nbsp;/&nbsp;<a ng-click="orcon.edit('close')">Close</a>
+										</div><div class="oreq-con" ng-class="{hidden: (!orcon.edit_mode || orcon.edit_msg)}"><a ng-click="orcon.save()">Save</a>&nbsp;/&nbsp;<a ng-click="orcon.close()">Cancel</a>
+										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_msg}">{{orcon.edit_msg}}</div>
 									</div>
 									<div class="oreq-row" ng-class="{hidden: orcon.edit_mode}">
 										<div class="oreq-pri">Priority: <strong>{{orcon.oreq.priority || 'None'}}</strong>
 										</div><div class="oreq-date">Target:<span class="textright">
 										{{(orcon.oreq.date_tgt | date:'EEE dd MMM yy') || 'None'}}</span></div>
 									</div>
-									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'">
-										<input type="number" ng-model="orcon.edit_oreq.priority" min="0" max="32766" /><input type="date" ng-model="orcon.edit_oreq.date_tgt" min="{{orcon.today | date:'yyyy-MM-dd'}}" />
+									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'" ng-form name="orcon.edit_form">
+										<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority" /><input type="date" min="{{orcon.today | date:'yyyy-MM-dd'}}" ng-model="orcon.edit_oreq.date_tgt" name="date_tgt" />
 									</div>
 									<div class="oreq-close" ng-if="orcon.edit_mode == 'close'">
-										<div class="oreq-form">
-											Reason:<span class="textright">Status: <select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status"></select></span>
+										<div class="oreq-form" ng-form name="orcon.edit_form">
+											Reason:<span class="textright">Status: <select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required></select></span>
 											<div class="floatclear"></div>
-											<input type="text" ng-model="orcon.edit_oreq.reason" /><div class="floatclear"></div>
+											<input type="text" ng-model="orcon.edit_oreq.reason" name="reason" required />
 										</div>
 									</div>
+									<div class="noborder nopadding" ng-class="{hidden: !orcon.edit_err}"><span class="error">{{orcon.edit_err}}</span></div>
 								</div>
 							</div>
 							<div id="reqclosed" class="noborder nopadding" ng-if="rdcon.detail.closed.length">
-								<div class="noborder"><strong>Closed</strong></div>
+								<div class="noborder"><span class="sectitle">Closed</span></div>
 							</div>
 						</div>
 					</div>
