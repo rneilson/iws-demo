@@ -334,6 +334,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	return {
 		detail: detail,
 		getdetails: getdetails,
+		addreq: addreq,
 		updatereq: updatereq,
 		updateopen: updateopen,
 		closereq: closereq,
@@ -352,6 +353,37 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		return $q.all(reqdetails).then(function() {
 			return detail;
 		});
+	}
+
+	function addreq (req, oreq) {
+		// Create request bodies
+		var addreq = {action: 'create'};
+		angular.extend(addreq, req);
+
+		var openreq = {action: 'open'};
+		angular.extend(openreq, oreq);
+
+		var newdetail = iwsUtil.emptyobj();
+
+		// First create featreq, then open for client
+		return $http.post(baseurl, addreq)
+			.then(function(response) {
+				newdetail.req = response.data.req;
+				return $http.post(baseurl + newdetail.req.id + exturl, openreq)
+			})
+			.then(function(response) {
+				var req = response.data.req;
+				newdetail.open = req.open_list;
+				newdetail.closed = req.closed_list;
+				return newdetail;
+			})
+			.then(function(newdetail) {
+				detail.req = newdetail.req;
+				detail.open = newdetail.open;
+				detail.closed = newdetail.closed;
+				return detail;
+			})
+			.catch(updateerror);
 	}
 
 	function updatereq (update) {
@@ -380,10 +412,6 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 			// TODO: return req regardless?
 			return $q.when(null);
 		}
-	}
-
-	function addreq (req, oreq) {
-
 	}
 
 	function updateopen (oreq) {
