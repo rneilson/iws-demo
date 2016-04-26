@@ -6,7 +6,7 @@ Please note that this is a work in progress, and the API is not considered stabl
 
 ### Web view
 
-The main web frontend is a single-page application, available at the `/webview/` path after installation. The API endpoints are also directly browsable (see `API.md` for the full listing).
+The main web interface is a single-page application, available at the `/webview/` path after installation. The API endpoints are also directly browsable (see `API.md` for the full listing).
 
 ### API
 
