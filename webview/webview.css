@@ -16,6 +16,7 @@ body {
     color: #333;
     background: #fff;
 	font-size: 10pt;
+	padding-left: calc(100vw - 100%);
 }
 a {
 	color: #417690;
@@ -84,12 +85,13 @@ div.footer {
 }
 div.perchheader {
 	margin-bottom: 0px;
-	border-bottom: 0px;
+	/*border-bottom: 0px;*/
 	border-color: #333;
 	border-width: 1px;
 }
 div.clienttable {
 	margin-top: 0px;
+	border-top-width: 0px;
 }
 div.noborder {
 	border-width: 0px;
@@ -343,8 +345,8 @@ textarea {
 	border-color: #333;
 }
 #clientdetails {
-	/*margin-top: 8px;*/
-	padding: 8px;
+	margin-top: 8px;
+	padding: 8px 12px 4px;
 }
 #clientdetails .form-row {
     padding: 4px 1.5em 4px 0;
@@ -356,6 +358,9 @@ textarea {
     margin: 4px 0px;
     border: 0px;
 }
+#reqdetails {
+	margin-top: 8px;
+}
 #reqnew {
 	width: 320px;
 	border-width: 0px;
@@ -366,7 +371,7 @@ textarea {
 	width: 320px;
 	display: inline-block;
 	vertical-align: top;
-	margin-bottom: 6px;
+	/*margin-bottom: 6px;*/
 	padding-right: 24px;
 }
 #reqdata textarea {
