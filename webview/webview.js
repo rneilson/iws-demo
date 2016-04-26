@@ -634,6 +634,10 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 			clientListService.getclients();
 		});
 
+		$scope.$on('req_created', function (event, client_id) {
+			clientListService.getclients();
+		});
+
 		function selectclient (client_id) {
 			if (client_id != vm.clients.id) {
 				vm.clients.id = client_id;
@@ -772,6 +776,16 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 			}
 		});
 
+		$scope.$on('req_created', function(event, client_id, req){
+			if (client_id == vm.client.id) {
+				vm.req.open = req.id;
+				if (vm.client.open !== null) {
+					reqListService.refopen();
+				}
+				selecttab('open');
+			}
+		});
+
 		function selecttab (seltab) {
 			if (vm.tab != seltab) {
 				vm.tab = seltab;
@@ -876,11 +890,11 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 						vm.edit_msg = 'Creating...';
 						vm.edit_err = '';
 						reqDetailService.addreq(vm.edit_req, vm.edit_oreq).then(
-							function (req) {
-								// TODO: now create openreq, or leave to service?
+							function (detail) {
+								var client_id = vm.edit_oreq.client_id;
 								close();
 								// Emit so req list can be updated
-								$scope.$emit('req_created', req);
+								$scope.$emit('req_created', client_id, detail.req);
 							},
 							function (reason) {
 								vm.edit_msg = '';

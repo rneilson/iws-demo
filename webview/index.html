@@ -216,7 +216,7 @@
 								<div class="noborder"><span class="sectitle">Closed</span></div>
 								<div class="oreq" ng-repeat="creq in rdcon.detail.closed">
 									<div class="oreq-row">
-										<div class="oreq-name">{{rdcon.getclientbyid(creq.client_id).name}}
+										<div class="oreq-name">{{rdcon.getclientname(creq.client_id)}}
 										</div><div class="oreq-con"><strong>{{creq.status}}</strong></div>
 									</div>
 									<div class="oreq-row"><pre class="reason">{{creq.reason}}</pre></div>
