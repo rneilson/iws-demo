@@ -775,7 +775,7 @@ def reqbyid_ext(request, req_id, tolist):
                     required={'action'},
                     asint={'priority'}
                 )
-            except ValueError, TypeError as e:
+            except (ValueError, TypeError) as e:
                 return badrequest(request, e)
 
             # Check action
