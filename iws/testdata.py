@@ -5,7 +5,7 @@ import datetime, time, json, getpass, argparse
 from collections import OrderedDict
 from django.test import Client
 from django.test.utils import override_settings
-from .utils import approxdatefmt
+from featreq.utils import approxdatefmt
 
 # Defaults/globals
 
@@ -186,18 +186,20 @@ def buildtestdata(client):
     cldict = OrderedDict([ (c['id'], []) for c in cllist ])
 
     # Create test requests
-    for c in cllist:
-        x = c['name'][-1]
+    xlen = len(cllist) - 1
+    for x in range(xlen+1):
+        c = cllist[x]
+        letter = c['name'][-1]
         toopen = []
-        for y in range(1, 7):
-            titlestr = title.format(x, y)
+        for y in range(1, 10):
+            titlestr = title.format(letter, y)
             if titlestr not in reqset:
                 reqargs = {
                     'action': 'create',
                     'title': titlestr,
-                    'desc': desc.format(x, y),
-                    'ref_url': ref_url.format(x.lower(), y),
-                    'prod_area': areas[y % len(areas)]
+                    'desc': desc.format(letter, y),
+                    'ref_url': ref_url.format(letter.lower(), y),
+                    'prod_area': areas[((xlen * x) + y) % len(areas)]
                 }
                 respobj = postjson(client, BASEURL + 'req/', reqargs, expcode=201)
                 assert 'req' in respobj
@@ -215,7 +217,7 @@ def buildtestdata(client):
         if toopen:
             sys.stderr.write('Opening {0} requests for client id {1}\n'.format(len(toopen), clid))
             for req_id, dt in zip(toopen, range(0, len(toopen))):
-                dtgt = approxdatefmt(basedt + datetime.timedelta(days=dt))
+                dtgt = approxdatefmt(basedt + datetime.timedelta(days=(dt*2)))
                 reqargs = {
                     'action': 'open',
                     'req_id': req_id,
