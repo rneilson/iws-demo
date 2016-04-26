@@ -777,8 +777,8 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 
 		vm.areas = ['Policies', 'Billing', 'Claims', 'Reports'];
 		vm.detail = reqDetailService.detail;
-		vm.client = clientListService.clients;
-		vm.getclientbyid = clientListService.getclientbyid;
+		vm.clients = clientListService.clients;
+		vm.getclientname = getclientname;
 
 		vm.edit = edit;
 		vm.save = save;
@@ -816,10 +816,11 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 				vm.edit_req.ref_url = '';
 				vm.edit_req.desc = '';
 				vm.edit_oreq = {
-					client_id: vm.client.id,
+					client_id: vm.clients.id,
 					priority: null,
 					date_tgt: null
 				};
+				vm.today = new Date();
 			}
 		}
 
@@ -875,6 +876,11 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 			vm.edit_err = '';
 			vm.edit_req = iwsUtil.emptyobj();
 		}
+
+		function getclientname (client_id) {
+			var use_id = (client_id) ? client_id : vm.clients.id;
+			return clientListService.getclientbyid(use_id).name;
+		}
 	}
 ]);
 
@@ -882,7 +888,6 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 	function ($scope, reqDetailService) {
 		var vm = this;
 		vm.oreq = null;
-		vm.client = null;
 		close();
 		vm.status_list = ['Complete', 'Rejected', 'Deferred']
 		vm.setup = setup;
@@ -890,9 +895,8 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 		vm.save = save;
 		vm.close = close;
 
-		function setup (oreq, client) {
+		function setup (oreq) {
 			vm.oreq = oreq;
-			vm.client = client;
 			vm.today = new Date();
 		}
 

@@ -357,6 +357,9 @@ textarea {
 	display: inline-block;
 	vertical-align: top;
 }
+#reqopennew {
+	padding: 4px 0px;
+}
 #login {
 	margin: auto;
 	border-width: 0px;
