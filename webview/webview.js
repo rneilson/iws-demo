@@ -887,20 +887,25 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 						);
 					}
 					else if (vm.edit_mode == 'create') {
-						vm.edit_msg = 'Creating...';
-						vm.edit_err = '';
-						reqDetailService.addreq(vm.edit_req, vm.edit_oreq).then(
-							function (detail) {
-								var client_id = vm.edit_oreq.client_id;
-								close();
-								// Emit so req list can be updated
-								$scope.$emit('req_created', client_id, detail.req);
-							},
-							function (reason) {
-								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Creation failed';
-							}
-						);
+						if (vm.open_form.$valid) {
+							vm.edit_msg = 'Creating...';
+							vm.edit_err = '';
+							reqDetailService.addreq(vm.edit_req, vm.edit_oreq).then(
+								function (detail) {
+									var client_id = vm.edit_oreq.client_id;
+									close();
+									// Emit so req list can be updated
+									$scope.$emit('req_created', client_id, detail.req);
+								},
+								function (reason) {
+									vm.edit_msg = '';
+									vm.edit_err = reason.error || reason || 'Creation failed';
+								}
+							);
+						}
+						else {
+							vm.edit_err = 'Please correct the error(s) above';
+						}
 					}
 				}
 				else {
