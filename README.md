@@ -1,8 +1,12 @@
 ## IWS-Demo
 
-This is a demonstration web application for creating and managing feature requests for a group of clients, written in Python using Django, and implementing a RESTful JSON API backend.
+This is a demonstration web application for creating and managing feature requests for a group of clients. The frontend is written in AngularJS, with a RESTful JSON API backend implemented in Python using Django.
 
-Please note that this is a work in progress, and the API is not considered stable at this time. A demonstration frontend is in consideration.
+Please note that this is a work in progress, and the API is not considered stable at this time.
+
+### Web view
+
+The main web frontend is a single-page application, available at the `/webview/` path after installation. The API endpoints are also directly browsable (see `API.md` for the full listing).
 
 ### API
 
@@ -182,9 +186,9 @@ For POST requests, reading JSON-formatted data from stdin, eg:
 ./iws-curl post https://iws.example.com/featreq/req/
 ```
 
-#### Authentication web view
+#### Authentication for API view
 
-A simple HTML login page is available at `/featreq/login/`. An optional `?next=` query parameter allows redirection after successful login.
+A simple HTML login page is available at `/featreq/login/`. An optional `?next=` query parameter allows redirection after successful login. This will allow for browsing the API without using the webview frontend.
 
 #### Authentication "by hand" walkthrough
 
