@@ -208,12 +208,12 @@ def getargsfrompost(request, fieldnames=None, required=None, aslist=None, asint=
                 else:
                     if isinstance(fv, list):
                         try:
-                            fv = [ int(v) for v in fv ]
+                            fv = [ int(v) if v else 0 for v in fv ]
                         except (ValueError, TypeError) as e:
                             raise TypeError('Cannot convert list item in field {0} to int: {1}'.format(fn, str(e)))
                     else:
                         try:
-                            fv = int(fv)
+                            fv = int(fv) if fv else 0
                         except (ValueError, TypeError) as e:
                             raise TypeError('Cannot convert field {0} to int: {1}'.format(fn, str(e)))
                     respdict[fn] = fv
@@ -775,7 +775,7 @@ def reqbyid_ext(request, req_id, tolist):
                     required={'action'},
                     asint={'priority'}
                 )
-            except ValueError as e:
+            except ValueError, TypeError as e:
                 return badrequest(request, e)
 
             # Check action
