@@ -143,17 +143,17 @@ div.req-text input[type="text"], input[type="url"] {
 	width: 100%;
 }
 div.oreq-name {
-	width: 158px;
+	width: 162px;
 }
 div.oreq-con {
-	width: 96px;
+	width: 92px;
 	text-align: right;
 }
 div.oreq-pri {
-	width: 96px;
+	width: 92px;
 }
 div.oreq-date {
-	width: 158px;
+	width: 162px;
 }
 div.oreq-form {
 	border-width: 0px;
@@ -358,7 +358,7 @@ textarea {
 	vertical-align: top;
 }
 #reqopennew {
-	padding: 4px 0px;
+	/*padding: 4px 0px;*/
 }
 #login {
 	margin: auto;

@@ -133,7 +133,7 @@
 							</tbody>
 						</table>
 					</div>
-					<div id="reqdetails" ng-controller="ReqDetailController as rdcon">
+					<div id="reqdetails" ng-class="{hidden: (!rdcon.clients.id)}" ng-controller="ReqDetailController as rdcon">
 						<div id="reqnew" ng-class="{hidden: ((rdcon.detail.req.id) || (rdcon.edit_mode == 'create'))}">
 							<div class="button-row">
 								<input ng-click="rdcon.edit('create')" type="button" value="New" />
@@ -154,7 +154,7 @@
 								</div>
 								<div class="oreq-row">
 									<div class="req-title">URL: </div><div class="req-text"><span ng-class="{hidden: rdcon.edit_mode}">
-									<a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a>
+									<span ng-class="{hidden: (!rdcon.detail.req.ref_url)}"><a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a></span><span ng-class="{hidden: (rdcon.detail.req.ref_url)}">(None)</span>
 									</span><span ng-if="rdcon.edit_mode"><input type="url" name="ref_url" ng-model="rdcon.edit_req.ref_url" /></span></div>
 								</div>
 							</div>
@@ -207,7 +207,7 @@
 									<div class="oreq-row">
 										<div class="oreq-pri">Priority:</div><div class="oreq-date">Target date:</div>
 									</div>
-									<div class="oreq-form" ng-form name="rdcon.edit_form">
+									<div class="oreq-form" ng-form name="rdcon.open_form">
 										<input type="number" min="0" max="32766" ng-model="rdcon.edit_oreq.priority" name="priority" /><input type="date" min="{{rdcon.today | date:'yyyy-MM-dd'}}" ng-model="rdcon.edit_oreq.date_tgt" name="date_tgt" />
 									</div>
 								</div>
