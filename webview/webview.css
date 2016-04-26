@@ -128,6 +128,20 @@ div.oreq-row > div {
 	margin: 0px;
 	padding: 0px;
 }
+div.req {
+	margin: 4px 0px;
+	padding: 4px 0px;
+	border-width: 0px;
+}
+div.req-title {
+	width: 32px;
+}
+div.req-text {
+	width: 252px;
+}
+div.req-text input[type="text"], input[type="url"] {
+	width: 100%;
+}
 div.oreq-name {
 	width: 158px;
 }
@@ -211,12 +225,13 @@ td.date, th.date {
 td.user, th.user {
 	width: 80px;
 }
-pre.desc {
+pre.desc, pre.reason {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
     color: #333;
     /*background: #ddd;*/
 	font-size: 10pt;
 	margin: 0px 0px 0.5em;
+	white-space: pre-wrap;
 }
 input {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
@@ -278,6 +293,10 @@ button.tabnav:active {
 button.tabnav:first-child {
 	border-width: 1px 1px 0px 1px;
 }
+textarea {
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+	font-size: 10pt;
+}
 #container {
 	margin: 0px;
 	padding: 0px;
@@ -324,16 +343,14 @@ button.tabnav:first-child {
 	display: inline-block;
 	vertical-align: top;
 	margin-bottom: 6px;
-}
-#reqdata input[name="title"] {
-	width: 240px;
-}
-#reqdata input[name="ref_url"] {
-	width: 210px;
+	padding-right: 24px;
 }
 #reqdata textarea {
-	width: 240px;
-	height: 36px;
+	width: 284px;
+	height: 48px;
+}
+#reqdata .button-row {
+	padding: 0px 4px;
 }
 #reqlists {
 	width: 270px;

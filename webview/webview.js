@@ -785,10 +785,12 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 		vm.close = close;
 
 		$scope.$on('client_select', function (event, client_id) {
+			close();
 			reqDetailService.clearreq();
 		});
 
 		$scope.$on('req_select', function (event, req_id) {
+			close();
 			if (!req_id) {
 				reqDetailService.clearreq();
 			}

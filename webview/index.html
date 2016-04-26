@@ -140,23 +140,29 @@
 							</div>
 						</div>
 						<div id="reqdata" class="noborder" ng-form name="rdcon.edit_form" ng-class="{hidden: ((!rdcon.detail.req.id) && (rdcon.edit_mode != 'create'))}">
-							<p>
+							<div class="noborder">
 								<span class="sectitle" ng-class="{hidden: (rdcon.edit_mode)}">{{rdcon.detail.req.title}}</span>
-								<!--<span ng-if="rdcon.edit_mode == 'create'">Title:<br/></span>-->
-								<span ng-if="rdcon.edit_mode"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /></span>
-							</p>
-							<p>
-								Product Area: <span ng-class="{hidden: rdcon.edit_mode}"><strong>{{rdcon.detail.req.prod_area}}</strong>
-								</span><span ng-if="rdcon.edit_mode"><select ng-options="area for area in rdcon.areas" ng-model="rdcon.edit_req.prod_area" name="prod_area" required></select></span>
-								<!--<span class="textright"><input type="button" value="Edit" /></span><span class="floatclear"/>--><br/>
-								URL: <span ng-class="{hidden: rdcon.edit_mode}">
-								<a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a>
-								</span><span ng-if="rdcon.edit_mode"><input type="url" name="ref_url" ng-model="rdcon.edit_req.ref_url" /></span>
-							</p>
-							Description:<br/>
-							<pre class="desc" ng-class="{hidden: (rdcon.edit_mode == 'create')}">{{rdcon.detail.req.desc}}</pre>
-							<textarea ng-if="rdcon.edit_mode" name="desc" ng-model="rdcon.edit_req.desc"></textarea>
-							<div class="noborder"><span class="error" ng-if="rdcon.edit_err">{{rdcon.edit_err}}</span></div>
+								<div class="oreq-row" ng-if="rdcon.edit_mode">
+									<div class="req-title">Title:
+									</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /></div>
+								</div>
+							</div>
+							<div class="oreq">
+								<div class="oreq-row">
+									Product Area: <span ng-class="{hidden: rdcon.edit_mode}"><strong>{{rdcon.detail.req.prod_area}}</strong>
+									</span><span ng-if="rdcon.edit_mode"><select ng-options="area for area in rdcon.areas" ng-model="rdcon.edit_req.prod_area" name="prod_area" required></select></span>
+								</div>
+								<div class="oreq-row">
+									<div class="req-title">URL: </div><div class="req-text"><span ng-class="{hidden: rdcon.edit_mode}">
+									<a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a>
+									</span><span ng-if="rdcon.edit_mode"><input type="url" name="ref_url" ng-model="rdcon.edit_req.ref_url" /></span></div>
+								</div>
+							</div>
+							<div class="oreq">
+								Description:<br/>
+								<pre class="desc" ng-class="{hidden: (rdcon.edit_mode == 'create')}">{{rdcon.detail.req.desc}}</pre>
+								<textarea ng-if="rdcon.edit_mode" name="desc" ng-model="rdcon.edit_req.desc"></textarea>
+							</div>
 							<div class="button-row" ng-class="{hidden: (rdcon.edit_mode || !rdcon.detail.open.length)}">
 								<input ng-click="rdcon.edit('update')" type="button" value="Edit" />
 								<input ng-click="rdcon.edit('create')" type="button" value="New" />
@@ -164,8 +170,8 @@
 							<div class="button-row" ng-if="rdcon.edit_mode">
 								<input ng-click="rdcon.save()" type="button" value="Save" />
 								<input ng-click="rdcon.close()" type="button" value="Cancel" />
-								<div class="noborder" ng-class="{hidden: !cdcon.edit_msg}">{{cdcon.edit_msg}}</div>
-								<div class="noborder" ng-class="{hidden: !cdcon.edit_err}"><span class="error">{{cdcon.edit_err}}</span></div>
+								<div class="noborder" ng-class="{hidden: !rdcon.edit_msg}">{{rdcon.edit_msg}}</div>
+								<div class="noborder" ng-class="{hidden: !rdcon.edit_err}"><span class="error">{{rdcon.edit_err}}</span></div>
 							</div>
 						</div><div id="reqlists" class="noborder" ng-class="{hidden: (rdcon.edit_mode == 'create')}">
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length">
@@ -200,7 +206,7 @@
 										<div class="oreq-name">{{rdcon.getclientbyid(creq.client_id).name}}
 										</div><div class="oreq-con"><strong>{{creq.status}}</strong></div>
 									</div>
-									<div class="oreq-row"><pre>{{creq.reason}}</pre></div>
+									<div class="oreq-row"><pre class="reason">{{creq.reason}}</pre></div>
 								</div>
 							</div>
 						</div>
