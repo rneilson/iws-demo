@@ -299,7 +299,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	function refclosed () {
 		// Get (promise of) list from server
 		// TODO: cache list?
-		return $http.get(baseurl + client_id + closedurl).then(function (response) {
+		return $http.get(baseurl + client.id + closedurl).then(function (response) {
 			var closed_list = response.data.client.closed_list;
 			if (closed_list) {
 				for (var i = closed_list.length - 1; i >= 0; i--) {
@@ -376,7 +376,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 
 		if (changed) {
 			return $http.post(baseurl + detail.req.id + exturl, update)
-				.then(opensuccess, updateerror);
+				.then(listsuccess, updateerror);
 		}
 		else {
 			// TODO: return details anyways?
@@ -385,7 +385,20 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	}
 
 	function closereq (oreq) {
+		var update = {action: 'close'};
+		// Ensure required arguments
+		if ((!oreq.status) || (!oreq.reason)) {
+			return $q.reject('Missing required fields');
+		}
+		// client_id is optional
+		if (oreq.client_id) {
+			update.client_id = oreq.client_id;
+		}
+		update.status = oreq.status;
+		update.reason = oreq.reason;
 
+		return $http.post(baseurl + detail.req.id + exturl, update)
+			.then(listsuccess, updateerror);
 	}
 
 	function emptyreq () {
@@ -439,7 +452,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		return detail;
 	}
 
-	function opensuccess (response) {
+	function listsuccess (response) {
 		var req = response.data.req;
 		detail.open = req.open_list;
 		detail.closed = req.closed_list;
@@ -560,6 +573,10 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 			}
 		});
 
+		$scope.$on('oreq_closed', function (event, client_id) {
+			clientListService.getclients();
+		});
+
 		function selectclient (client_id) {
 			if (client_id != vm.clients.id) {
 				vm.clients.id = client_id;
@@ -670,10 +687,31 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 		});
 
 		$scope.$on('oreq_updated', function(event, client_id) {
-			if ((client_id == vm.client.id) && 
-				((vm.tab == 'open') || 
-				((vm.tab == 'closed') && (vm.client.open_list !== null)))) {
+			// Update under the following conditions:
+			//   - client_id matches or is empty
+			//   - tab is open, or tab is closed and open list has already been fetched
+			if (((!client_id) || (client_id == vm.client.id)) && 
+				((vm.tab == 'open') || ((vm.tab == 'closed') && (vm.client.open_list !== null)))) {
 				reqListService.refopen();
+			}
+		});
+
+		$scope.$on('oreq_closed', function(event, client_id) {
+			// We want to update both lists if fetched
+			if ((!client_id) || (client_id == vm.client.id)) {
+				if (vm.client.open !== null) {
+					reqListService.refopen();
+				}
+				if (vm.client.closed !== null) {
+					reqListService.refclosed();
+				}
+				// Deselect request on open tab, select on closed
+				// Don't send req_select event -- we want to let
+				// the just-closed req stay visible
+				if (vm.tab == 'open') {
+					vm.req.closed = vm.req.open;
+					vm.req.open = "";
+				}
 			}
 		});
 
@@ -727,7 +765,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 	function ($scope, clientListService, reqDetailService) {
 		var vm = this;
 		vm.oreq = null;
-		vm.client_name = '';
+		vm.client = null;
 		close();
 		vm.status_list = ['Complete', 'Rejected', 'Deferred']
 		vm.setup = setup;
@@ -737,7 +775,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 
 		function setup (oreq) {
 			vm.oreq = oreq;
-			vm.client_name = clientListService.getclientbyid(oreq.client_id).name;
+			vm.client = clientListService.getclientbyid(oreq.client_id);
 			vm.today = new Date();
 		}
 
@@ -755,8 +793,8 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 		}
 
 		function save () {
-			if (vm.edit_form.$dirty) {
-				if (vm.edit_mode == 'update') {
+			if (vm.edit_mode == 'update') {
+				if (vm.edit_form.$dirty) {
 					// Have to check date_tgt specially -- leaving a past date intact is valid
 					if ((vm.edit_form.priority.$valid) && 
 						(vm.edit_form.date_tgt.$pristine || vm.edit_form.date_tgt.$valid)) {
@@ -794,25 +832,27 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 						vm.edit_err = 'Please correct the error(s) above';
 					}
 				}
-				else if (vm.edit_mode == 'close') {
-					if (vm.edit_form.$valid) {
-						vm.edit_msg = 'Closing...';
-						vm.edit_err = '';
-						reqDetailService.closereq(vm.edit_oreq).then(
-							function () {
-								// Emit so client list can be updated
-								$scope.$emit('oreq_closed', vm.edit_oreq.client_id);
-							},
-							function (reason) {
-								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Closing failed';
-							}
-						);
-					}
+				else {
+					close();
 				}
 			}
-			else {
-				close();
+			else if (vm.edit_mode == 'close') {
+				if (vm.edit_form.$valid) {
+					// TODO: modal dialog for confirmation
+					vm.edit_msg = 'Closing...';
+					vm.edit_err = '';
+					var client_id = vm.edit_oreq.client_id;
+					reqDetailService.closereq(vm.edit_oreq).then(
+						function () {
+							// Emit so client list can be updated
+							$scope.$emit('oreq_closed', client_id);
+						},
+						function (reason) {
+							vm.edit_msg = '';
+							vm.edit_err = reason.error || reason || 'Closing failed';
+						}
+					);
+				}
 			}
 		}
 
