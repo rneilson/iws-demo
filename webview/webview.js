@@ -201,14 +201,16 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	return {
 		client: client,
 		getopen: getopen,
-		getclosed: getclosed
+		refopen: refopen,
+		getclosed: getclosed,
+		refclosed: refclosed
 	};
 
 	function getopen (client_id) {
 		if (client_id) {
 
 			if ((client_id == client.id) && (client.open_list !== null)) {
-				// Already have list, return (resolved) promise
+				// Already have list, no forced refresh, return (resolved) promise
 				return $q.when(client.open_list);
 			}
 
@@ -219,37 +221,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 				client.closed_list = null;
 			}
 
-			// Get (promise of) list from server
-			// TODO: cache list?
-			return $http.get(baseurl + client_id + openurl).then(function (response) {
-				var open_list = response.data.client.open_list;
-				if (open_list) {
-					for (var i = open_list.length - 1; i >= 0; i--) {
-						// Replace list entry
-						open_list[i] = iwsUtil.oreqproc(open_list[i]);
-					};
-					open_list.sort(
-						function (a, b) {
-							// Sort by priority if both present, open date (descending) if neither
-							// Request with priority always sorted higher than one without
-							if (a.priority) {
-								if (b.priority) {
-									return a.priority - b.priority;
-								}
-								else {return 1;}
-							}
-							else {
-								if (b.priority) {return -1;}
-								else {
-									return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
-								}
-							}
-						}
-					);
-				}
-				client.open_list = open_list;
-				return open_list;
-			});
+			return refopen();
 		}
 		else {
 			// Set new (empty) client id
@@ -262,11 +234,45 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 		}
 	}
 
+	function refopen () {
+		// Get (promise of) list from server
+		// TODO: cache list?
+		return $http.get(baseurl + client.id + openurl).then(function (response) {
+			var open_list = response.data.client.open_list;
+			if (open_list) {
+				for (var i = open_list.length - 1; i >= 0; i--) {
+					// Replace list entry
+					open_list[i] = iwsUtil.oreqproc(open_list[i]);
+				};
+				open_list.sort(
+					function (a, b) {
+						// Sort by priority if both present, open date (descending) if neither
+						// Request with priority always sorted higher than one without
+						if (a.priority) {
+							if (b.priority) {
+								return a.priority - b.priority;
+							}
+							else {return -1;}
+						}
+						else {
+							if (b.priority) {return 1;}
+							else {
+								return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
+							}
+						}
+					}
+				);
+			}
+			client.open_list = open_list;
+			return open_list;
+		});
+	}
+
 	function getclosed (client_id) {
 		if (client_id) {
 
 			if ((client_id == client.id) && (client.closed_list !== null)) {
-				// Already have list, return (resolved) promise
+				// Already have list, no forced refresh, return (resolved) promise
 				return $q.when(client.closed_list);
 			}
 
@@ -277,25 +283,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 				client.open_list = null;
 			}
 
-			// Get (promise of) list from server
-			// TODO: cache list?
-			return $http.get(baseurl + client_id + closedurl).then(function (response) {
-				var closed_list = response.data.client.closed_list;
-				if (closed_list) {
-					for (var i = closed_list.length - 1; i >= 0; i--) {
-						// Replace list entry
-						closed_list[i] = iwsUtil.creqproc(closed_list[i]);
-					};
-					closed_list.sort(
-						function (a, b) {
-							// Sort by closed date, descending
-							return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
-						}
-					);
-				}
-				client.closed_list = closed_list;
-				return closed_list;
-			});
+			return refclosed();
 		}
 		else {
 			// Set new (empty) client id
@@ -306,6 +294,28 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 			// Return (resolved) promise of empty list
 			return $q.when(client.closed_list);
 		}
+	}
+
+	function refclosed () {
+		// Get (promise of) list from server
+		// TODO: cache list?
+		return $http.get(baseurl + client_id + closedurl).then(function (response) {
+			var closed_list = response.data.client.closed_list;
+			if (closed_list) {
+				for (var i = closed_list.length - 1; i >= 0; i--) {
+					// Replace list entry
+					closed_list[i] = iwsUtil.creqproc(closed_list[i]);
+				};
+				closed_list.sort(
+					function (a, b) {
+						// Sort by closed date, descending
+						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
+					}
+				);
+			}
+			client.closed_list = closed_list;
+			return closed_list;
+		});
 	}
 }]);
 
@@ -659,6 +669,14 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 			}
 		});
 
+		$scope.$on('oreq_updated', function(event, client_id) {
+			if ((client_id == vm.client.id) && 
+				((vm.tab == 'open') || 
+				((vm.tab == 'closed') && (vm.client.open_list !== null)))) {
+				reqListService.refopen();
+			}
+		});
+
 		function selecttab (seltab) {
 			if (vm.tab != seltab) {
 				vm.tab = seltab;
@@ -746,7 +764,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 						// Both priority and date_tgt can be null (or can be *changed* to null),
 						// so for both we have to check if at least one of them is set on original
 						// or edit copy AND if they differ (bit of extra work here, sadly)
-						var update = {client_id: vm.oreq.client_id};
+						var update = {client_id: vm.edit_oreq.client_id};
 						if ((vm.edit_oreq.priority || vm.oreq.priority) && 
 							(vm.edit_oreq.priority != vm.oreq.priority)) {
 							update.priority = vm.edit_oreq.priority;
@@ -758,11 +776,12 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 
 						vm.edit_msg = 'Updating...';
 						vm.edit_err = '';
+						var client_id = vm.edit_oreq.client_id;
 						reqDetailService.updateopen(update).then(
 							function (response) {
 								if (response) {
 									// Emit so req list can be updated
-									$scope.$emit('oreq_updated', vm.edit_oreq.client_id);
+									$scope.$emit('oreq_updated', client_id);
 								}
 							},
 							function (reason) {
