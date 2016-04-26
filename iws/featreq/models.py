@@ -499,8 +499,10 @@ class OpenReqManager(models.Manager):
         # Check priority (TypeError during int coercion will pass uncaught)
         if priority:
             pr = int(priority)
-            if pr <= 0 or pr > 32766:
+            if pr < 0 or pr > 32766:
                 raise ValueError('Priority out of range: {0}'.format(pr))
+            elif pr == 0:
+                pr = None
             newargs['priority'] = pr
             # Shift priorities if req'd
             self.shiftpri(client, pr)
