@@ -143,13 +143,13 @@ class FeatureReq(models.Model):
     def __str__(self):
         return str(self.title)
 
-    def updatereq(self, user, desc='', title='', ref_url='', prod_area=''):
+    def updatereq(self, user, desc=None, title=None, ref_url=None, prod_area=None):
         # Check for required fields
         if not user:
             raise ValueError('User field required')
         # Ensure we're actually updating something
         # If not, return unchanged
-        if not desc and not title and not ref_url and not prod_area:
+        if not desc and not title and not prod_area and ref_url is None:
             return self
 
         # Get current datetime
@@ -181,6 +181,11 @@ class FeatureReq(models.Model):
             self.ref_url = ref_url
             upstr = upstr + padstr + '{0}, {1}:\n[Changed reference URL to "{2}"]'.format(
                 dtstr, user, ref_url)
+        elif ref_url is not None and self.ref_url:
+            # Force blanking of ref_url
+            self.ref_url = ''
+            upstr = upstr + padstr + '{0}, {1}:\n[Removed reference URL]'.format(
+                dtstr, user)
 
 
         # Next append title change, if present

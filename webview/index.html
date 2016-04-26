@@ -71,25 +71,19 @@
 									<input ng-model="cdcon.edit_cli.con_mail" name="con_mail" type="email" /></label>
 								</div>
 								<div class="button-row">
-									<!--
-									<input ng-click="cdcon.update()" type="button" value="Save" ng-disabled="!cdcon.edit_form.$valid" />
-									-->
-									<input ng-click="cdcon.update()" type="button" value="Save" />
+									<input ng-click="cdcon.save()" type="button" value="Save" />
 									<input ng-click="cdcon.close()" type="button" value="Cancel" />
 								</div>
 								<div class="noborder" ng-class="{hidden: !cdcon.edit_msg}">{{cdcon.edit_msg}}</div>
-								<div class="noborder error" ng-class="{hidden: !cdcon.edit_err}">{{cdcon.edit_err}}</div>
-								<!--
-								<div class="noborder error" ng-class="{hidden: (cdcon.edit_form.$pristine || cdcon.edit_form.$valid)}">Please correct the error(s) above</div>
-								-->
+								<div class="noborder" ng-class="{hidden: !cdcon.edit_err}"><span class="error">{{cdcon.edit_err}}</span></div>
 							</form>
 						</div>
 					</div>
 				</div>
 				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
 					<div id="nav">
-						<div class="tabnav" ng-class="{selected: rlcon.tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
-						</div><div class="tabnav" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>
+						<button class="tabnav" type="button" ng-class="{selected: rlcon.tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
+						</button><button class="tabnav" type="button" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</button>
 					</div>
 					<div id="clientopen" class="panel" ng-class="{open: rlcon.tab == 'open'}">
 						<table>
@@ -139,13 +133,95 @@
 							</tbody>
 						</table>
 					</div>
-					<div id="reqdetails" ng-controller="ReqDetailController as rdcon" ng-class="{hidden: !rdcon.req.id}">
-						<div class="noborder">
-							<p><span class="sectitle">{{rdcon.req.title}}</span></p>
-							<p>
-								Product Area: <strong>{{rdcon.req.prod_area}}</strong><br/>
-								Reference: <a href="{{rdcon.req.ref_url}}">{{rdcon.req.ref_url}}</a>
-							</p>Description:<br/><pre class="desc">{{rdcon.req.desc}}</pre>
+					<div id="reqdetails" ng-class="{hidden: (!rdcon.clients.id)}" ng-controller="ReqDetailController as rdcon">
+						<div id="reqnew" ng-class="{hidden: ((rdcon.detail.req.id) || (rdcon.edit_mode == 'create'))}">
+							<div class="button-row">
+								<input ng-click="rdcon.edit('create')" type="button" value="New" />
+							</div>
+						</div>
+						<div id="reqdata" class="noborder" ng-form name="rdcon.edit_form" ng-class="{hidden: ((!rdcon.detail.req.id) && (rdcon.edit_mode != 'create'))}">
+							<div class="noborder">
+								<span class="sectitle" ng-class="{hidden: (rdcon.edit_mode)}">{{rdcon.detail.req.title}}</span>
+								<div class="oreq-row" ng-if="rdcon.edit_mode">
+									<div class="req-title">Title:
+									</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /></div>
+								</div>
+							</div>
+							<div class="oreq">
+								<div class="oreq-row">
+									Product Area: <span ng-class="{hidden: rdcon.edit_mode}"><strong>{{rdcon.detail.req.prod_area}}</strong>
+									</span><span ng-if="rdcon.edit_mode"><select ng-options="area for area in rdcon.areas" ng-model="rdcon.edit_req.prod_area" name="prod_area" required></select></span>
+								</div>
+								<div class="oreq-row">
+									<div class="req-title">URL: </div><div class="req-text"><span ng-class="{hidden: rdcon.edit_mode}">
+									<span ng-class="{hidden: (!rdcon.detail.req.ref_url)}"><a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a></span><span ng-class="{hidden: (rdcon.detail.req.ref_url)}">(None)</span>
+									</span><span ng-if="rdcon.edit_mode"><input type="url" name="ref_url" ng-model="rdcon.edit_req.ref_url" /></span></div>
+								</div>
+							</div>
+							<div class="oreq">
+								Description:<br/>
+								<pre class="desc" ng-class="{hidden: (rdcon.edit_mode == 'create')}">{{rdcon.detail.req.desc}}</pre>
+								<textarea ng-if="rdcon.edit_mode" name="desc" ng-model="rdcon.edit_req.desc"></textarea>
+							</div>
+							<div class="button-row" ng-class="{hidden: (rdcon.edit_mode || !rdcon.detail.open.length)}">
+								<input ng-click="rdcon.edit('update')" type="button" value="Edit" />
+								<input ng-click="rdcon.edit('create')" type="button" value="New" />
+							</div>
+							<div class="button-row" ng-if="rdcon.edit_mode">
+								<input ng-click="rdcon.save()" type="button" value="Save" />
+								<input ng-click="rdcon.close()" type="button" value="Cancel" />
+								<div class="noborder" ng-class="{hidden: !rdcon.edit_msg}">{{rdcon.edit_msg}}</div>
+								<div class="noborder" ng-class="{hidden: !rdcon.edit_err}"><span class="error">{{rdcon.edit_err}}</span></div>
+							</div>
+						</div><div id="reqlists" class="noborder">
+							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length" ng-class="{hidden: (rdcon.edit_mode == 'create')}">
+								<div class="noborder"><span class="sectitle">Open</span></div>
+								<div class="oreq" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
+								ng-init="orcon.setup(oreq)">
+									<div class="oreq-row">
+										<div class="oreq-name">{{rdcon.getclientname(oreq.client_id)}}
+										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
+										</div><div class="oreq-con" ng-class="{hidden: (!orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.save()" value="Save"/> <input type="button" ng-click="orcon.close()" value="Cancel"/>
+										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_msg}">{{orcon.edit_msg}}</div>
+									</div>
+									<div class="oreq-row" ng-class="{hidden: (orcon.edit_mode)}">
+										<div class="oreq-pri">Priority: <span><strong>{{orcon.oreq.priority || 'None'}}</strong></span>
+										</div><div class="oreq-date">Target date:<span class="textright">
+										{{(orcon.oreq.date_tgt | date:'EEE dd MMM yy') || 'None'}}</span></div>
+									</div>
+									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'" ng-form name="orcon.edit_form">
+										<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority" /><input type="date" min="{{orcon.today | date:'yyyy-MM-dd'}}" ng-model="orcon.edit_oreq.date_tgt" name="date_tgt" />
+									</div>
+									<div class="oreq-form" ng-if="orcon.edit_mode == 'close'" ng-form name="orcon.edit_form">
+										<input type="text" ng-model="orcon.edit_oreq.reason" name="reason" required />
+										<span class="textright"><select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required></select></span>
+									</div>
+									<div class="noborder nopadding" ng-class="{hidden: !orcon.edit_err}"><span class="error">{{orcon.edit_err}}</span></div>
+								</div>
+							</div>
+							<div id="reqopennew" class="noborder nopadding" ng-if="rdcon.edit_mode == 'create'">
+								<div class="noborder">
+									<span>{{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span>
+								</div>
+								<div class="noborder">
+									<div class="oreq-row">
+										<div class="oreq-pri">Priority:</div><div class="oreq-date">Target date:</div>
+									</div>
+									<div class="oreq-form" ng-form name="rdcon.open_form">
+										<input type="number" min="0" max="32766" ng-model="rdcon.edit_oreq.priority" name="priority" /><input type="date" min="{{rdcon.today | date:'yyyy-MM-dd'}}" ng-model="rdcon.edit_oreq.date_tgt" name="date_tgt" />
+									</div>
+								</div>
+							</div>
+							<div id="reqclosed" class="noborder nopadding" ng-if="rdcon.detail.closed.length" ng-class="{hidden: (rdcon.edit_mode == 'create')}">
+								<div class="noborder"><span class="sectitle">Closed</span></div>
+								<div class="oreq" ng-repeat="creq in rdcon.detail.closed">
+									<div class="oreq-row">
+										<div class="oreq-name">{{rdcon.getclientname(creq.client_id)}}
+										</div><div class="oreq-con"><strong>{{creq.status}}</strong></div>
+									</div>
+									<div class="oreq-row"><pre class="reason">{{creq.reason}}</pre></div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

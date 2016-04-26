@@ -26,6 +26,7 @@ a:hover {
 	/*text-decoration: underline;*/
 	color: #fff;
 	background-color: #417690;
+	cursor: pointer;
 }
 p {
 	margin-top: 4px;
@@ -55,9 +56,6 @@ div.topright {
 	display: inline-block;
 	text-align: right;
 	line-height: 30px;
-}
-div.topright a:hover {
-	cursor: pointer;
 }
 div.header {
 	background: #417690;
@@ -100,17 +98,6 @@ div.noborder {
 div.nopadding {
 	padding: 0px;
 }
-div.tabnav {
-	display: inline-block;
-	border-width: 1px 1px 0px 0px;
-	margin: 0px;
-	background-color: #c0c0c0;
-	/*padding: 6px;*/
-	cursor: pointer;
-}
-div.tabnav:first-child {
-	border-width: 1px 1px 0px 1px;
-}
 div.panel {
 	display: none;
 }
@@ -118,6 +105,83 @@ div.open {
 	display: block;
 	margin-top: 0px;
 	border-top: none;
+}
+div.button-row {
+	padding: 0px;	
+    margin: 4px 0px;
+    border: 0px;
+}
+div.oreq {
+	margin: 4px 0px;
+	border-width: 0px;
+}
+div.oreq-row {
+	width: 100%;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+	/*line-height: 24px;*/
+}
+div.oreq-row > div {
+	display: inline-block;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+div.req {
+	margin: 4px 0px;
+	padding: 4px 0px;
+	border-width: 0px;
+}
+div.req-title {
+	width: 32px;
+}
+div.req-text {
+	width: 252px;
+}
+div.req-text input[type="text"], input[type="url"] {
+	width: 100%;
+}
+div.oreq-name {
+	width: 162px;
+}
+div.oreq-con {
+	width: 92px;
+	text-align: right;
+}
+div.oreq-pri {
+	width: 92px;
+}
+div.oreq-date {
+	width: 162px;
+}
+div.oreq-form {
+	border-width: 0px;
+	margin: 2px 0px;
+	padding: 0px;
+}
+div.oreq-form > input {
+	line-height: 18px;
+}
+div.oreq-form > input[type="number"] {
+	width: 64px;
+	text-align: right;
+}
+div.oreq-form > input[type="date"] {
+	width: 158px;
+	float: right;
+}
+div.oreq-form > input[type="text"] {
+	width: 164px;
+}
+div.oreq-close {
+	line-height: 20px;
+	border-width: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+div.oreq-close input[type="text"] {
+	width: 100%;
 }
 table {
 	border-collapse: collapse;
@@ -161,12 +225,13 @@ td.date, th.date {
 td.user, th.user {
 	width: 80px;
 }
-pre.desc {
+pre.desc, pre.reason {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
     color: #333;
     /*background: #ddd;*/
 	font-size: 10pt;
 	margin: 0px 0px 0.5em;
+	white-space: pre-wrap;
 }
 input {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
@@ -183,6 +248,54 @@ input.ng-dirty.ng-invalid:focus {
 	box-shadow: 0 0 2px 0px #CC0000;
 	outline-color: #CC0000;
 	/*outline-width: 1px;*/
+}
+input[type="button"] {
+    background-color: #fff;
+    color: #417690;
+    font-weight: 400;
+    border: 1px solid #417690;
+    line-height: 14px;
+    padding: 1px 4px;
+    cursor: pointer;
+}
+input[type="button"]:active {
+	background-color: #417690;
+	color: #fff;
+}
+input[type="number"]::-webkit-inner-spin-button {
+	opacity: 1;
+}
+select {
+	font-size: 10pt;
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    background-color: white;
+    padding: 1px;
+}
+button {
+	font-size: 10pt;
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+button.tabnav {
+	display: inline-block;
+	border-width: 1px 1px 0px 0px;
+	border-color: #333;
+	border-style: solid;
+	margin: 0px;
+	background-color: #c0c0c0;
+	/*padding: 6px;*/
+	cursor: pointer;
+	line-height: 24px;
+}
+button.tabnav:active {
+	background-color: #fff;
+	color: #417690;
+}
+button.tabnav:first-child {
+	border-width: 1px 1px 0px 1px;
+}
+textarea {
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+	font-size: 10pt;
 }
 #container {
 	margin: 0px;
@@ -218,6 +331,34 @@ input.ng-dirty.ng-invalid:focus {
     padding: 4px 1.5em 4px 0;
     margin: 4px 0px;
     border: 0px;
+}
+#reqnew {
+	width: 320px;
+	border-width: 0px;
+	margin: 0px;
+	display: inline-block;	
+}
+#reqdata {
+	width: 320px;
+	display: inline-block;
+	vertical-align: top;
+	margin-bottom: 6px;
+	padding-right: 24px;
+}
+#reqdata textarea {
+	width: 284px;
+	height: 48px;
+}
+#reqdata .button-row {
+	padding: 0px 4px;
+}
+#reqlists {
+	width: 270px;
+	display: inline-block;
+	vertical-align: top;
+}
+#reqopennew {
+	/*padding: 4px 0px;*/
 }
 #login {
 	margin: auto;
@@ -263,9 +404,19 @@ input.ng-dirty.ng-invalid:focus {
 	color: #333;
 	text-align: center;
 }
+.floatclear {
+	clear: both;
+	padding: 0px;
+	margin: 0px;
+	border-width: 0px;
+}
 span.error {
 	padding-right: 4px;
 	padding-left: 4px;
 	color: #CC0000;
 	background-color: initial;
+}
+span.textright {
+	text-align: right;
+	float: right;
 }
