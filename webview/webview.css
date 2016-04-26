@@ -126,20 +126,11 @@ div.oreq-con {
 	width: 96px;
 	text-align: right;
 }
-div.oreq-con input[type="number"] {
-	width: 64px;
-	text-align: right;
-	line-height: 14px;
-}
 div.oreq-pri {
 	width: 96px;
 }
 div.oreq-date {
 	width: 158px;
-}
-div.oreq-date input[type="date"] {
-	width: 158px;
-	line-height: 14px;
 }
 div.oreq-form {
 	border-width: 0px;
@@ -153,9 +144,6 @@ div.oreq-form > input[type="number"] {
 div.oreq-form > input[type="date"] {
 	width: 158px;
 	float: right;
-}
-div.oreq-row > input[type="date"] {
-	width: 158px;
 }
 div.oreq-close {
 	line-height: 20px;
