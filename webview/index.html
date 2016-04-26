@@ -88,8 +88,8 @@
 				</div>
 				<div id="container" class="rightside" ng-controller="ReqListController as rlcon" ng-if="clcon.logged_in">
 					<div id="nav">
-						<div class="tabnav" ng-class="{selected: rlcon.tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
-						</div><div class="tabnav" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</div>
+						<button class="tabnav" type="button" ng-class="{selected: rlcon.tab=='open'}" ng-click="rlcon.selecttab('open')">Open requests
+						</button><button class="tabnav" type="button" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</button>
 					</div>
 					<div id="clientopen" class="panel" ng-class="{open: rlcon.tab == 'open'}">
 						<table>

@@ -98,17 +98,6 @@ div.noborder {
 div.nopadding {
 	padding: 0px;
 }
-div.tabnav {
-	display: inline-block;
-	border-width: 1px 1px 0px 0px;
-	margin: 0px;
-	background-color: #c0c0c0;
-	/*padding: 6px;*/
-	cursor: pointer;
-}
-div.tabnav:first-child {
-	border-width: 1px 1px 0px 1px;
-}
 div.panel {
 	display: none;
 }
@@ -236,6 +225,7 @@ input[type="button"] {
     border: 1px solid #417690;
     line-height: 14px;
     padding: 1px 4px;
+    cursor: pointer;
 }
 input[type="button"]:active {
 	background-color: #417690;
@@ -244,6 +234,28 @@ input[type="button"]:active {
 select {
 	font-size: 10pt;
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+button {
+	font-size: 10pt;
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+button.tabnav {
+	display: inline-block;
+	border-width: 1px 1px 0px 0px;
+	border-color: #333;
+	border-style: solid;
+	margin: 0px;
+	background-color: #c0c0c0;
+	/*padding: 6px;*/
+	cursor: pointer;
+	line-height: 24px;
+}
+button.tabnav:active {
+	background-color: #fff;
+	color: #417690;
+}
+button.tabnav:first-child {
+	border-width: 1px 1px 0px 1px;
 }
 #container {
 	margin: 0px;
