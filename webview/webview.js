@@ -741,10 +741,12 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 	}
 ]);
 
-iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
-	function ($scope, reqDetailService) {
+iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientListService',
+	function ($scope, reqDetailService, clientListService) {
 		var vm = this;
 		vm.detail = reqDetailService.detail;
+		vm.client = clientListService.client;
+		vm.getclientbyid = clientListService.getclientbyid;
 
 		$scope.$on('client_select', function (event, client_id) {
 			reqDetailService.clearreq();
@@ -761,8 +763,8 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService',
 	}
 ]);
 
-iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetailService',
-	function ($scope, clientListService, reqDetailService) {
+iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
+	function ($scope, reqDetailService) {
 		var vm = this;
 		vm.oreq = null;
 		vm.client = null;
@@ -773,9 +775,9 @@ iwsApp.controller('OpenReqController', ['$scope', 'clientListService', 'reqDetai
 		vm.save = save;
 		vm.close = close;
 
-		function setup (oreq) {
+		function setup (oreq, client) {
 			vm.oreq = oreq;
-			vm.client = clientListService.getclientbyid(oreq.client_id);
+			vm.client = client;
 			vm.today = new Date();
 		}
 

@@ -150,7 +150,7 @@
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length">
 								<div class="noborder"><span class="sectitle">Open</span></div>
 								<div class="noborder" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
-								ng-init="orcon.setup(oreq)">
+								ng-init="orcon.setup(oreq, rdcon.getclientbyid(oreq.client_id))">
 									<div class="oreq-row">
 										<div class="oreq-name">{{orcon.client.name}}
 										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
@@ -167,7 +167,7 @@
 									</div>
 									<div class="oreq-close" ng-if="orcon.edit_mode == 'close'">
 										<div class="oreq-form" ng-form name="orcon.edit_form">
-											Reason:<span class="textright">Status: <select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required></select></span>
+											Reason:<span class="textright"><select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required></select></span>
 											<div class="floatclear"></div>
 											<input type="text" ng-model="orcon.edit_oreq.reason" name="reason" required />
 										</div>
@@ -177,6 +177,13 @@
 							</div>
 							<div id="reqclosed" class="noborder nopadding" ng-if="rdcon.detail.closed.length">
 								<div class="noborder"><span class="sectitle">Closed</span></div>
+								<div class="noborder" ng-repeat="creq in rdcon.detail.closed">
+									<div class="oreq-row">
+										<div class="oreq-name">{{rdcon.getclientbyid(creq.client_id).name}}
+										</div><div class="oreq-con"><strong>{{creq.status}}</strong></div>
+									</div>
+									<div class="oreq-row">{{creq.reason}}</div>
+								</div>
 							</div>
 						</div>
 					</div>
