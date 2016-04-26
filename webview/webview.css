@@ -38,14 +38,14 @@ div {
 	margin: 4px;
 }
 div.leftside {
-	width: 280px;
+	width: 330px;
 	float: left;
-	display: inline-block;
+	position: relative;
 }
 div.rightside {
-	width: calc(100% - 280px);
+	width: calc(100% - 330px);
 	float: left;
-	display: inline-block;
+	position: relative;
 }
 div.topleft {
 	float: left;
@@ -183,6 +183,23 @@ div.oreq-close {
 div.oreq-close input[type="text"] {
 	width: 100%;
 }
+div.tablecon {
+	height: 160px;
+}
+div.tablebody, div.tablehead {
+	margin: 0px;
+	padding: 0px;
+	border-width: 0px;
+}
+div.tablebody table {
+	width: calc(100% - 4px);
+}
+div.tablebody tbody {
+	overflow-y: auto;
+	overflow-x: hidden;
+	display: block;
+	height: 120px;
+}
 table {
 	border-collapse: collapse;
 	/*width: 100%;*/
@@ -207,6 +224,9 @@ col.clientname {
 }
 col.count {
 	width: 80px;
+}
+td.clientname, th.clientname {
+	width: 160px;
 }
 td.count, th.count {
 	width: 60px;
@@ -296,6 +316,10 @@ button.tabnav:first-child {
 textarea {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
 	font-size: 10pt;
+}
+#outer {
+	width: 960px;
+	margin: auto;
 }
 #container {
 	margin: 0px;
