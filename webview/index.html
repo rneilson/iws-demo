@@ -187,7 +187,7 @@
 								<div class="noborder" ng-class="{hidden: !rdcon.edit_msg}">{{rdcon.edit_msg}}</div>
 								<div class="noborder" ng-class="{hidden: !rdcon.edit_err}"><span class="error">{{rdcon.edit_err}}</span></div>
 							</div>
-						</div><div id="reqlists" class="noborder" ng-class="{hidden: (!rdcon.detail.req.id)}">
+						</div><div id="reqlists" class="noborder">
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length" ng-class="{hidden: (rdcon.edit_mode == 'create')}">
 								<div class="noborder"><span class="sectitle">Open</span></div>
 								<div class="oreq" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
