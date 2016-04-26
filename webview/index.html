@@ -157,9 +157,9 @@
 										</div><div class="oreq-con" ng-class="{hidden: (!orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.save()" value="Save"/> <input type="button" ng-click="orcon.close()" value="Cancel"/>
 										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_msg}">{{orcon.edit_msg}}</div>
 									</div>
-									<div class="oreq-row" ng-class="{hidden: orcon.edit_mode}">
-										<div class="oreq-pri">Priority: <strong>{{orcon.oreq.priority || 'None'}}</strong>
-										</div><div class="oreq-date">Target:<span class="textright">
+									<div class="oreq-row" ng-class="{hidden: (orcon.edit_mode == 'close')}">
+										<div class="oreq-pri">Priority: <span ng-class="{hidden: orcon.edit_mode}"><strong>{{orcon.oreq.priority || 'None'}}</strong></span>
+										</div><div class="oreq-date">Target date:<span class="textright" ng-class="{hidden: orcon.edit_mode}">
 										{{(orcon.oreq.date_tgt | date:'EEE dd MMM yy') || 'None'}}</span></div>
 									</div>
 									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'" ng-form name="orcon.edit_form">

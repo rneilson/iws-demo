@@ -120,7 +120,7 @@ div.oreq-row > div {
 	padding: 0px;
 }
 div.oreq-name {
-	width: 128px;
+	width: 158px;
 }
 div.oreq-con {
 	width: 96px;
@@ -130,7 +130,7 @@ div.oreq-pri {
 	width: 96px;
 }
 div.oreq-date {
-	width: 128px;
+	width: 158px;
 }
 div.oreq-form {
 	border-width: 0px;
@@ -138,10 +138,11 @@ div.oreq-form {
 	padding: 0px;
 }
 div.oreq-form > input[type="number"] {
-	width: 56px;
+	width: 64px;
+	text-align: right;
 }
 div.oreq-form > input[type="date"] {
-	width: 132px;
+	width: 158px;
 	float: right;
 }
 div.oreq-close {
@@ -231,6 +232,9 @@ input[type="button"]:active {
 	background-color: #417690;
 	color: #fff;
 }
+input[type="number"]::-webkit-inner-spin-button {
+	opacity: 1;
+}
 select {
 	font-size: 10pt;
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
@@ -293,12 +297,12 @@ button.tabnav:first-child {
     border: 0px;
 }
 #reqdata {
-	width: 350px;
+	width: 320px;
 	display: inline-block;
 	vertical-align: top;
 }
 #reqlists {
-	width: 240px;
+	width: 270px;
 	display: inline-block;
 	vertical-align: top;
 }
