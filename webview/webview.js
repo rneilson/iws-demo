@@ -323,6 +323,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/req/';
 	var exturl = '/all/';
 	var fields = ['prod_area', 'ref_url', 'desc', 'title', 'id'];
+	var upfields = ['prod_area', 'ref_url', 'title'];
 	var extra = ['user_up', 'date_up', 'user_cr', 'date_cr'];
 	var detail = {
 		req: emptyreq(),
@@ -353,7 +354,35 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		});
 	}
 
-	function updatereq (req) {
+	function updatereq (update) {
+		// Get changed fields
+		var upreq = {action: 'update'};
+		var changed = false;
+
+		// Check/update normal fields
+		for (var i = upfields.length - 1; i >= 0; i--) {
+			var field = upfields[i];
+			if ((iwsUtil.hasprop(update, field)) && (update[field] != detail.req[field])) {
+				upreq[field] = update[field];
+				changed = true;
+			}
+		}
+		if (update.desc) {
+			upreq.desc = update.desc;
+			changed = true;
+		}
+
+		if (changed) {
+			return $http.post(baseurl + detail.req.id, upreq)
+				.then(reqsuccess, updateerror);
+		}
+		else {
+			// TODO: return req regardless?
+			return $q.when(null);
+		}
+	}
+
+	function addreq (req, oreq) {
 
 	}
 
@@ -744,9 +773,16 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientListService',
 	function ($scope, reqDetailService, clientListService) {
 		var vm = this;
+		var fields = ['ref_url', 'prod_area', 'title']; // Description can only be appended to
+
+		vm.areas = ['Policies', 'Billing', 'Claims', 'Reports'];
 		vm.detail = reqDetailService.detail;
-		vm.client = clientListService.client;
+		vm.client = clientListService.clients;
 		vm.getclientbyid = clientListService.getclientbyid;
+
+		vm.edit = edit;
+		vm.save = save;
+		vm.close = close;
 
 		$scope.$on('client_select', function (event, client_id) {
 			reqDetailService.clearreq();
@@ -760,6 +796,83 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 				reqDetailService.getdetails(req_id);
 			}
 		});
+
+		function edit (mode) {
+			vm.edit_mode = mode;
+			vm.edit_req = iwsUtil.emptyobj();
+
+			if (mode == 'update') {
+				var req = vm.detail.req;
+				vm.edit_req.title = req.title;
+				vm.edit_req.prod_area = req.prod_area;
+				vm.edit_req.ref_url = req.ref_url;
+				vm.edit_req.desc = ''; // Description can only be appended to
+			}
+			else if (mode == 'create') {
+				vm.edit_req.title = '';
+				vm.edit_req.prod_area = vm.areas[0];
+				vm.edit_req.ref_url = '';
+				vm.edit_req.desc = '';
+				vm.edit_oreq = {
+					client_id: vm.client.id,
+					priority: null,
+					date_tgt: null
+				};
+			}
+		}
+
+		function save () {
+			if (vm.edit_form.$dirty) {
+				if (vm.edit_form.$valid) {
+					if (vm.edit_mode == 'update') {
+						vm.edit_msg = 'Updating...';
+						vm.edit_err = '';
+						reqDetailService.updatereq(vm.edit_req).then(
+							function (req) {
+								close();
+								if (req) {
+									// Emit so req list can be updated
+									$scope.$emit('req_updated', req);
+								}
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Update failed';
+							}
+						);
+					}
+					else if (vm.edit_mode == 'create') {
+						vm.edit_msg = 'Creating...';
+						vm.edit_err = '';
+						reqDetailService.addreq(vm.edit_req, vm.edit_oreq).then(
+							function (req) {
+								// TODO: now create openreq, or leave to service?
+								close();
+								// Emit so req list can be updated
+								$scope.$emit('req_created', req);
+							},
+							function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || reason || 'Creation failed';
+							}
+						);
+					}
+				}
+				else {
+					vm.edit_err = 'Please correct the error(s) above';
+				}
+			}
+			else {
+				close();
+			}
+		}
+
+		function close () {
+			vm.edit_mode = '';
+			vm.edit_msg = '';
+			vm.edit_err = '';
+			vm.edit_req = iwsUtil.emptyobj();
+		}
 	}
 ]);
 

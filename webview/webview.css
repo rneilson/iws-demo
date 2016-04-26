@@ -106,12 +106,21 @@ div.open {
 	margin-top: 0px;
 	border-top: none;
 }
+div.button-row {
+	padding: 0px;	
+    margin: 4px 0px;
+    border: 0px;
+}
+div.oreq {
+	margin: 4px 0px;
+	border-width: 0px;
+}
 div.oreq-row {
 	width: 100%;
 	border-width: 0px;
 	margin: 0px;
 	padding: 0px;
-	line-height: 20px;
+	/*line-height: 24px;*/
 }
 div.oreq-row > div {
 	display: inline-block;
@@ -134,8 +143,11 @@ div.oreq-date {
 }
 div.oreq-form {
 	border-width: 0px;
-	margin: 0px;
+	margin: 2px 0px;
 	padding: 0px;
+}
+div.oreq-form > input {
+	line-height: 18px;
 }
 div.oreq-form > input[type="number"] {
 	width: 64px;
@@ -144,6 +156,9 @@ div.oreq-form > input[type="number"] {
 div.oreq-form > input[type="date"] {
 	width: 158px;
 	float: right;
+}
+div.oreq-form > input[type="text"] {
+	width: 164px;
 }
 div.oreq-close {
 	line-height: 20px;
@@ -238,6 +253,8 @@ input[type="number"]::-webkit-inner-spin-button {
 select {
 	font-size: 10pt;
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    background-color: white;
+    padding: 1px;
 }
 button {
 	font-size: 10pt;
@@ -296,16 +313,27 @@ button.tabnav:first-child {
     margin: 4px 0px;
     border: 0px;
 }
+#reqnew {
+	width: 320px;
+	border-width: 0px;
+	margin: 0px;
+	display: inline-block;	
+}
 #reqdata {
 	width: 320px;
 	display: inline-block;
 	vertical-align: top;
 	margin-bottom: 6px;
 }
-#reqdata .button-row {
-	padding: 0px;	
-    margin: 4px 0px;
-    border: 0px;
+#reqdata input[name="title"] {
+	width: 240px;
+}
+#reqdata input[name="ref_url"] {
+	width: 210px;
+}
+#reqdata textarea {
+	width: 240px;
+	height: 36px;
 }
 #reqlists {
 	width: 270px;
