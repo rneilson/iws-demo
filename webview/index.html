@@ -153,8 +153,8 @@
 								ng-init="orcon.setup(oreq)">
 									<div class="oreq-row">
 										<div class="oreq-name">{{orcon.client.name}}
-										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}"><a ng-click="orcon.edit('update')">Edit</a>&nbsp;/&nbsp;<a ng-click="orcon.edit('close')">Close</a>
-										</div><div class="oreq-con" ng-class="{hidden: (!orcon.edit_mode || orcon.edit_msg)}"><a ng-click="orcon.save()">Save</a>&nbsp;/&nbsp;<a ng-click="orcon.close()">Cancel</a>
+										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
+										</div><div class="oreq-con" ng-class="{hidden: (!orcon.edit_mode || orcon.edit_msg)}"><input type="button" ng-click="orcon.save()" value="Save"/> <input type="button" ng-click="orcon.close()" value="Cancel"/>
 										</div><div class="oreq-con" ng-class="{hidden: !orcon.edit_msg}">{{orcon.edit_msg}}</div>
 									</div>
 									<div class="oreq-row" ng-class="{hidden: orcon.edit_mode}">

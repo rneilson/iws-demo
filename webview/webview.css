@@ -131,10 +131,10 @@ div.oreq-row > div {
 	padding: 0px;
 }
 div.oreq-name {
-	width: 144px;
+	width: 128px;
 }
 div.oreq-con {
-	width: 80px;
+	width: 96px;
 	text-align: right;
 }
 div.oreq-pri {
@@ -228,6 +228,22 @@ input.ng-dirty.ng-invalid:focus {
 	box-shadow: 0 0 2px 0px #CC0000;
 	outline-color: #CC0000;
 	/*outline-width: 1px;*/
+}
+input[type="button"] {
+    background-color: #fff;
+    color: #417690;
+    font-weight: 400;
+    border: 1px solid #417690;
+    line-height: 14px;
+    padding: 1px 4px;
+}
+input[type="button"]:active {
+	background-color: #417690;
+	color: #fff;
+}
+select {
+	font-size: 10pt;
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
 }
 #container {
 	margin: 0px;
