@@ -143,9 +143,17 @@
 						<div id="reqdata" class="noborder">
 							<p><span class="sectitle">{{rdcon.detail.req.title}}</span></p>
 							<p>
-								Product Area: <strong>{{rdcon.detail.req.prod_area}}</strong><br/>
+								Product Area: <strong>{{rdcon.detail.req.prod_area}}</strong>
+								<!--<span class="textright"><input type="button" value="Edit" /></span><span class="floatclear"/>--><br/>
 								Reference: <a href="{{rdcon.detail.req.ref_url}}">{{rdcon.detail.req.ref_url}}</a>
-							</p>Description:<br/><pre class="desc">{{rdcon.detail.req.desc}}</pre>
+							</p>
+							Description:<br/>
+							<pre class="desc">{{rdcon.detail.req.desc}}</pre>
+							<div class="noborder"></div>
+							<div class="button-row" ng-show="rdcon.detail.open.length">
+								<input ng-click="rdcon.edit('update')" type="button" value="Edit" />
+								<input ng-click="rdcon.edit('create')" type="button" value="New" />
+							</div>
 						</div><div id="reqlists" class="noborder">
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length">
 								<div class="noborder"><span class="sectitle">Open</span></div>

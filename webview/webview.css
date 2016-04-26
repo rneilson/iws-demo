@@ -300,6 +300,12 @@ button.tabnav:first-child {
 	width: 320px;
 	display: inline-block;
 	vertical-align: top;
+	margin-bottom: 6px;
+}
+#reqdata .button-row {
+	padding: 0px;	
+    margin: 4px 0px;
+    border: 0px;
 }
 #reqlists {
 	width: 270px;
