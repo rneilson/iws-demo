@@ -162,18 +162,18 @@ div.oreq-form {
 	margin: 2px 0px;
 	padding: 0px;
 }
-div.oreq-form > input {
+div.oreq-form input {
 	line-height: 18px;
 }
-div.oreq-form > input[type="number"] {
+div.oreq-form input[type="number"] {
 	width: 64px;
 	text-align: right;
 }
-div.oreq-form > input[type="date"] {
+div.oreq-form input[type="date"] {
 	width: 158px;
 	float: right;
 }
-div.oreq-form > input[type="text"] {
+div.oreq-form input[type="text"] {
 	width: 164px;
 }
 div.oreq-close {
