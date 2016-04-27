@@ -137,9 +137,15 @@ div.req {
 }
 div.req-title {
 	width: 32px;
+	vertical-align: top;
+}
+div.req-title-edit {
+	width: 32px;
+	vertical-align: middle;
 }
 div.req-text {
 	width: 252px;
+	overflow-wrap: break-word;
 }
 div.req-text input[type="text"], input[type="url"] {
 	width: 100%;
