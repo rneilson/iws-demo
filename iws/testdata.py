@@ -226,6 +226,8 @@ def buildtestdata(client):
                 }
                 respobj = postjson(client, BASEURL + 'client/' + clid + '/open/', reqargs)
                 assert 'client' in respobj
+                # Sleep to stagger open times
+                time.sleep(1.0)
         else:
             sys.stderr.write('No test requests to open for client id {0}\n'.format(clid))
         sys.stderr.flush()
