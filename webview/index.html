@@ -165,6 +165,22 @@
 									</div>
 								</div>
 								<div class="oreq">
+									<div class="oreq-row">
+										<div class="oreq-date">
+											Created:<span class="textright">{{rdcon.detail.req.date_cr | date:'EEE dd MMM yy'}}</span>
+										</div><div class="oreq-con">
+											{{rdcon.detail.req.user_cr}}
+										</div>
+									</div>
+									<div class="oreq-row">
+										<div class="oreq-date">
+											Updated:<span class="textright">{{rdcon.detail.req.date_up | date:'EEE dd MMM yy'}}</span>
+										</div><div class="oreq-con">
+											{{rdcon.detail.req.user_up}}
+										</div>
+									</div>
+								</div>
+								<div class="oreq">
 									Description:<br/>
 									<pre class="desc">{{rdcon.detail.req.desc}}</pre>
 								</div>
