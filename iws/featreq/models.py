@@ -155,7 +155,7 @@ class FeatureReq(models.Model):
 
         # Get current datetime
         dt = approxnow()
-        dtstr = dt.strftime('%Y-%m-%d %H:%M:%S')
+        dtstr = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
         padstr = '\n\n'
         upstr = ""
 
