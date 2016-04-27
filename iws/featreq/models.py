@@ -3,6 +3,7 @@ from collections import OrderedDict
 from django.db import models, transaction
 from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 from .utils import *
 
 ## Module-level functions
@@ -166,8 +167,9 @@ class FeatureReq(models.Model):
             if prod_area in AREA_BY_SHORT:
                 # Change product area and append change
                 self.prod_area = prod_area
-                upstr = upstr + padstr + '{0}, {1}:\n[Changed product area to "{2}"]'.format(
-                    dtstr, user, AREA_BY_SHORT[prod_area])
+                if settings.IWS_REQ_ADD_CHG_DESC:
+                    upstr = upstr + padstr + '{0}, {1}:\n[Changed product area to "{2}"]'.format(
+                        dtstr, user, AREA_BY_SHORT[prod_area])
             else:
                 raise ValueError('Invalid product area: {0}'.format(prod_area))
 
@@ -179,13 +181,15 @@ class FeatureReq(models.Model):
                 raise TypeError('Invalid URL type: {0}'.format(type(ref_url)))
             # Change URL and append change
             self.ref_url = ref_url
-            upstr = upstr + padstr + '{0}, {1}:\n[Changed reference URL to "{2}"]'.format(
-                dtstr, user, ref_url)
-        elif ref_url is not None and self.ref_url:
-            # Force blanking of ref_url
-            self.ref_url = ''
-            upstr = upstr + padstr + '{0}, {1}:\n[Removed reference URL]'.format(
-                dtstr, user)
+            if settings.IWS_REQ_ADD_CHG_DESC:
+                if ref_url is not None and self.ref_url:
+                    # Force blanking of ref_url
+                    self.ref_url = ''
+                    upstr = upstr + padstr + '{0}, {1}:\n[Removed URL]'.format(
+                        dtstr, user)
+                else:
+                    upstr = upstr + padstr + '{0}, {1}:\n[Changed URL to "{2}"]'.format(
+                        dtstr, user, ref_url)
 
 
         # Next append title change, if present
@@ -195,8 +199,9 @@ class FeatureReq(models.Model):
                 raise TypeError('Invalid title type: {0}'.format(type(title)))
             # Change title and append change
             self.title = title
-            upstr = upstr + padstr + '{0}, {1}:\n[Changed title to "{2}"]'.format(
-                dtstr, user, title)
+            if settings.IWS_REQ_ADD_CHG_DESC:
+                upstr = upstr + padstr + '{0}, {1}:\n[Changed title to "{2}"]'.format(
+                    dtstr, user, title)
 
         # Now description addendum, if requested
         if desc:

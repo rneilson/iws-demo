@@ -134,3 +134,5 @@ SILENCED_SYSTEM_CHECKS = ['urls.W002']
 CSRF_COOKIE_HTTPONLY = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
+IWS_REQ_ADD_CHG_DESC = False
+
