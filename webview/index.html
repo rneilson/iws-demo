@@ -213,8 +213,7 @@
 								<div class="oreq" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
 								ng-init="orcon.setup(oreq)">
 									<div class="oreq-row">
-										<div class="oreq-name-exp">{{rdcon.getclientname(oreq.client_id)}}
-											<!--<div class="expand">{{rdcon.getclientname(oreq.client_id)}}</div>&nbsp;-->
+										<div class="oreq-name"><div class="expand">{{rdcon.getclientname(oreq.client_id)}}</div>&nbsp;
 										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}">
 											<input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
 										</div><div class="oreq-con" ng-if="orcon.edit_mode">
