@@ -157,6 +157,21 @@ div.req-text input[type="text"], input[type="url"] {
 div.oreq-name {
 	width: 154px;
 }
+div.oreq-name-exp {
+	width: 154px;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+}
+div.oreq-name-exp:hover {
+	overflow-x: visible;
+	z-index: 10;
+	/*top: -1px;*/
+	/*left: -1px;*/
+	border: 1px solid #ccc;
+	opacity: 1;
+	background-color: #eee;
+	width: auto;
+}
 div.oreq-row .expand {
 	overflow-x: hidden;
 	text-overflow: ellipsis;
