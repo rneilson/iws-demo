@@ -222,7 +222,7 @@
 										</div>
 									</div>
 									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'" ng-form name="orcon.edit_form">
-										<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority" />
+										<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority"/>
 										<input type="date" min="{{orcon.today | date:'yyyy-MM-dd'}}" ng-model="orcon.edit_oreq.date_tgt" name="date_tgt" />
 									</div>
 									<div class="oreq-form" ng-if="orcon.edit_mode == 'close'" ng-form name="orcon.edit_form">
@@ -262,20 +262,20 @@
 									<div class="oreq-row"><pre class="reason">{{creq.reason}}</pre></div>
 								</div>
 							</div>
-							<div id="reqmodinfo" class="noborder nopadding" ng-class="{hidden: (!rdcon.detail.req.id)}">
+							<div id="reqmod" class="noborder nopadding" ng-class="{hidden: ((!rdcon.detail.req.id) || (rdcon.edit_mode == 'create'))}">
 								<div class="oreq">
 									<div class="oreq-row">
 										<div class="oreq-date">
 											Created:<span class="textright">{{rdcon.detail.req.date_cr | date:'EEE dd MMM yy'}}</span>
-										</div><div class="oreq-con">
-											{{rdcon.detail.req.user_cr}}
+										</div><div class="oreq-pri">
+											&nbsp;<span class="textright">{{rdcon.detail.req.user_cr}}</span>
 										</div>
 									</div>
 									<div class="oreq-row">
 										<div class="oreq-date">
 											Updated:<span class="textright">{{rdcon.detail.req.date_up | date:'EEE dd MMM yy'}}</span>
-										</div><div class="oreq-con">
-											{{rdcon.detail.req.user_up}}
+										</div><div class="oreq-pri">
+											&nbsp;<span class="textright">{{rdcon.detail.req.user_up}}</span>
 										</div>
 									</div>
 								</div>
