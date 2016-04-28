@@ -129,6 +129,7 @@ div.oreq-row {
 }
 div.oreq-row > div {
 	display: inline-block;
+	position: relative;
 	border-width: 0px;
 	margin: 0px;
 	padding: 0px;
@@ -155,30 +156,25 @@ div.req-text input[type="text"], input[type="url"] {
 }
 div.oreq-name {
 	width: 154px;
-	position: relative;
 }
-div.oreq-name .truncate {
+div.oreq-row .expand {
 	overflow-x: hidden;
+	position: absolute;
 	margin: 0px;
 	padding: 0px;
 	border-width: 0px;
+	width: 100%;
 }
-div.oreq-name .expand {
-	position: absolute;
-	/*visibility: hidden;*/
+div.oreq-row .expand:hover {
+	overflow-x: visible;
 	z-index: 10;
 	top: -1px;
 	left: -1px;
-	display: none;
-	margin: 0px;
-	padding: 0px;
-}
-div.oreq-name:hover .expand {
-	/*visibility: visible;*/
 	border: 1px solid #ccc;
-	display: block;
+	/*display: block;*/
 	opacity: 1;
 	background-color: #eee;
+	width: auto;
 }
 div.oreq-con {
 	width: 100px;
