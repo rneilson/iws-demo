@@ -155,6 +155,30 @@ div.req-text input[type="text"], input[type="url"] {
 }
 div.oreq-name {
 	width: 154px;
+	position: relative;
+}
+div.oreq-name .truncate {
+	overflow-x: hidden;
+	margin: 0px;
+	padding: 0px;
+	border-width: 0px;
+}
+div.oreq-name .expand {
+	position: absolute;
+	/*visibility: hidden;*/
+	z-index: 10;
+	top: -1px;
+	left: -1px;
+	display: none;
+	margin: 0px;
+	padding: 0px;
+}
+div.oreq-name:hover .expand {
+	/*visibility: visible;*/
+	border: 1px solid #ccc;
+	display: block;
+	opacity: 1;
+	background-color: #eee;
 }
 div.oreq-con {
 	width: 100px;
