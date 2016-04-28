@@ -100,6 +100,9 @@ div.noborder {
 div.nopadding {
 	padding: 0px;
 }
+div.toppadding {
+	padding: 4px 0px 0px 0px;
+}
 div.panel {
 	display: none;
 }
@@ -194,7 +197,7 @@ div.oreq-close input[type="text"] {
 	width: 100%;
 }
 div.tablecon {
-	height: 160px;
+	height: 200px;
 }
 div.tablebody, div.tablehead {
 	margin: 0px;
@@ -204,11 +207,11 @@ div.tablebody, div.tablehead {
 div.tablebody table {
 	width: calc(100% - 4px);
 }
-div.tablebody tbody {
+div.tablecon tbody {
 	overflow-y: auto;
 	overflow-x: hidden;
 	display: block;
-	height: 120px;
+	height: 160px;
 }
 table {
 	border-collapse: collapse;
@@ -361,7 +364,7 @@ textarea {
 }
 #clientdetails {
 	margin-top: 8px;
-	padding: 8px 12px 4px;
+	padding: 4px 12px 4px;
 }
 #clientdetails .form-row {
     padding: 4px 1.5em 4px 0;

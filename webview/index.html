@@ -50,18 +50,25 @@
 							</div>
 						</div>
 					</div>
-					<div id="clientdetails" ng-controller="ClientDetailController as cdcon" ng-class="{hidden: !cdcon.client.id}">
-						<div class="noborder nopadding" ng-class="{hidden: cdcon.edit_mode}">
-							<p><span class="sectitle">{{cdcon.client.name}}</span></p>
-							<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
-							<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
-							<p>Date added: {{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
-							<div class="button-row">
-								<input ng-click="cdcon.edit('update')" type="button" value="Edit" />
-								<input ng-click="cdcon.edit('create')" type="button" value="New" />
+					<div id="clientdetails" ng-controller="ClientDetailController as cdcon">
+						<div class="noborder nopadding" ng-class="{hidden: (cdcon.edit_mode)}">
+							<div class="noborder nopadding" ng-class="{hidden: (cdcon.client.id)}">
+								<div class="button-row">
+									<input ng-click="cdcon.edit('create')" type="button" value="New" />
+								</div>
+							</div>
+							<div class="noborder toppadding" ng-class="{hidden: (!cdcon.client.id)}">
+								<p><span class="sectitle">{{cdcon.client.name}}</span></p>
+								<p>Contact name:<br/>{{cdcon.client.con_name}}</p>
+								<p>Contact email:<br/><a href="mailto:{{cdcon.client.con_mail}}">{{cdcon.client.con_mail}}</a></p>
+								<p>Date added: {{cdcon.client.date_add | date:'EEE dd MMM yy'}}</p>
+								<div class="button-row">
+									<input ng-click="cdcon.edit('update')" type="button" value="Edit" />
+									<input ng-click="cdcon.edit('create')" type="button" value="New" />
+								</div>
 							</div>
 						</div>
-						<div class="noborder nopadding" ng-if="cdcon.edit_mode">
+						<div class="noborder toppadding" ng-if="cdcon.edit_mode">
 							<form name="cdcon.edit_form" novalidate>
 								<div class="form-row">
 									<label>Client name: <span class="error" ng-class="{hidden: !cdcon.edit_form.name.$error.required}">Required</span><br/>
