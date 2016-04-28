@@ -159,6 +159,7 @@ div.oreq-name {
 }
 div.oreq-row .expand {
 	overflow-x: hidden;
+	text-overflow: ellipsis;
 	position: absolute;
 	margin: 0px;
 	padding: 0px;
