@@ -273,8 +273,8 @@ th:nth-child(1), td:nth-child(1) {
 	text-align: left;
 }
 td.clientname, th.clientname {
-	width: 160px;
-	max-width: 160px;
+	width: 168px;
+	max-width: 168px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -284,8 +284,8 @@ td.count, th.count {
 }
 td.reqtitle, th.reqtitle {
 	text-align: left;
-	width: 160px;
-	max-width: 160px;
+	width: 168px;
+	max-width: 168px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -501,6 +501,10 @@ textarea {
 	padding: 0px;
 	margin: 0px;
 	border-width: 0px;
+}
+.clipped {
+	overflow-x: hidden;
+	text-overflow: ellipsis;
 }
 span.error {
 	padding-right: 4px;

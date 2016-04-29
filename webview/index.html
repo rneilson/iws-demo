@@ -160,8 +160,8 @@
 					<div id="reqdetails" ng-class="{hidden: (!rdcon.clients.id)}" ng-controller="ReqDetailController as rdcon">
 						<div id="reqdata" class="noborder" ng-form name="rdcon.edit_form">
 							<div class="noborder nopadding" ng-class="{hidden: ((!rdcon.detail.req.id) || (rdcon.edit_mode))}">
-								<div class="noborder">
-									<span class="sectitle" ng-class="{hidden: (rdcon.edit_mode)}">{{rdcon.detail.req.title}}</span>
+								<div class="noborder clipped">
+									<span class="sectitle">{{rdcon.detail.req.title}}</span>
 								</div>
 								<div class="oreq">
 									<div class="oreq-row">
