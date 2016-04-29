@@ -11,7 +11,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt, requir
 from django.middleware.csrf import get_token as csrf_get_token
 from django.contrib.auth import authenticate, login, logout
 from .models import FeatureReq, ClientInfo, OpenReq, ClosedReq
-from .utils import approxnow, tojsondict, qset_vals_tojsonlist
+from .utils import approxnow, tojsondict, qset_vals_tojsonlist, DATETIMEFMT
 
 ## Common vars
 
@@ -449,6 +449,12 @@ def apiauth(request):
         else:
             loggedin = request.user.is_authenticated()
             username = request.user.get_username()
+
+            # Refresh session if auth'd
+            # if loggedin:
+                # request.session.set_expiry(SESSION_EXPIRY)
+            
+            # Get full name or placeholder
             try:
                 fullname = request.user.get_full_name()
             except AttributeError:
@@ -460,7 +466,8 @@ def apiauth(request):
             reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
             if (reqfmt and reqfmt[0] == 'plain') or req_is_plain(request):
                 histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
-                    loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_age())
+                    loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_date(
+                        modification=request.session._last_modification()).strftime(DATETIMEFMT))
                 return HttpResponse(histr, content_type='text/plain')
             else:
                 respdict = OrderedDict([
@@ -468,7 +475,8 @@ def apiauth(request):
                     ('username', username),
                     ('full_name', fullname),
                     ('csrf_token', csrf_get_token(request)),
-                    ('session_expiry', request.session.get_expiry_age()),
+                    ('session_expiry', request.session.get_expiry_date(
+                        modification=request.session._last_modification()).strftime(DATETIMEFMT)),
                 ])
                 return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
@@ -513,14 +521,34 @@ def apiauth(request):
                     return forbidden(request, 'User {0} is disabled'.format(user.get_username()))
             else:
                 return forbidden(request, 'Login failed')
+
+        elif action == 'refresh':
+            # Make sure usernames (given and stored) match
+            if postargs['username'] != request.user.get_username():
+                return forbidden(request, 'Given username does not match current user',
+                    {'username': postargs['username']})
+
+            if request.user.is_authenticated():
+                # Reset expiry
+                request.session.set_expiry(SESSION_EXPIRY)
+                # Have to manually save, or the updated value won't show in response
+                request.session.save()
+                return _authresp(request)
+            else:
+                return forbidden(request, 'Not logged in')
+
         elif action == 'logout':
             # Make sure usernames (given and stored) match
             if postargs['username'] != request.user.get_username():
                 return forbidden(request, 'Given username does not match current user',
                     {'username': postargs['username']})
+
             # Log out user
-            logout(request)
-            return _authresp(request)
+            if request.user.is_authenticated():
+                logout(request)
+                return _authresp(request)
+            else:
+                return forbidden(request, 'Not logged in')
         else:
             return badrequest(request, 'Invalid action: {0}'.format(action), 'action')
 
