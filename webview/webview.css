@@ -160,11 +160,12 @@ div.oreq-name {
 div.oreq-row .expand {
 	overflow-x: hidden;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+	width: 100%;
 	position: absolute;
 	margin: 0px;
 	padding: 0px;
 	border-width: 0px;
-	width: 100%;
 }
 div.oreq-row .expand:hover {
 	overflow-x: visible;
@@ -172,7 +173,6 @@ div.oreq-row .expand:hover {
 	top: -1px;
 	left: -1px;
 	border: 1px solid #ccc;
-	/*display: block;*/
 	opacity: 1;
 	background-color: #eee;
 	width: auto;
