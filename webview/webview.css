@@ -147,6 +147,12 @@ div.req-title-edit {
 	width: 32px;
 	/*vertical-align: middle;*/
 }
+div.req-user {
+	width: 92px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 div.req-text {
 	width: 252px;
 	overflow-wrap: break-word;
@@ -156,6 +162,24 @@ div.req-text input[type="text"], input[type="url"] {
 }
 div.oreq-name {
 	width: 154px;
+}
+div.oreq-con {
+	width: 100px;
+	text-align: right;
+}
+div.oreq-pri {
+	width: 92px;
+}
+div.oreq-user {
+	width: 92px;
+	text-align: right;
+}
+div.oreq-row > div.oreq-user {
+	width: 82px;
+	margin-left: 10px;
+}
+div.oreq-date {
+	width: 162px;
 }
 div.oreq-row .expand {
 	overflow-x: hidden;
@@ -177,15 +201,10 @@ div.oreq-row .expand:hover {
 	background-color: #eee;
 	width: auto;
 }
-div.oreq-con {
-	width: 100px;
-	text-align: right;
-}
-div.oreq-pri {
-	width: 92px;
-}
-div.oreq-date {
-	width: 162px;
+div.oreq-user .expand:hover {
+	right: -1px;
+	left: auto;
+	padding-left: 0px;
 }
 div.oreq-form {
 	border-width: 0px;
@@ -253,14 +272,12 @@ tbody tr.selected {
 th:nth-child(1), td:nth-child(1) {
 	text-align: left;
 }
-col.clientname {
-	width: 160px;
-}
-col.count {
-	width: 80px;
-}
 td.clientname, th.clientname {
 	width: 160px;
+	max-width: 160px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 td.count, th.count {
 	width: 60px;
@@ -268,6 +285,10 @@ td.count, th.count {
 td.reqtitle, th.reqtitle {
 	text-align: left;
 	width: 160px;
+	max-width: 160px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 td.short, th.short {
 	text-align: left;
@@ -278,6 +299,9 @@ td.date, th.date {
 }
 td.user, th.user {
 	width: 80px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 pre.desc, pre.reason {
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
