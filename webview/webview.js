@@ -75,7 +75,7 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 
 	function getclients () {
 		return $http.get(clienturl).then(function (response) {
-			client_list = response.data.client_list;
+			var client_list = response.data.client_list;
 			if (client_list) {
 				client_list.sort(
 					function(a, b) {
@@ -1063,7 +1063,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 var iwsUtil = {
 	oreqproc: function oreqproc(oreq) {
 		// Process received data into new object
-		newreq = Object.create(null);
+		var newreq = Object.create(null);
 		if (oreq.client_id) {
 			newreq.client_id = oreq.client_id;
 		}
@@ -1079,7 +1079,7 @@ var iwsUtil = {
 	},
 	creqproc: function creqproc(creq) {
 		// Process received data into new object
-		newreq = Object.create(null);
+		var newreq = Object.create(null);
 		if (creq.client_id) {
 			newreq.client_id = creq.client_id;
 		}

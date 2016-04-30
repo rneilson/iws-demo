@@ -185,7 +185,7 @@ div.oreq-row .expand {
 	overflow-x: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	width: 100%;
+	max-width: 100%;
 	position: absolute;
 	margin: 0px;
 	padding: 0px;
@@ -201,10 +201,13 @@ div.oreq-row .expand:hover {
 	background-color: #eee;
 	width: auto;
 }
+div.oreq-user .expand {
+	right: 0px;
+}
 div.oreq-user .expand:hover {
+	padding-left: 1px;
 	right: -1px;
 	left: auto;
-	padding-left: 0px;
 }
 div.oreq-form {
 	border-width: 0px;
