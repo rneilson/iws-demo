@@ -124,12 +124,19 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 	};
 
 	function getdetails (client_id) {
-		return $http.get(baseurl + client_id).then(function (response) {
-			var newclient = response.data.client;
-			newclient.date_add = new Date(newclient.date_add);
-			angular.copy(newclient, client)
-			return client;
-		});
+		if (client_id) {
+			return $http.get(baseurl + client_id).then(function (response) {
+				var newclient = response.data.client;
+				newclient.date_add = new Date(newclient.date_add);
+				angular.copy(newclient, client)
+				return client;
+			});
+		}
+		else {
+			var newclient = emptyclient(true);
+			angular.copy(newclient, client);
+			return $q.when(client);
+		}
 	}
 
 	function updateclient (update) {
@@ -170,10 +177,16 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 		}
 	}
 
-	function emptyclient () {
+	function emptyclient (full) {
 		var newcli = iwsUtil.emptyobj();
+		if (full) {
+			newcli.id = '';
+		}
 		for (var i = fields.length - 1; i >= 0; i--) {
 			newcli[fields[i]] = '';
+		}
+		if (full) {
+			newcli.date_add = null;
 		}
 		return newcli;
 	}
@@ -623,6 +636,7 @@ iwsApp.controller('ClientListController', ['$scope', 'clientListService',
 		$scope.$on('logged_out', function (event, auth) {
 			vm.logged_in = false;
 			clientListService.clearclients();
+			$scope.$broadcast('client_select', '');
 		});
 
 		$scope.$on('client_updated', function (event, client) {
@@ -661,10 +675,10 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 		vm.close = close;
 
 		$scope.$on('client_select', function (event, client_id) {
-			if (client_id) {
-				close();
-				clientDetailService.getdetails(client_id);
-			}
+			// if (client_id) {
+			// }
+			close();
+			clientDetailService.getdetails(client_id);
 		});
 
 		function edit (mode) {
@@ -930,7 +944,13 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 
 		function getclientname (client_id) {
 			var use_id = (client_id) ? client_id : vm.clients.id;
-			return clientListService.getclientbyid(use_id).name;
+			var use_cl = clientListService.getclientbyid(use_id);
+			if (use_cl) {
+				return use_cl.name;
+			}
+			else {
+				return '';
+			}
 		}
 	}
 ]);
