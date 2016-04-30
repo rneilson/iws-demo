@@ -125,60 +125,14 @@ div.oreq-row {
 	border-width: 0px;
 	margin: 0px;
 	padding: 0px;
-	position: relative;
+	/*line-height: 24px;*/
 }
 div.oreq-row > div {
 	display: inline-block;
-	vertical-align: top;
+	position: relative;
 	border-width: 0px;
 	margin: 0px;
 	padding: 0px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-div[data-expand]:hover::after {
-	content: attr(data-expand);
-	position: absolute;
-	z-index: 10;
-	top: -1px;
-	left: -1px;
-	border: 1px solid #ccc;
-	opacity: 1;
-	background-color: #eee;
-	width: auto;
-}
-div.oreq-user[data-expand]:hover::after {
-	right: -1px;
-	left: auto;
-	padding-left: 0px;
-}
-/*
-div.oreq-row .expand {
-	overflow-x: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	width: 100%;
-	position: absolute;
-	margin: 0px;
-	padding: 0px;
-	border-width: 0px;
-}
-*/
-div.oreq-row .expand:hover {
-	overflow-x: visible;
-	z-index: 10;
-	top: -1px;
-	left: -1px;
-	border: 1px solid #ccc;
-	opacity: 1;
-	background-color: #eee;
-	width: auto;
-}
-div.oreq-user.expand:hover {
-	right: -1px;
-	left: auto;
-	padding-left: 0px;
 }
 div.req {
 	margin: 4px 0px;
@@ -191,10 +145,13 @@ div.req-title {
 }
 div.req-title-edit {
 	width: 32px;
-	vertical-align: middle;
+	/*vertical-align: middle;*/
 }
 div.req-user {
 	width: 92px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 div.req-text {
 	width: 252px;
@@ -223,6 +180,31 @@ div.oreq-row > div.oreq-user {
 }
 div.oreq-date {
 	width: 170px;
+}
+div.oreq-row .expand {
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	width: 100%;
+	position: absolute;
+	margin: 0px;
+	padding: 0px;
+	border-width: 0px;
+}
+div.oreq-row .expand:hover {
+	overflow-x: visible;
+	z-index: 10;
+	top: -1px;
+	left: -1px;
+	border: 1px solid #ccc;
+	opacity: 1;
+	background-color: #eee;
+	width: auto;
+}
+div.oreq-user .expand:hover {
+	right: -1px;
+	left: auto;
+	padding-left: 0px;
 }
 div.oreq-form {
 	border-width: 0px;
