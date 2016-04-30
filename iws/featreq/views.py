@@ -479,7 +479,7 @@ def apiauth(request):
                 histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\n'.format(
                     loggedin, username, fullname, csrf_get_token(request))
                 if mod_time:
-                    histr += 'Session expiry: {4}s\n'.format(mod_time)
+                    histr += 'Session expiry: {4}\n'.format(mod_time)
                 return HttpResponse(histr, content_type='text/plain')
             else:
                 respdict = OrderedDict([
