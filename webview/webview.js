@@ -559,13 +559,17 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 		});
 
 		// Get initial auth status
-		authService.refresh().then(function (auth) {
+		authService.refresh()
+		.then(function (auth) {
 			if (auth.logged_in) {
 				login_success(auth);
 			}
 			else {
 				logged_out();
 			}
+		})
+		.catch(function (reason) {
+			vm.login_msg = reason.error || reason.statusText || "Error getting login status";
 		});
 
 		function login_success (auth) {
@@ -596,7 +600,7 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 				function (reason) {
 					vm.password = "";
 					vm.login_req = true;
-					vm.login_msg = reason.error || reason || "Error logging in";
+					vm.login_msg = reason.error || reason.statusText || "Error logging in";
 				}
 			);
 		}
