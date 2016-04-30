@@ -199,7 +199,7 @@ div.oreq-row .expand:hover {
 	border: 1px solid #ccc;
 	opacity: 1;
 	background-color: #eee;
-	width: auto;
+	max-width: none;
 }
 div.oreq-user .expand {
 	right: 0px;
