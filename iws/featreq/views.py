@@ -468,9 +468,10 @@ def apiauth(request):
                 try:
                     last_mod = request.session._last_modification()
                 except Exception as e:
-                    pass
-                else:
-                    mod_time = request.session.get_expiry_date(modification=last_mod).strftime(DATETIMEFMT)
+                    last_mod = approxnow()
+                mod_time = request.session.get_expiry_date(modification=last_mod).strftime(DATETIMEFMT)
+            else:
+                mod_time = ''
 
             # Check for text/plain
             reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
