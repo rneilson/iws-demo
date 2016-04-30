@@ -725,7 +725,7 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 					}
 				}
 				else {
-					vm.edit_err = 'Please correct the error(s) above';
+					vm.edit_err = 'Please correct above error(s)';
 				}
 			}
 			else {
@@ -922,12 +922,12 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 							);
 						}
 						else {
-							vm.edit_err = 'Please correct the error(s) above';
+							vm.edit_err = 'Please correct above error(s)';
 						}
 					}
 				}
 				else {
-					vm.edit_err = 'Please correct the error(s) above';
+					vm.edit_err = 'Please correct above error(s)';
 				}
 			}
 			else {
@@ -1021,7 +1021,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 						);
 					}
 					else {
-						vm.edit_err = 'Please correct the error(s) above';
+						vm.edit_err = 'Please correct above error(s)';
 					}
 				}
 				else {

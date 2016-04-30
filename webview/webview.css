@@ -127,6 +127,9 @@ div.oreq-row {
 	padding: 0px;
 	/*line-height: 24px;*/
 }
+div.oreq-row.topmargin {
+	margin-top: 2px;
+}
 div.oreq-row > div {
 	display: inline-block;
 	position: relative;
@@ -134,49 +137,30 @@ div.oreq-row > div {
 	margin: 0px;
 	padding: 0px;
 }
-div.req {
-	margin: 4px 0px;
-	padding: 4px 0px;
-	border-width: 0px;
-}
-div.req-title {
-	width: 32px;
-	vertical-align: top;
-}
-div.req-title-edit {
-	width: 32px;
-	/*vertical-align: middle;*/
-}
-div.req-user {
-	width: 92px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-div.req-text {
-	width: 252px;
-	overflow-wrap: break-word;
-}
-div.req-text input[type="text"], input[type="url"] {
-	width: 100%;
+div.oreq-row > pre {
+	margin: 2px 0px 0px;
 }
 div.oreq-name {
-	width: 162px;
+	width: 220px;
+}
+div.oreq-vshort {
+	width: 42px;
 }
 div.oreq-con {
-	width: 100px;
-	text-align: right;
+	width: 92px;
+	/*text-align: right;*/
 }
-div.oreq-pri {
+div.oreq-pri, div.oreq-user, div.oreq-short {
 	width: 92px;
 }
-div.oreq-user {
-	width: 92px;
-	text-align: right;
+div.oreq-row > div.oreq-pri {
+	width: 76px;
+	margin-right: 16px;
 }
 div.oreq-row > div.oreq-user {
 	width: 82px;
 	margin-left: 10px;
+	text-align: right;
 }
 div.oreq-date {
 	width: 170px;
@@ -220,15 +204,19 @@ div.oreq-form input {
 }
 */
 div.oreq-form input[type="number"] {
-	width: 64px;
+	width: 89px;
+	/*margin-right: 9px;*/
 	text-align: right;
 }
 div.oreq-form input[type="date"] {
-	width: 158px;
-	float: right;
+	width: 170px;
+	/*float: right;*/
 }
 div.oreq-form input[type="text"] {
-	width: 164px;
+	width: 170px;
+}
+div.oreq-form select {
+	width: 89px;
 }
 div.oreq-close {
 	line-height: 20px;
@@ -237,6 +225,32 @@ div.oreq-close {
 	padding: 0px;
 }
 div.oreq-close input[type="text"] {
+	width: 100%;
+}
+div.req {
+	margin: 4px 0px;
+	padding: 4px 0px;
+	border-width: 0px;
+}
+div.req-title {
+	width: 32px;
+	vertical-align: top;
+}
+div.req-title-edit {
+	width: 32px;
+	/*vertical-align: middle;*/
+}
+div.req-user {
+	width: 92px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+div.req-text {
+	width: 252px;
+	overflow-wrap: break-word;
+}
+div.req-text input[type="text"], input[type="url"] {
 	width: 100%;
 }
 div.tablecon {
@@ -512,13 +526,15 @@ textarea {
 	overflow-x: hidden;
 	text-overflow: ellipsis;
 }
-span.error {
-	padding-right: 4px;
-	padding-left: 4px;
+.textright {
+	text-align: right;
+	float: right;
+}
+.error {
 	color: #CC0000;
 	background-color: initial;
 }
-span.textright {
-	text-align: right;
-	float: right;
+span.error {
+	padding-right: 4px;
+	padding-left: 4px;
 }

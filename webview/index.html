@@ -213,43 +213,54 @@
 								<div class="oreq" ng-repeat="oreq in rdcon.detail.open"	ng-controller="OpenReqController as orcon" 
 								ng-init="orcon.setup(oreq)">
 									<div class="oreq-row">
-										<div class="oreq-name"><div class="expand">{{rdcon.getclientname(oreq.client_id)}}</div>&nbsp;
-										</div><div class="oreq-con" ng-class="{hidden: (orcon.edit_mode || orcon.edit_msg)}">
-											<input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
-										</div><div class="oreq-con" ng-if="orcon.edit_mode">
+										<div class="oreq-vshort">Client:&nbsp;
+										</div><div class="oreq-name"><div class="expand">{{rdcon.getclientname(oreq.client_id)}}</div>&nbsp;
+										</div>
+									</div>
+									<div class="noborder nopadding" ng-class="{hidden: (orcon.edit_mode)}">
+										<div class="oreq-row">
+											<div class="oreq-pri">
+												Priority:<span class="textright"><strong>{{orcon.oreq.priority || 'None'}}</strong></span>
+											</div><div class="oreq-date">
+												Target date:<span class="textright">{{(orcon.oreq.date_tgt | date:'EEE dd MMM yy') || 'None'}}</span>
+											</div>
+										</div>
+										<div class="oreq-row topmargin">
+											<div class="oreq-con">
+												<input type="button" ng-click="orcon.edit('update')" value="Edit"/> <input type="button" ng-click="orcon.edit('close')" value="Close"/>
+											</div>
+										</div>
+									</div>
+									<div class="noborder nopadding" ng-if="orcon.edit_mode == 'update'">
+										<div class="oreq-form" ng-form name="orcon.edit_form">
+											<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority"/>
+											<input type="date" min="{{orcon.today | date:'yyyy-MM-dd'}}" ng-model="orcon.edit_oreq.date_tgt" name="date_tgt"/>
+										</div>
+									</div>
+									<div class="noborder nopadding" ng-if="orcon.edit_mode == 'close'">
+										<div class="oreq-form" ng-form name="orcon.edit_form">
+											<select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required></select>
+											<input type="text" ng-model="orcon.edit_oreq.reason" name="reason" required />
+										</div>
+									</div>
+									<div class="oreq-row topmargin" ng-if="orcon.edit_mode">
+										<div class="oreq-con">
 											<span ng-class="{hidden: (orcon.edit_msg)}"><input type="button" ng-click="orcon.save()" value="Save"/> <input type="button" ng-click="orcon.close()" value="Cancel"/>
 											</span><span ng-class="{hidden: (!orcon.edit_msg)}">{{orcon.edit_msg}}</span>
-										</div>
+										</div><div ng-class="{hidden: !orcon.edit_err}" class="error">{{orcon.edit_err}}</div>
 									</div>
-									<div class="oreq-row" ng-class="{hidden: (orcon.edit_mode)}">
-										<div class="oreq-pri">
-											Priority: <strong>{{orcon.oreq.priority || 'None'}}</strong>
-										</div><div class="oreq-date">
-											Target date:<span class="textright">{{(orcon.oreq.date_tgt | date:'EEE dd MMM yy') || 'None'}}</span>
-										</div>
-									</div>
-									<div class="oreq-form" ng-if="orcon.edit_mode == 'update'" ng-form name="orcon.edit_form">
-										<input type="number" min="0" max="32766" ng-model="orcon.edit_oreq.priority" name="priority"/>
-										<input type="date" min="{{orcon.today | date:'yyyy-MM-dd'}}" ng-model="orcon.edit_oreq.date_tgt" name="date_tgt" />
-									</div>
-									<div class="oreq-form" ng-if="orcon.edit_mode == 'close'" ng-form name="orcon.edit_form">
-										<select ng-options="status for status in orcon.status_list" ng-model="orcon.edit_oreq.status" name="status" required>
-										</select>
-										<span class="textright"><input type="text" ng-model="orcon.edit_oreq.reason" name="reason" required /></span>
-									</div>
-									<div class="noborder nopadding" ng-class="{hidden: !orcon.edit_err}"><span class="error">{{orcon.edit_err}}</span></div>
 								</div>
 							</div>
 							<div id="reqopennew" class="noborder nopadding" ng-if="rdcon.edit_mode == 'create'">
 								<div class="noborder">
-									<span>{{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span>
+									Client: <span>{{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span>
 								</div>
 								<div class="noborder">
 									<div class="oreq-row">
 										<div class="oreq-pri">Priority:</div><div class="oreq-date">Target date:</div>
 									</div>
 									<div class="oreq-form" ng-form name="rdcon.open_form">
-										<input type="number" min="0" max="32766" ng-model="rdcon.edit_oreq.priority" name="priority" />
+										<input type="number" min="0" max="32766" ng-model="rdcon.edit_oreq.priority" name="priority"/>
 										<input type="date" min="{{rdcon.today | date:'yyyy-MM-dd'}}" ng-model="rdcon.edit_oreq.date_tgt" name="date_tgt" />
 									</div>
 								</div>
@@ -260,12 +271,18 @@
 								</div>
 								<div class="oreq" ng-repeat="creq in rdcon.detail.closed">
 									<div class="oreq-row">
-										<div class="oreq-name"><div class="expand">{{rdcon.getclientname(creq.client_id)}}</div>&nbsp;
-										</div><div class="oreq-con">
-											<strong>{{creq.status}}</strong>
+										<div class="oreq-vshort">Client:&nbsp;
+										</div><div class="oreq-name"><div class="expand">{{rdcon.getclientname(creq.client_id)}}</div>&nbsp;
 										</div>
 									</div>
-									<div class="oreq-row"><pre class="reason">{{creq.reason}}</pre></div>
+									<div class="oreq-row">
+										<div class="oreq-pri">
+											<strong>{{creq.status}}</strong>
+										</div><div class="oreq-date">
+											Closed on:<span class="textright">{{(creq.closed_at | date:'EEE dd MMM yy') || 'None'}}</span>
+										</div>
+									</div>
+									<div class="oreq-row topmargin"><pre class="reason">{{creq.reason}}</pre></div>
 								</div>
 							</div>
 							<div id="reqmod" class="noborder nopadding" ng-class="{hidden: ((!rdcon.detail.req.id) || (rdcon.edit_mode == 'create'))}">
