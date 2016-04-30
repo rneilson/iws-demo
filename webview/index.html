@@ -260,8 +260,7 @@
 								</div>
 								<div class="oreq" ng-repeat="creq in rdcon.detail.closed">
 									<div class="oreq-row">
-										<div class="oreq-name">
-											{{rdcon.getclientname(creq.client_id)}}
+										<div class="oreq-name"><div class="expand">{{rdcon.getclientname(creq.client_id)}}</div>&nbsp;
 										</div><div class="oreq-con">
 											<strong>{{creq.status}}</strong>
 										</div>
