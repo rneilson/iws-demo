@@ -462,12 +462,23 @@ def apiauth(request):
             if not fullname:
                 fullname = '[user {0}]'.format(username)
 
+            mod_time =''
+            if loggedin:
+                # Get last modified time
+                try:
+                    last_mod = request.session._last_modification()
+                except Exception as e:
+                    pass
+                else:
+                    mod_time = request.session.get_expiry_date(modification=last_mod).strftime(DATETIMEFMT)
+
             # Check for text/plain
             reqfmt = getfieldsfromget(request, fieldsep=None, fieldname='format', allfieldname=None)
             if (reqfmt and reqfmt[0] == 'plain') or req_is_plain(request):
-                histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\nSession expiry: {4}s\n'.format(
-                    loggedin, username, fullname, csrf_get_token(request), request.session.get_expiry_date(
-                        modification=request.session._last_modification()).strftime(DATETIMEFMT))
+                histr = 'Logged in: {0}\nUsername: {1}\nFull name: {2}\nCSRF token: {3}\n'.format(
+                    loggedin, username, fullname, csrf_get_token(request))
+                if mod_time:
+                    histr += 'Session expiry: {4}s\n'.format(mod_time)
                 return HttpResponse(histr, content_type='text/plain')
             else:
                 respdict = OrderedDict([
@@ -475,8 +486,7 @@ def apiauth(request):
                     ('username', username),
                     ('full_name', fullname),
                     ('csrf_token', csrf_get_token(request)),
-                    ('session_expiry', request.session.get_expiry_date(
-                        modification=request.session._last_modification()).strftime(DATETIMEFMT)),
+                    ('session_expiry', mod_time),
                 ])
                 return HttpResponse(json.dumps(respdict, indent=1)+'\n', content_type=json_contype)
 
