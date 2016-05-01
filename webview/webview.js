@@ -204,8 +204,12 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/client/';
-	var openurl = '/open/?fields=id,title,prod_area';
-	var closedurl = '/closed/?fields=id,title,prod_area';
+	var allurl = '/featreq/req';
+	var reqfields = ['id', 'title', 'prod_area'];
+	var openurl = '/open/?fields=' + reqfields.join(',');
+	var closedurl = '/closed/?fields=' + reqfields.join(',');
+	var allopenurl = allurl + openurl;
+	var allclosedurl = allurl + closedurl;
 	var client = {
 		id: "",
 		open_list: null,
@@ -257,24 +261,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 					// Replace list entry
 					open_list[i] = iwsUtil.oreqproc(open_list[i]);
 				};
-				open_list.sort(
-					function (a, b) {
-						// Sort by priority if both present, open date (descending) if neither
-						// Request with priority always sorted higher than one without
-						if (a.priority) {
-							if (b.priority) {
-								return a.priority - b.priority;
-							}
-							else {return -1;}
-						}
-						else {
-							if (b.priority) {return 1;}
-							else {
-								return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
-							}
-						}
-					}
-				);
+				open_list.sort(sortopen);
 			}
 			client.open_list = open_list;
 			return open_list;
@@ -321,7 +308,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 				};
 				closed_list.sort(
 					function (a, b) {
-						// Sort by closed date, descending
+						// Sort by closed date, latest-first
 						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
 					}
 				);
@@ -329,6 +316,48 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 			client.closed_list = closed_list;
 			return closed_list;
 		});
+	}
+
+	function sortopen (a, b) {
+		// Sort by priority, then target date, then open date
+		// Request with priority always sorted higher than one without
+		// Dates sorted earliest-first
+		var comp = 0;
+
+		// First sort by priorities
+		if (a.priority) {
+			if (b.priority) {
+				comp = a.priority - b.priority;
+			}
+			else {
+				comp = -1;
+			}
+		}
+		else if (b.priority) {
+			comp = 1;
+		}
+		if (comp != 0) {
+			return comp;
+		}
+
+		// Next sort by target dates
+		if (a.date_tgt) {
+			if (b.date_tgt) {
+				comp = a.date_tgt < b.date_tgt ? -1 : a.date_tgt > b.date_tgt ? 1 : 0;
+			}
+			else {
+				comp = -1;
+			}
+		}
+		else if (b.date_tgt) {
+			comp = 1;
+		}
+		if (comp != 0) {
+			return comp;
+		}
+
+		// Finally sort by open date/time
+		return a.opened_at < b.opened_at ? -1 : a.opened_at > b.opened_at ? 1 : 0;
 	}
 }]);
 
