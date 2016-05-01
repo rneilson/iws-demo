@@ -142,9 +142,9 @@ def buildtestclients(client, tocreate='ABC'):
 
 def buildtestdata(client):
     # Templates
-    title = 'Test {0}{1}'
-    desc = 'Test feature request, number {0}{1}'
-    ref_url = 'http://test{0}{1}.com'
+    title = 'Test request {0}{1}'
+    desc = 'Test feature request, number {0}{1}.\nOpened by "testdata.py"'
+    ref_url = 'http://test-{0}{1}.com'
     areas = ['Billing', 'Reports', 'Claims', 'Policies']
     basedt = datetime.datetime.now(datetime.timezone.utc).replace(
         hour=12, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
@@ -186,12 +186,12 @@ def buildtestdata(client):
     cldict = OrderedDict([ (c['id'], []) for c in cllist ])
 
     # Create test requests
-    xlen = len(cllist) - 1
-    for x in range(xlen+1):
+    maxrange = 15
+    for x in range(len(cllist)):
         c = cllist[x]
         letter = c['name'][-1]
         toopen = []
-        for y in range(1, 10):
+        for y in range(1, maxrange+1):
             titlestr = title.format(letter, y)
             if titlestr not in reqset:
                 reqargs = {
@@ -199,7 +199,7 @@ def buildtestdata(client):
                     'title': titlestr,
                     'desc': desc.format(letter, y),
                     'ref_url': ref_url.format(letter.lower(), y),
-                    'prod_area': areas[((xlen * x) + y) % len(areas)]
+                    'prod_area': areas[((maxrange * x) + y - 1) % len(areas)]
                 }
                 respobj = postjson(client, BASEURL + 'req/', reqargs, expcode=201)
                 assert 'req' in respobj
@@ -213,11 +213,11 @@ def buildtestdata(client):
         sys.stderr.flush()
 
     # Open requests per client
-    for clid, toopen in cldict.items():
+    for clid, toopen, offset in zip(cldict.keys(), cldict.values(), range(0, len(cldict))):
         if toopen:
             sys.stderr.write('Opening {0} requests for client id {1}\n'.format(len(toopen), clid))
             for req_id, dt in zip(toopen, range(0, len(toopen))):
-                dtgt = approxdatefmt(basedt + datetime.timedelta(days=(dt*2)))
+                dtgt = approxdatefmt(basedt + datetime.timedelta(days=(dt * 2 + offset)))
                 reqargs = {
                     'action': 'open',
                     'req_id': req_id,
