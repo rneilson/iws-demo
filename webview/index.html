@@ -40,10 +40,15 @@
 							<div class="tablebody">
 								<table>
 									<tbody>
-										<tr ng-class="{selected: cli.id == clcon.clients.id}" ng-repeat="cli in clcon.clients.list" ng-click="clcon.selectclient(cli.id)">
+										<tr ng-class="{selected: clcon.clients.id == cli.id}" ng-repeat="cli in clcon.clients.list" ng-click="clcon.selectclient(cli.id)">
 											<td class="clientname">{{cli.name}}</td>
 											<td class="count">{{cli.open_count}}</td>
 											<td class="count">{{cli.closed_count}}</td>
+										</tr>
+										<tr ng-class="{selected: clcon.clients.id == '_all'}" ng-click="clcon.selectclient('_all')">
+											<td class="clientname"><em>All clients</em></td>
+											<td class="count"><em>{{clcon.clients.open}}</em></td>
+											<td class="count"><em>{{clcon.clients.closed}}</em></td>
 										</tr>
 									</tbody>
 								</table>
@@ -98,63 +103,123 @@
 						</button><button class="tabnav" type="button" ng-class="{selected: rlcon.tab=='closed'}" ng-click="rlcon.selecttab('closed')">Closed requests</button>
 					</div>
 					<div id="clientopen" class="panel tablecon" ng-class="{open: rlcon.tab == 'open'}">
-						<div class="tablehead">
-							<table>
-								<thead>
-									<tr>
-										<th class="short">Priority</th>
-										<th class="reqtitle">Title</th>
-										<th class="short">Area</th>
-										<th class="date">Target Date</th>
-										<th class="date">Opened On</th>
-										<th class="user">Opened By</th>
-									</tr>
-								</thead>
-							</table>
+						<div class="noborder nopadding" ng-if="((rlcon.client.id) && (rlcon.client.id != '_all'))">
+							<div class="tablehead">
+								<table>
+									<thead>
+										<tr>
+											<th class="short">Priority</th>
+											<th class="reqtitle">Title</th>
+											<th class="short">Area</th>
+											<th class="date">Target Date</th>
+											<th class="date">Opened On</th>
+											<th class="user">Opened By</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+							<div class="tablebody">
+								<table>
+									<tbody>
+										<tr ng-repeat="oreq in rlcon.client.open_list" ng-class="{selected: oreq.req.id == rlcon.req.open}" ng-click="rlcon.selectreq(oreq.req.id)">
+											<td class="short">{{oreq.priority}}</td>
+											<td class="reqtitle">{{oreq.req.title}}</td>
+											<td class="short">{{oreq.req.prod_area}}</td>
+											<td class="date">{{oreq.date_tgt | date:'EEE dd MMM yy'}}</td>
+											<td class="date">{{oreq.opened_at | date:'EEE dd MMM yy'}}</td>
+											<td class="user">{{oreq.opened_by}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
-						<div class="tablebody">
-							<table>
-								<tbody>
-									<tr ng-repeat="oreq in rlcon.client.open_list" ng-class="{selected: oreq.req.id == rlcon.req.open}" ng-click="rlcon.selectreq(oreq.req.id)">
-										<td class="short">{{oreq.priority}}</td>
-										<td class="reqtitle">{{oreq.req.title}}</td>
-										<td class="short">{{oreq.req.prod_area}}</td>
-										<td class="date">{{oreq.date_tgt | date:'EEE dd MMM yy'}}</td>
-										<td class="date">{{oreq.opened_at | date:'EEE dd MMM yy'}}</td>
-										<td class="user">{{oreq.opened_by}}</td>
-									</tr>
-								</tbody>
-							</table>
+						<div class="noborder nopadding" ng-if="rlcon.client.id == '_all'">
+							<div class="tablehead">
+								<table>
+									<thead>
+										<tr>
+											<th class="clientname">Client</th>
+											<th class="short">Priority</th>
+											<th class="reqtitle">Title</th>
+											<th class="short">Area</th>
+											<th class="date">Target Date</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+							<div class="tablebody">
+								<table>
+									<tbody>
+										<tr ng-repeat="oreq in rlcon.client.open_list" ng-class="{selected: oreq.req.id == rlcon.req.open}" ng-click="rlcon.selectreq(oreq.req.id)">
+											<td class="clientname">{{rlcon.getclientname(oreq.client_id)}}</td>
+											<td class="short">{{oreq.priority}}</td>
+											<td class="reqtitle">{{oreq.req.title}}</td>
+											<td class="short">{{oreq.req.prod_area}}</td>
+											<td class="date">{{oreq.date_tgt | date:'EEE dd MMM yy'}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 					<div id="clientclosed" class="panel tablecon" ng-class="{open: rlcon.tab == 'closed'}">
-						<div class="tablehead">
-							<table>
-								<thead>
-									<tr>
-										<th class="short">Status</th>
-										<th class="reqtitle">Title</th>
-										<th class="short">Area</th>
-										<th class="date">Target Date</th>
-										<th class="date">Closed On</th>
-										<th class="user">Closed By</th>
-									</tr>
-								</thead>
-							</table>
+						<div class="noborder nopadding" ng-if="((rlcon.client.id) && (rlcon.client.id != '_all'))">
+							<div class="tablehead">
+								<table>
+									<thead>
+										<tr>
+											<th class="short">Status</th>
+											<th class="reqtitle">Title</th>
+											<th class="short">Area</th>
+											<th class="date">Target Date</th>
+											<th class="date">Closed On</th>
+											<th class="user">Closed By</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+							<div class="tablebody">
+								<table>
+									<tbody>
+										<tr ng-repeat="creq in rlcon.client.closed_list" ng-class="{selected: creq.req.id == rlcon.req.closed}" ng-click="rlcon.selectreq(creq.req.id)">
+											<td class="short">{{creq.status}}</td>
+											<td class="reqtitle">{{creq.req.title}}</td>
+											<td class="short">{{creq.req.prod_area}}</td>
+											<td class="date">{{creq.date_tgt | date:'EEE dd MMM yy'}}</td>
+											<td class="date">{{creq.closed_at | date:'EEE dd MMM yy'}}</td>
+											<td class="user">{{creq.closed_by}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
-						<div class="tablebody">
-							<table>
-								<tbody>
-									<tr ng-repeat="creq in rlcon.client.closed_list" ng-class="{selected: creq.req.id == rlcon.req.closed}" ng-click="rlcon.selectreq(creq.req.id)">
-										<td class="short">{{creq.status}}</td>
-										<td class="reqtitle">{{creq.req.title}}</td>
-										<td class="short">{{creq.req.prod_area}}</td>
-										<td class="date">{{creq.date_tgt | date:'EEE dd MMM yy'}}</td>
-										<td class="date">{{creq.closed_at | date:'EEE dd MMM yy'}}</td>
-										<td class="user">{{creq.closed_by}}</td>
-									</tr>
-								</tbody>
-							</table>
+						<div class="noborder nopadding" ng-if="(rlcon.client.id == '_all')">
+							<div class="tablehead">
+								<table>
+									<thead>
+										<tr>
+											<th class="clientname">Client</th>
+											<th class="short">Status</th>
+											<th class="reqtitle">Title</th>
+											<th class="short">Area</th>
+											<th class="date">Closed On</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+							<div class="tablebody">
+								<table>
+									<tbody>
+										<tr ng-repeat="creq in rlcon.client.closed_list" ng-class="{selected: creq.req.id == rlcon.req.closed}" ng-click="rlcon.selectreq(creq.req.id)">
+											<td class="clientname">{{rlcon.getclientname(creq.client_id)}}</td>
+											<td class="short">{{creq.status}}</td>
+											<td class="reqtitle">{{creq.req.title}}</td>
+											<td class="short">{{creq.req.prod_area}}</td>
+											<td class="date">{{creq.closed_at | date:'EEE dd MMM yy'}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 					<div id="reqdetails" ng-class="{hidden: (!rdcon.clients.id)}" ng-controller="ReqDetailController as rdcon">
