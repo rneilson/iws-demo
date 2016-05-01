@@ -4,13 +4,19 @@ var iwsApp = angular.module('iws-webview', []);
 
 iwsApp.run()
 
-iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
+
+/***************
+    SERVICES
+***************/
+
+iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q, $rootScope) {
 	var authurl = '/featreq/auth/';
 	var status = {
 		logged_in: false,
 		username: "",
 		full_name: "",
 		csrf_token: "",
+		session_expiry: null
 	};
 
 	return {
@@ -40,14 +46,21 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 	}
 
 	function update (response) {
-		// TODO: emit login/logout events
 		// Update auth status
 		status.logged_in = response.data.logged_in;
 		status.username = response.data.username;
 		status.full_name = response.data.full_name;
 		status.csrf_token = response.data.csrf_token;
+		status.session_expiry = response.data.session_expiry ? new Date(response.data.session_expiry) : null;
 		// Update default POST header
 		$http.defaults.headers.post['X-CSRFToken'] = status.csrf_token;
+		// Emit login/logout events
+		if (status.logged_in) {
+			$rootScope.$broadcast('login_success', status);
+		}
+		else {
+			$rootScope.$broadcast('logged_out', status);
+		}
 		return status;
 	}
 
@@ -633,6 +646,11 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 	}
 }]);
 
+
+/******************
+    CONTROLLERS
+******************/
+
 iwsApp.controller('HeaderController', ['$rootScope', 'authService', 
 	function ($rootScope, authService) {
 		var vm = this;
@@ -641,14 +659,10 @@ iwsApp.controller('HeaderController', ['$rootScope', 'authService',
 		// TODO: add refresh timer
 
 		function logout () {
-			authService.logout().then(
-				function (auth) {
-					$rootScope.$broadcast('logged_out', auth);
-				},
-				function (reason) {
-					console.log(reason);
-				}
-			);
+			authService.logout()
+			.catch(function (reason) {
+				console.log(reason);
+			});
 		}
 	}
 ]);
@@ -669,23 +683,30 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 			logged_out();
 		});
 
-		// Get initial auth status
-		authService.refresh()
-		.then(function (auth) {
-			if (auth.logged_in) {
-				login_success(auth);
-			}
-			else {
-				logged_out();
-			}
-		})
-		.catch(function (reason) {
-			vm.login_msg = reason.error || reason.statusText || "Error getting login status";
+		$rootScope.$on('login_success', function (auth) {
+			login_success();
 		});
 
-		function login_success (auth) {
+		// Get initial auth status
+		authService.refresh()
+		.catch(function (reason) {
+			vm.password = "";
+			vm.login_req = true;
+			vm.login_msg = reason.error || reason.statusText || "Error getting login status";
+		});
+		// .then(function (auth) {
+		// 	if (auth.logged_in) {
+		// 		login_success(auth);
+		// 	}
+		// 	else {
+		// 		logged_out();
+		// 	}
+		// })
+
+		function login_success () {
+			vm.password = "";
+			vm.login_req = false;
 			vm.login_msg = "Logged in";
-			$rootScope.$broadcast('login_success', auth);
 		}
 
 		function logged_out () {
@@ -696,24 +717,12 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 		function login () {
 			vm.login_req = false;
 			vm.login_msg = "Logging in...";
-			authService.login(vm.username, vm.password).then(
-				function (auth) {
-					if (auth.logged_in) {
-						vm.password = "";
-						login_success(auth);
-					}
-					else {
-						vm.password = "";
-						vm.login_req = true;
-						vm.login_msg = "Login failed";
-					}
-				},
-				function (reason) {
-					vm.password = "";
-					vm.login_req = true;
-					vm.login_msg = reason.error || reason.statusText || "Error logging in";
-				}
-			);
+			authService.login(vm.username, vm.password)
+			.catch(function (reason) {
+				vm.password = "";
+				vm.login_req = true;
+				vm.login_msg = reason.error || reason.statusText || "Error logging in";
+			});
 		}
 	}
 ]);
