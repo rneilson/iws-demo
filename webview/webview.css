@@ -154,8 +154,8 @@ div.oreq-pri, div.oreq-user, div.oreq-short {
 	width: 92px;
 }
 div.oreq-row > div.oreq-pri {
-	width: 76px;
-	margin-right: 16px;
+	width: 80px;
+	margin-right: 12px;
 }
 div.oreq-row > div.oreq-user {
 	width: 82px;

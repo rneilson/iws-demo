@@ -60,16 +60,15 @@ iwsApp.factory('authService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('clientListService', ['$http', function ($http) {
 	var clienturl = '/featreq/client/';
-	var clients = {
-		list: [],
-		id: ""
-	};
-	var clients_byid = iwsUtil.emptyobj();
+	var clients = iwsUtil.emptyobj();
+	var clients_byid = null;
+	clearclients();
 
 	return {
 		clients: clients,
 		getclients: getclients,
 		getclientbyid: getclientbyid,
+		getclientname: getclientname,
 		clearclients: clearclients
 	};
 
@@ -83,13 +82,19 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 				});
 			}
 			clients.list = client_list;
+
 			clients_byid = iwsUtil.emptyobj();
-			for (var i = 0; i < client_list.length; i++) {
+			var total_open = 0;
+			var total_closed = 0;
+
+			for (var i = 0, len = client_list.length; i < len; i++) {
 				var cli = client_list[i];
+				total_open += cli.open_count;
+				total_closed += cli.closed_count;
 				clients_byid[cli.id] = cli;
-				// DEBUG
-				// console.log('Added ' + getclientbyid(cli.id).name);
 			}
+			clients.open = total_open;
+			clients.closed = total_closed;
 			return client_list;
 		});
 	}
@@ -103,9 +108,22 @@ iwsApp.factory('clientListService', ['$http', function ($http) {
 		}
 	}
 
+	function getclientname (client_id) {
+		var use_id = (client_id) ? client_id : clients.id;
+		var use_cl = getclientbyid(use_id);
+		if (use_cl) {
+			return use_cl.name;
+		}
+		else {
+			return '';
+		}
+	}
+
 	function clearclients () {
 		clients.list = [];
 		clients.id = "";
+		clients.open = 0;
+		clients.closed = 0;
 		clients_byid = iwsUtil.emptyobj();
 	}
 }]);
@@ -124,7 +142,7 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 	};
 
 	function getdetails (client_id) {
-		if (client_id) {
+		if ((client_id) && (client_id != '_all')) {
 			return $http.get(baseurl + client_id).then(function (response) {
 				var newclient = response.data.client;
 				newclient.date_add = new Date(newclient.date_add);
@@ -204,8 +222,12 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 
 iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	var baseurl = '/featreq/client/';
-	var openurl = '/open/?fields=id,title,prod_area';
-	var closedurl = '/closed/?fields=id,title,prod_area';
+	var allurl = '/featreq/req';
+	var reqfields = ['id', 'title', 'prod_area'];
+	var openurl = '/open/?fields=' + reqfields.join(',');
+	var closedurl = '/closed/?fields=' + reqfields.join(',');
+	var allopenurl = allurl + openurl;
+	var allclosedurl = allurl + closedurl;
 	var client = {
 		id: "",
 		open_list: null,
@@ -250,6 +272,30 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	function refopen () {
 		// Get (promise of) list from server
 		// TODO: cache list?
+		if (client.id == '_all') {
+			return $http.get(allopenurl).then(function (response) {
+				var req_list = response.data.req_list;
+				var open_list = [];
+				// We need to pull the openreqs from each req, and invert parentage
+				for (var i = 0, len_i = req_list.length; i < len_i; i++) {
+					var req = req_list[i];
+					var oreq_list = req.open_list;
+					delete req.open_list;
+					// Now convert each openreq and add to the list
+					for (var j = 0, len_j = oreq_list.length; j < len_j; j++) {
+						var oreq = oreq_list[j];
+						oreq.req = req;
+						open_list.push(iwsUtil.oreqproc(oreq));
+					}
+				}
+				if (open_list) {
+					open_list.sort(sortopen);
+				}
+				client.open_list = open_list;
+				return open_list;
+			});
+		}
+
 		return $http.get(baseurl + client.id + openurl).then(function (response) {
 			var open_list = response.data.client.open_list;
 			if (open_list) {
@@ -257,24 +303,7 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 					// Replace list entry
 					open_list[i] = iwsUtil.oreqproc(open_list[i]);
 				};
-				open_list.sort(
-					function (a, b) {
-						// Sort by priority if both present, open date (descending) if neither
-						// Request with priority always sorted higher than one without
-						if (a.priority) {
-							if (b.priority) {
-								return a.priority - b.priority;
-							}
-							else {return -1;}
-						}
-						else {
-							if (b.priority) {return 1;}
-							else {
-								return a.opened_at > b.opened_at ? -1 : a.opened_at < b.opened_at ? 1 : 0;
-							}
-						}
-					}
-				);
+				open_list.sort(sortopen);
 			}
 			client.open_list = open_list;
 			return open_list;
@@ -312,6 +341,32 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	function refclosed () {
 		// Get (promise of) list from server
 		// TODO: cache list?
+		if (client.id == '_all') {
+			return $http.get(allclosedurl).then(function (response) {
+				var req_list = response.data.req_list;
+				var closed_list = [];
+				if (req_list) {
+					// We need to pull the closedreqs from each req, and invert parentage
+					for (var i = 0, len_i = req_list.length; i < len_i; i++) {
+						var req = req_list[i];
+						var creq_list = req.closed_list;
+						delete req.closed_list;
+						// Now convert each closedreq and add to the list
+						for (var j = 0, len_j = creq_list.length; j < len_j; j++) {
+							var creq = creq_list[j];
+							creq.req = req;
+							closed_list.push(iwsUtil.creqproc(creq));
+						}
+					}
+				}
+				if (closed_list) {
+					closed_list.sort(sortclosed);
+				}
+				client.closed_list = closed_list;
+				return closed_list;
+			});
+		}
+
 		return $http.get(baseurl + client.id + closedurl).then(function (response) {
 			var closed_list = response.data.client.closed_list;
 			if (closed_list) {
@@ -319,17 +374,60 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 					// Replace list entry
 					closed_list[i] = iwsUtil.creqproc(closed_list[i]);
 				};
-				closed_list.sort(
-					function (a, b) {
-						// Sort by closed date, descending
-						return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
-					}
-				);
+				closed_list.sort(sortclosed);
 			}
 			client.closed_list = closed_list;
 			return closed_list;
 		});
 	}
+
+	function sortopen (a, b) {
+		// Sort by priority, then target date, then open date
+		// Request with priority always sorted higher than one without
+		// Dates sorted earliest-first
+		var comp = 0;
+
+		// First sort by priorities
+		if (a.priority) {
+			if (b.priority) {
+				comp = a.priority - b.priority;
+			}
+			else {
+				comp = -1;
+			}
+		}
+		else if (b.priority) {
+			comp = 1;
+		}
+		if (comp != 0) {
+			return comp;
+		}
+
+		// Next sort by target dates
+		if (a.date_tgt) {
+			if (b.date_tgt) {
+				comp = a.date_tgt < b.date_tgt ? -1 : a.date_tgt > b.date_tgt ? 1 : 0;
+			}
+			else {
+				comp = -1;
+			}
+		}
+		else if (b.date_tgt) {
+			comp = 1;
+		}
+		if (comp != 0) {
+			return comp;
+		}
+
+		// Finally sort by open date/time
+		return a.opened_at < b.opened_at ? -1 : a.opened_at > b.opened_at ? 1 : 0;
+	}
+
+	function sortclosed (a, b) {
+		// Sort by closed date, latest-first
+		return a.closed_at > b.closed_at ? -1 : a.closed_at < b.closed_at ? 1 : 0;
+	}
+
 }]);
 
 iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
@@ -742,8 +840,8 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 	}
 ]);
 
-iwsApp.controller('ReqListController', ['$scope', 'reqListService',
-	function ($scope, reqListService) {
+iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListService',
+	function ($scope, reqListService, clientListService) {
 		var vm = this;
 		vm.tab = 'open';
 		vm.req = {
@@ -751,6 +849,7 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService',
 			closed: ""
 		};
 		vm.client = reqListService.client;
+		vm.getclientname = clientListService.getclientname;
 		vm.selecttab = selecttab;
 		vm.selectreq = selectreq;
 
@@ -838,7 +937,7 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 		vm.areas = ['Policies', 'Billing', 'Claims', 'Reports'];
 		vm.detail = reqDetailService.detail;
 		vm.clients = clientListService.clients;
-		vm.getclientname = getclientname;
+		vm.getclientname = clientListService.getclientname;
 
 		vm.edit = edit;
 		vm.save = save;
@@ -940,17 +1039,6 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 			vm.edit_msg = '';
 			vm.edit_err = '';
 			vm.edit_req = iwsUtil.emptyobj();
-		}
-
-		function getclientname (client_id) {
-			var use_id = (client_id) ? client_id : vm.clients.id;
-			var use_cl = clientListService.getclientbyid(use_id);
-			if (use_cl) {
-				return use_cl.name;
-			}
-			else {
-				return '';
-			}
 		}
 	}
 ]);
