@@ -27,7 +27,9 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 	};
 
 	function refresh () {
-		return $http.get(authurl).then(update, failed);
+		return $http.get(authurl)
+		.then(update)
+		.catch(failed);
 	}
 
 	function login (username, password) {
@@ -35,14 +37,18 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 			"action": "login",
 			"username": username,
 			"password": password
-		}).then(update, failed);
+		})
+		.then(update)
+		.catch(failed);
 	}
 
 	function logout () {
 		return $http.post(authurl, {
 			"action": "logout",
 			"username": status.username
-		}).then(update, failed);
+		}).then(update)
+		.catch(expired)
+		.catch(failed);
 	}
 
 	function update (response) {
@@ -64,9 +70,23 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		return status;
 	}
 
+	function expired (reason) {
+		var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
+		// If session expired, refresh auth status so it can send logged_out event if req'd
+		if ((status.logged_in) && (msg) && (msg.search(/expired/i) != -1)) {
+			refresh();
+		}
+		// Pass along rejection regardless
+		return $q.reject(reason);
+	}
+
 	function failed (reason) {
-		// console.log(reason)
+		// TODO: filter out text/html
 		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+
+		// TODO: Add global error message
+		console.log("Authentication error: " + msg.error);
+
 		return $q.reject(msg);
 	}
 }]);

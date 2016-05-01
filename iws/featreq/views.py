@@ -432,6 +432,8 @@ def weblogin(request):
 @allow_methods(['GET', 'POST'])
 def apiauth(request):
 
+    NOT_LOGGED_IN = 'Not logged in or session expired'
+
     @makepretty
     def _authresp(request):
         # Check for 'next' field
@@ -442,7 +444,7 @@ def apiauth(request):
                 return HttpResponseRedirect(nexturl[0])
             else:
                 if req_is_json(request):
-                    return forbidden(request, 'Not logged in or session expired', {'next': nexturl[0]})
+                    return forbidden(request, NOT_LOGGED_IN, {'next': nexturl[0]})
                 else:
                     redir = urlreverse('featreq-login') + '?next=' + nexturl[0]
                     return HttpResponseRedirect(redir)
@@ -546,20 +548,19 @@ def apiauth(request):
                 request.session.save()
                 return _authresp(request)
             else:
-                return forbidden(request, 'Not logged in')
+                return forbidden(request, NOT_LOGGED_IN)
 
         elif action == 'logout':
-            # Make sure usernames (given and stored) match
-            if postargs['username'] != request.user.get_username():
-                return forbidden(request, 'Given username does not match current user',
-                    {'username': postargs['username']})
-
             # Log out user
             if request.user.is_authenticated():
+                # Make sure usernames (given and stored) match
+                if postargs['username'] != request.user.get_username():
+                    return forbidden(request, 'Given username does not match current user',
+                        {'username': postargs['username']})
                 logout(request)
                 return _authresp(request)
             else:
-                return forbidden(request, 'Not logged in')
+                return forbidden(request, NOT_LOGGED_IN)
         else:
             return badrequest(request, 'Invalid action: {0}'.format(action), 'action')
 
