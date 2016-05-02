@@ -959,7 +959,7 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListS
 		});
 
 		$scope.$on('req_created', function(event, client_id, req){
-			if (client_id == vm.client.id) {
+			if ((vm.client.id == client_id) || (vm.client.id == '_all')) {
 				vm.req.open = req.id;
 				if (vm.client.open !== null) {
 					reqListService.refopen();
@@ -1046,11 +1046,20 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 				vm.edit_req.prod_area = vm.areas[0];
 				vm.edit_req.ref_url = '';
 				vm.edit_req.desc = '';
-				vm.edit_oreq = {
-					client_id: vm.clients.id,
-					priority: null,
-					date_tgt: null
-				};
+				if (vm.clients.id == '_all') {
+					vm.edit_oreq = {
+						priority: null,
+						date_tgt: null
+					};
+						// client_id: '',
+				}
+				else {
+					vm.edit_oreq = {
+						client_id: vm.clients.id,
+						priority: null,
+						date_tgt: null
+					};
+				}
 				vm.today = new Date();
 			}
 		}
@@ -1091,6 +1100,9 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 							});
 						}
 						else {
+							if (!vm.edit_oreq.client_id) {
+								vm.open_form.client_id.$setDirty();
+							}
 							vm.edit_err = 'Please correct above error(s)';
 						}
 					}

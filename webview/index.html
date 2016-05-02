@@ -250,7 +250,7 @@
 								<div class="noborder">
 									<div class="oreq-row" ng-if="rdcon.edit_mode">
 										<div class="req-title-edit">Title:
-										</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /></div>
+										</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /><span class="error" ng-class="{hidden: !rdcon.edit_form.title.$error.required}">Required</span></div>
 									</div>
 								</div>
 								<div class="oreq">
@@ -262,9 +262,9 @@
 									</div>
 								</div>
 								<div class="oreq">
-									Description:<br/>
+									Description:<span class="error" ng-class="{hidden: !rdcon.edit_form.desc.$error.required}">Required</span><br/>
 									<pre class="desc" ng-class="{hidden: (rdcon.edit_mode == 'create')}">{{rdcon.detail.req.desc}}</pre>
-									<textarea name="desc" ng-model="rdcon.edit_req.desc"></textarea>
+									<textarea name="desc" ng-model="rdcon.edit_req.desc" ng-required="rdcon.edit_mode == 'create'"></textarea>
 								</div>
 							</div>
 							<div class="button-row" ng-class="{hidden: (rdcon.edit_mode)}">
@@ -272,10 +272,14 @@
 								<input ng-click="rdcon.edit('create')" type="button" value="New" />
 							</div>
 							<div class="button-row" ng-if="rdcon.edit_mode">
-								<input ng-click="rdcon.save()" type="button" value="Save" />
-								<input ng-click="rdcon.close()" type="button" value="Cancel" />
-								<div class="noborder" ng-class="{hidden: !rdcon.edit_msg}">{{rdcon.edit_msg}}</div>
-								<div class="noborder" ng-class="{hidden: !rdcon.edit_err}"><span class="error">{{rdcon.edit_err}}</span></div>
+								<span ng-class="{hidden: (rdcon.edit_msg)}">
+									<input ng-click="rdcon.save()" type="button" value="Save" />
+									<input ng-click="rdcon.close()" type="button" value="Cancel" />
+								</span>
+								<span ng-class="{hidden: (!rdcon.edit_msg)}">{{rdcon.edit_msg}}</span>
+								<span ng-class="{hidden: (!rdcon.edit_err)}" class="error">{{rdcon.edit_err}}</span>
+								<!-- <div class="noborder" ng-class="{hidden: !rdcon.edit_msg}">{{rdcon.edit_msg}}</div> -->
+								<!-- <div class="noborder" ng-class="{hidden: !rdcon.edit_err}"><span class="error">{{rdcon.edit_err}}</span></div> -->
 							</div>
 						</div><div id="reqlists" class="noborder">
 							<div id="reqopen" class="noborder nopadding" ng-if="rdcon.detail.open.length" ng-class="{hidden: (rdcon.edit_mode == 'create')}">
@@ -321,15 +325,20 @@
 									</div>
 								</div>
 							</div>
-							<div id="reqopennew" class="noborder nopadding" ng-if="rdcon.edit_mode == 'create'">
+							<div id="reqopennew" class="noborder nopadding" ng-if="rdcon.edit_mode == 'create'" ng-form name="rdcon.open_form">
 								<div class="noborder">
-									Client: <span>{{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span>
+									<!-- <span ng-if="rdcon.clients.id != '_all'">Client: {{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span> -->
+									<!-- <span ng-if="rdcon.clients.id == '_all'"> -->
+										<label>Client: <select ng-model="rdcon.edit_oreq.client_id" ng-options="cli.id as cli.name for cli in rdcon.clients.list" name="client_id" required>
+											<option value="">-- Choose client --</option>
+										</select></label><span class="error" ng-class="{hidden: !rdcon.open_form.client_id.$error.required}">Required</span>
+									<!-- </span> -->
 								</div>
-								<div class="noborder">
+								<div class="oreq">
 									<div class="oreq-row">
 										<div class="oreq-pri">Priority:</div><div class="oreq-date">Target date:</div>
 									</div>
-									<div class="oreq-form" ng-form name="rdcon.open_form">
+									<div class="oreq-form">
 										<input type="number" min="0" max="32766" ng-model="rdcon.edit_oreq.priority" name="priority"/>
 										<input type="date" min="{{rdcon.today | date:'yyyy-MM-dd'}}" ng-model="rdcon.edit_oreq.date_tgt" name="date_tgt" />
 									</div>

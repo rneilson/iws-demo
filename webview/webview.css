@@ -253,6 +253,12 @@ div.req-text {
 div.req-text input[type="text"], input[type="url"] {
 	width: 100%;
 }
+div.req-text input[type="text"].ng-invalid-required {
+	width: calc(100% - 60px);
+}
+div.req-text span.error {
+	width: 60px;
+}
 div.tablecon {
 	height: 200px;
 }
@@ -375,6 +381,14 @@ select {
     background-color: white;
     /*padding: 1px;*/
 	border: 1px solid #c0c0c0;
+}
+select.ng-dirty.ng-invalid {
+	border: 1px solid #CC0000;
+}
+select.ng-dirty.ng-invalid:focus {
+	box-shadow: 0 0 2px 0px #CC0000;
+	outline-color: #CC0000;
+	/*outline-width: 1px;*/
 }
 button {
 	font-size: 10pt;
