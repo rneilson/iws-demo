@@ -99,7 +99,6 @@ iwsApp.factory('errorInterceptor', ['$q', '$rootScope', function ($q, $rootScope
 	return {responseError: errorcheck};
 
 	function errorcheck (reason) {
-		console.log(reason);
 
 		var err;
 		if (reason.headers('content-type') == 'application/json') {
@@ -117,6 +116,7 @@ iwsApp.factory('errorInterceptor', ['$q', '$rootScope', function ($q, $rootScope
 		if (err.status_code === -1) {
 			err.error = 'Connection error';
 		}
+		// console.log(reason);
 		// Pass along rejection regardless
 		return $q.reject(err);
 	}
@@ -306,7 +306,8 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 		getopen: getopen,
 		refopen: refopen,
 		getclosed: getclosed,
-		refclosed: refclosed
+		refclosed: refclosed,
+		updatereq: updatereq
 	};
 
 	function getopen (client_id) {
@@ -447,6 +448,25 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 			client.closed_list = closed_list;
 			return closed_list;
 		});
+	}
+
+	function updatereq (req) {
+		// Assumes update to request in open list
+		if (client.open_list) {
+			console.log('updatereq() called');
+			for (var i = client.open_list.length - 1; i >= 0; i--) {
+				var oreq = client.open_list[i];
+				if (oreq.req.id == req.id) {
+					console.log("Updating request " + oreq.req.title);
+					// Have to create new outer object so watching controller(s) will pick it up
+					var neworeq = angular.copy(oreq);
+					for (var j = 0; j < reqfields.length; j++) {
+						neworeq.req[reqfields[j]] = req[reqfields[j]];
+					}
+					client.open_list[i] = neworeq;
+				}
+			}
+		}
 	}
 
 	function sortopen (a, b) {
@@ -956,6 +976,15 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListS
 			}
 		});
 
+		$scope.$on('req_updated', function(event, req) {
+			// Update if tab is open, or tab is closed and open list has already been fetched
+			if ((vm.tab == 'open') || ((vm.tab == 'closed') && (vm.client.open_list !== null))) {
+				console.log('Event req_updated received');
+				console.log(req);
+				reqListService.updatereq(req);
+			}
+		});
+
 		function selecttab (seltab) {
 			if (vm.tab != seltab) {
 				vm.tab = seltab;
@@ -1043,11 +1072,11 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 						vm.edit_msg = 'Updating...';
 						vm.edit_err = '';
 						reqDetailService.updatereq(vm.edit_req)
-						.then(function (req) {
+						.then(function (detail) {
 							close();
-							if (req) {
+							if (detail.req) {
 								// Emit so req list can be updated
-								$scope.$emit('req_updated', req);
+								$scope.$emit('req_updated', detail.req);
 							}
 						})
 						.catch(function (reason) {
