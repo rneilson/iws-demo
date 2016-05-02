@@ -84,35 +84,46 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 	}
 
 	function failed (reason) {
-		// TODO: filter out text/html
-		var msg = ((reason.data) && (reason.data.error)) ? reason.data : {status_code: reason.status, error: reason.statusText};
+		// Now handled by interceptor
+		// var msg = ((reason.data) && (reason.data.error)) ? reason.data : {status_code: reason.status, error: reason.statusText};
 
-		status.err_msg = msg.error;
-		console.log("Authentication error: " + msg.error);
+		status.err_msg = "Error: " + (reason.error || "Authentication failure");
+		console.log("Authentication error: " + reason.error);
 
-		return $q.reject(msg);
-	}
-}]);
-
-iwsApp.factory('authInterceptor', ['$q', '$rootScope', function ($q, $rootScope) {
-
-	return {responseError: expired};
-
-	function expired (reason) {
-		if (reason.status === 403) {
-			var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
-			// If session expired, send auth expired event so authService can send logged_out event if req'd
-			if ((msg) && (msg.search(/expired/i) != -1)) {
-				$rootScope.$emit('auth_expired', msg);
-			}
-		}
-		// Pass along rejection regardless
 		return $q.reject(reason);
 	}
 }]);
 
+iwsApp.factory('errorInterceptor', ['$q', '$rootScope', function ($q, $rootScope) {
+
+	return {responseError: errorcheck};
+
+	function errorcheck (reason) {
+		console.log(reason);
+
+		var err;
+		if (reason.headers('content-type') == 'application/json') {
+			err = reason.data;
+		}
+		else {
+			err = {status_code: reason.status, error: reason.statusText};
+		}
+		if (err.status_code === 403) {
+			// If session expired, send auth expired event so authService can send logged_out event if req'd
+			if ((err.error) && (err.error.search(/expired/i) != -1)) {
+				$rootScope.$emit('auth_expired', err.error);
+			}
+		}
+		if (err.status_code === -1) {
+			err.error = 'Connection error';
+		}
+		// Pass along rejection regardless
+		return $q.reject(err);
+	}
+}]);
+
 iwsApp.config(['$httpProvider',function($httpProvider) {
-	$httpProvider.interceptors.push('authInterceptor');
+	$httpProvider.interceptors.push('errorInterceptor');
 }]);
 
 iwsApp.factory('clientListService', ['$http', function ($http) {
@@ -227,7 +238,7 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 		}
 		if (changed) {
 			return $http.post(baseurl + client.id, upcli)
-				.then(updatesuccess, updateerror);
+				.then(updatesuccess);
 		}
 		else {
 			// TODO: return client regardless?
@@ -248,7 +259,7 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 		}
 		else {
 			return $http.post(baseurl, addcli)
-				.then(updatesuccess, updateerror);
+				.then(updatesuccess);
 		}
 	}
 
@@ -272,8 +283,8 @@ iwsApp.factory('clientDetailService', ['$http', '$q', function ($http, $q) {
 	}
 
 	function updateerror (reason) {
-		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
-		return $q.reject(msg);
+		// var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		return $q.reject(reason.error);
 	}
 }]);
 
@@ -550,8 +561,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 				detail.open = newdetail.open;
 				detail.closed = newdetail.closed;
 				return detail;
-			})
-			.catch(updateerror);
+			});
 	}
 
 	function updatereq (update) {
@@ -574,7 +584,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 
 		if (changed) {
 			return $http.post(baseurl + detail.req.id, upreq)
-				.then(reqsuccess, updateerror);
+				.then(reqsuccess);
 		}
 		else {
 			// TODO: return req regardless?
@@ -601,7 +611,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 
 		if (changed) {
 			return $http.post(baseurl + detail.req.id + exturl, update)
-				.then(listsuccess, updateerror);
+				.then(listsuccess);
 		}
 		else {
 			// TODO: return details anyways?
@@ -623,7 +633,7 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		update.reason = oreq.reason;
 
 		return $http.post(baseurl + detail.req.id + exturl, update)
-			.then(listsuccess, updateerror);
+			.then(listsuccess);
 	}
 
 	function emptyreq () {
@@ -684,10 +694,12 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		return detail;
 	}
 
+	/*
 	function updateerror (reason) {
-		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		var msg = reason.error || "Update failed";
 		return $q.reject(msg);
 	}
+	*/
 }]);
 
 
@@ -833,32 +845,32 @@ iwsApp.controller('ClientDetailController', ['$scope', 'clientDetailService',
 					if (vm.edit_mode == 'update') {
 						vm.edit_msg = 'Updating...';
 						vm.edit_err = '';
-						clientDetailService.updateclient(vm.edit_cli).then(
-							function (client) {
-								close();
-								// Emit so client list can be updated
-								// TODO: send to service instead?
-								$scope.$emit('client_updated', client);
-							},
-							function (reason) {
+						clientDetailService.updateclient(vm.edit_cli)
+						.then(function (client) {
+							close();
+							// Emit so client list can be updated
+							// TODO: send to service instead?
+							$scope.$emit('client_updated', client);
+						})
+						.catch(function (reason) {
 								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Update failed';
+								vm.edit_err = reason.error || 'Update failed';
 							}
 						);
 					}
 					else if (vm.edit_mode == 'create') {
 						vm.edit_msg = 'Creating...';
 						vm.edit_err = '';
-						clientDetailService.addclient(vm.edit_cli).then(
-							function (client) {
-								close();
-								// Emit so client list can be updated
-								// TODO: send to service instead?
-								$scope.$emit('client_updated', client);
-							},
-							function (reason) {
+						clientDetailService.addclient(vm.edit_cli)
+						.then(function (client) {
+							close();
+							// Emit so client list can be updated
+							// TODO: send to service instead?
+							$scope.$emit('client_updated', client);
+						})
+						.catch(function (reason) {
 								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Creation failed';
+								vm.edit_err = reason.error || 'Creation failed';
 							}
 						);
 					}
@@ -1030,36 +1042,34 @@ iwsApp.controller('ReqDetailController', ['$scope', 'reqDetailService', 'clientL
 					if (vm.edit_mode == 'update') {
 						vm.edit_msg = 'Updating...';
 						vm.edit_err = '';
-						reqDetailService.updatereq(vm.edit_req).then(
-							function (req) {
-								close();
-								if (req) {
-									// Emit so req list can be updated
-									$scope.$emit('req_updated', req);
-								}
-							},
-							function (reason) {
-								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Update failed';
+						reqDetailService.updatereq(vm.edit_req)
+						.then(function (req) {
+							close();
+							if (req) {
+								// Emit so req list can be updated
+								$scope.$emit('req_updated', req);
 							}
-						);
+						})
+						.catch(function (reason) {
+							vm.edit_msg = '';
+							vm.edit_err = reason.error || 'Update failed';
+						});
 					}
 					else if (vm.edit_mode == 'create') {
 						if (vm.open_form.$valid) {
 							vm.edit_msg = 'Creating...';
 							vm.edit_err = '';
-							reqDetailService.addreq(vm.edit_req, vm.edit_oreq).then(
-								function (detail) {
-									var client_id = vm.edit_oreq.client_id;
-									close();
-									// Emit so req list can be updated
-									$scope.$emit('req_created', client_id, detail.req);
-								},
-								function (reason) {
-									vm.edit_msg = '';
-									vm.edit_err = reason.error || reason || 'Creation failed';
-								}
-							);
+							reqDetailService.addreq(vm.edit_req, vm.edit_oreq)
+							.then(function (detail) {
+								var client_id = vm.edit_oreq.client_id;
+								close();
+								// Emit so req list can be updated
+								$scope.$emit('req_created', client_id, detail.req);
+							})
+							.catch(function (reason) {
+								vm.edit_msg = '';
+								vm.edit_err = reason.error || 'Creation failed';
+							});
 						}
 						else {
 							vm.edit_err = 'Please correct above error(s)';
@@ -1136,18 +1146,17 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 						vm.edit_msg = 'Updating...';
 						vm.edit_err = '';
 						var client_id = vm.edit_oreq.client_id;
-						reqDetailService.updateopen(update).then(
-							function (response) {
-								if (response) {
-									// Emit so req list can be updated
-									$scope.$emit('oreq_updated', client_id);
-								}
-							},
-							function (reason) {
-								vm.edit_msg = '';
-								vm.edit_err = reason.error || reason || 'Update failed';
+						reqDetailService.updateopen(update)
+						.then(function (response) {
+							if (response) {
+								// Emit so req list can be updated
+								$scope.$emit('oreq_updated', client_id);
 							}
-						);
+						})
+						.catch(function (reason) {
+							vm.edit_msg = '';
+							vm.edit_err = reason.error || 'Update failed';
+						});
 					}
 					else {
 						vm.edit_err = 'Please correct above error(s)';
@@ -1163,16 +1172,15 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 					vm.edit_msg = 'Closing...';
 					vm.edit_err = '';
 					var client_id = vm.edit_oreq.client_id;
-					reqDetailService.closereq(vm.edit_oreq).then(
-						function () {
-							// Emit so client list can be updated
-							$scope.$emit('oreq_closed', client_id);
-						},
-						function (reason) {
-							vm.edit_msg = '';
-							vm.edit_err = reason.error || reason || 'Closing failed';
-						}
-					);
+					reqDetailService.closereq(vm.edit_oreq)
+					.then(function () {
+						// Emit so client list can be updated
+						$scope.$emit('oreq_closed', client_id);
+					})
+					.catch(function (reason) {
+						vm.edit_msg = '';
+						vm.edit_err = reason.error || 'Closing failed';
+					});
 				}
 			}
 		}
