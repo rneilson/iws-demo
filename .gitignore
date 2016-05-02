@@ -1,6 +1,7 @@
 # Databases
 *.sqlite3
 *.sqlite3.*bak
+*.sqlite3.*new
 
 # Python compiled
 *.pyo
@@ -18,3 +19,4 @@ tmp/
 # uwsgi files
 log/
 iws_uwsgi.ini
+iws_uwsgi.pid
