@@ -250,7 +250,7 @@
 								<div class="noborder">
 									<div class="oreq-row" ng-if="rdcon.edit_mode">
 										<div class="req-title-edit">Title:
-										</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /></div>
+										</div><div class="req-text"><input type="text" name="title" ng-model="rdcon.edit_req.title" required /><span class="error" ng-class="{hidden: !rdcon.edit_form.title.$error.required}">Required</span></div>
 									</div>
 								</div>
 								<div class="oreq">
@@ -262,7 +262,7 @@
 									</div>
 								</div>
 								<div class="oreq">
-									Description: <span class="error" ng-class="{hidden: !rdcon.edit_form.desc.$error.required}">Required</span><br/>
+									Description:<span class="error" ng-class="{hidden: !rdcon.edit_form.desc.$error.required}">Required</span><br/>
 									<pre class="desc" ng-class="{hidden: (rdcon.edit_mode == 'create')}">{{rdcon.detail.req.desc}}</pre>
 									<textarea name="desc" ng-model="rdcon.edit_req.desc" ng-required="rdcon.edit_mode == 'create'"></textarea>
 								</div>
@@ -327,12 +327,12 @@
 							</div>
 							<div id="reqopennew" class="noborder nopadding" ng-if="rdcon.edit_mode == 'create'" ng-form name="rdcon.open_form">
 								<div class="noborder">
-									<span ng-if="rdcon.clients.id != '_all'">Client: {{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span>
-									<span ng-if="rdcon.clients.id == '_all'">
+									<!-- <span ng-if="rdcon.clients.id != '_all'">Client: {{rdcon.getclientname(rdcon.edit_oreq.client_id)}}</span> -->
+									<!-- <span ng-if="rdcon.clients.id == '_all'"> -->
 										<label>Client: <select ng-model="rdcon.edit_oreq.client_id" ng-options="cli.id as cli.name for cli in rdcon.clients.list" name="client_id" required>
 											<option value="">-- Choose client --</option>
 										</select></label><span class="error" ng-class="{hidden: !rdcon.open_form.client_id.$error.required}">Required</span>
-									</span>
+									<!-- </span> -->
 								</div>
 								<div class="oreq">
 									<div class="oreq-row">

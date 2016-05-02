@@ -253,6 +253,12 @@ div.req-text {
 div.req-text input[type="text"], input[type="url"] {
 	width: 100%;
 }
+div.req-text input[type="text"].ng-invalid-required {
+	width: calc(100% - 60px);
+}
+div.req-text span.error {
+	width: 60px;
+}
 div.tablecon {
 	height: 200px;
 }
