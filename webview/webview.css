@@ -376,6 +376,14 @@ select {
     /*padding: 1px;*/
 	border: 1px solid #c0c0c0;
 }
+select.ng-dirty.ng-invalid {
+	border: 1px solid #CC0000;
+}
+select.ng-dirty.ng-invalid:focus {
+	box-shadow: 0 0 2px 0px #CC0000;
+	outline-color: #CC0000;
+	/*outline-width: 1px;*/
+}
 button {
 	font-size: 10pt;
     font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
