@@ -19,6 +19,13 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		session_expiry: null
 	};
 
+	$rootScope.$on('auth_expired', function (event, msg) {
+		if (status.logged_in) {
+			console.log(msg);
+			refresh();
+		}
+	});
+
 	return {
 		status: status,
 		refresh: refresh,
@@ -47,8 +54,8 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 			"action": "logout",
 			"username": status.username
 		}).then(update)
-		.catch(expired)
 		.catch(failed);
+		// .catch(expired)
 	}
 
 	function update (response) {
@@ -70,15 +77,19 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		return status;
 	}
 
+	/*
 	function expired (reason) {
-		var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
-		// If session expired, refresh auth status so it can send logged_out event if req'd
-		if ((status.logged_in) && (msg) && (msg.search(/expired/i) != -1)) {
-			refresh();
+		if (reason.status === 403) {
+			var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
+			// If session expired, refresh auth status so it can send logged_out event if req'd
+			if ((status.logged_in) && (msg) && (msg.search(/expired/i) != -1)) {
+				refresh();
+			}
 		}
 		// Pass along rejection regardless
 		return $q.reject(reason);
 	}
+	*/
 
 	function failed (reason) {
 		// TODO: filter out text/html
@@ -89,6 +100,27 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 
 		return $q.reject(msg);
 	}
+}]);
+
+iwsApp.factory('authInterceptor', ['$q', '$rootScope', function ($q, $rootScope) {
+
+	return {responseError: expired};
+
+	function expired (reason) {
+		if (reason.status === 403) {
+			var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
+			// If session expired, send auth expired event so authService can send logged_out event if req'd
+			if ((msg) && (msg.search(/expired/i) != -1)) {
+				$rootScope.$emit('auth_expired', msg);
+			}
+		}
+		// Pass along rejection regardless
+		return $q.reject(reason);
+	}
+}]);
+
+iwsApp.config(['$httpProvider',function($httpProvider) {
+	$httpProvider.interceptors.push('authInterceptor');
 }]);
 
 iwsApp.factory('clientListService', ['$http', function ($http) {
@@ -699,11 +731,11 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 		vm.password = "";
 		vm.login = login;
 
-		$rootScope.$on('logged_out', function (auth) {
+		$rootScope.$on('logged_out', function (event, auth) {
 			logged_out();
 		});
 
-		$rootScope.$on('login_success', function (auth) {
+		$rootScope.$on('login_success', function (event, auth) {
 			login_success();
 		});
 
@@ -1173,6 +1205,7 @@ iwsApp.controller('OpenReqController', ['$scope', 'reqDetailService',
 		}
 	}
 ]);
+
 
 /* Utility functions */
 
