@@ -16,11 +16,13 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		username: "",
 		full_name: "",
 		csrf_token: "",
-		session_expiry: null
+		session_expiry: null,
+		err_msg: ""
 	};
 
 	$rootScope.$on('auth_expired', function (event, msg) {
 		if (status.logged_in) {
+			status.err_msg = msg;
 			console.log(msg);
 			refresh();
 		}
@@ -40,6 +42,7 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 	}
 
 	function login (username, password) {
+		status.err_msg = '';
 		return $http.post(authurl, {
 			"action": "login",
 			"username": username,
@@ -60,15 +63,17 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 
 	function update (response) {
 		// Update auth status
-		status.logged_in = response.data.logged_in;
-		status.username = response.data.username;
-		status.full_name = response.data.full_name;
-		status.csrf_token = response.data.csrf_token;
-		status.session_expiry = response.data.session_expiry ? new Date(response.data.session_expiry) : null;
+		var newstatus = response.data;
+		status.logged_in = newstatus.logged_in;
+		status.username = newstatus.username;
+		status.full_name = newstatus.full_name;
+		status.csrf_token = newstatus.csrf_token;
+		status.session_expiry = newstatus.session_expiry ? new Date(newstatus.session_expiry) : null;
 		// Update default POST header
 		$http.defaults.headers.post['X-CSRFToken'] = status.csrf_token;
 		// Emit login/logout events
 		if (status.logged_in) {
+			// status.err_msg = '';
 			$rootScope.$broadcast('login_success', status);
 		}
 		else {
@@ -77,25 +82,11 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		return status;
 	}
 
-	/*
-	function expired (reason) {
-		if (reason.status === 403) {
-			var msg = ((reason.data) && (reason.data.error)) ? reason.data.error : '';
-			// If session expired, refresh auth status so it can send logged_out event if req'd
-			if ((status.logged_in) && (msg) && (msg.search(/expired/i) != -1)) {
-				refresh();
-			}
-		}
-		// Pass along rejection regardless
-		return $q.reject(reason);
-	}
-	*/
-
 	function failed (reason) {
 		// TODO: filter out text/html
-		var msg = reason.data || {status_code: reason.status, error: reason.statusText};
+		var msg = ((reason.data) && (reason.data.error)) ? reason.data : {status_code: reason.status, error: reason.statusText};
 
-		// TODO: Add global error message
+		status.err_msg = msg.error;
 		console.log("Authentication error: " + msg.error);
 
 		return $q.reject(msg);
@@ -741,11 +732,13 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 
 		// Get initial auth status
 		authService.refresh()
-		.catch(function (reason) {
-			vm.password = "";
-			vm.login_req = true;
-			vm.login_msg = reason.error || reason.statusText || "Error getting login status";
-		});
+		.catch(logged_out);
+		// .catch(function (reason) {
+		// 	vm.password = "";
+		// 	vm.login_req = true;
+		// 	vm.login_msg = "Please log in";
+		// 	vm.login_msg = reason.error || reason.statusText || "Error getting login status";
+		// });
 		// .then(function (auth) {
 		// 	if (auth.logged_in) {
 		// 		login_success(auth);
@@ -762,6 +755,7 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 		}
 
 		function logged_out () {
+			vm.password = "";
 			vm.login_req = true;
 			vm.login_msg = "Please log in";
 		}
@@ -770,11 +764,12 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 			vm.login_req = false;
 			vm.login_msg = "Logging in...";
 			authService.login(vm.username, vm.password)
-			.catch(function (reason) {
-				vm.password = "";
-				vm.login_req = true;
-				vm.login_msg = reason.error || reason.statusText || "Error logging in";
-			});
+			.catch(logged_out);
+			// .catch(function (reason) {
+			// 	vm.password = "";
+			// 	vm.login_req = true;
+			// 	vm.login_msg = reason.error || reason.statusText || "Error logging in";
+			// });
 		}
 	}
 ]);

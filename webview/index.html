@@ -12,14 +12,19 @@
 	</head>
 	<body ng-app="iws-webview">
 		<div id="outer" class="noborder nopadding">
-			<div id="header" class="header" ng-controller="HeaderController as hdcon">
-				<div class="nopadding noborder topleft"><h1>IWS Demo</h1></div>
-				<div class="nopadding noborder topright">
-					<span ng-class="{hidden: !hdcon.auth.logged_in}">
-						<strong>{{hdcon.auth.full_name}}</strong> / <a ng-click="hdcon.logout()">Log out</a>
-					</span>
+			<div class="noborder nopadding" ng-controller="HeaderController as hdcon">
+				<div id="header" class="header">
+					<div class="nopadding noborder topleft"><h1>IWS Demo</h1></div>
+					<div class="nopadding noborder topright">
+						<span ng-class="{hidden: !hdcon.auth.logged_in}">
+							<strong>{{hdcon.auth.full_name}}</strong> / <a ng-click="hdcon.logout()">Log out</a>
+						</span>
+					</div>
+					<div class="footer"></div>
 				</div>
-				<div class="footer"></div>
+			<div class="error" ng-class="{hidden: (!hdcon.auth.err_msg)}">
+				{{hdcon.auth.err_msg}}
+			</div>
 			</div>
 			<div id="main" class="noborder nopadding" ng-controller="ClientListController as clcon" ng-class="{hidden: !clcon.logged_in}">
 				<div id="sidebar" class="leftside nopadding noborder">
