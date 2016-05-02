@@ -22,6 +22,7 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 
 	$rootScope.$on('auth_expired', function (event, msg) {
 		if (status.logged_in) {
+			status.logged_in = false;
 			status.err_msg = msg;
 			console.log(msg);
 			refresh();
@@ -42,7 +43,7 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 	}
 
 	function login (username, password) {
-		status.err_msg = '';
+		// status.err_msg = '';
 		return $http.post(authurl, {
 			"action": "login",
 			"username": username,
@@ -73,7 +74,7 @@ iwsApp.factory('authService', ['$http', '$q', '$rootScope', function ($http, $q,
 		$http.defaults.headers.post['X-CSRFToken'] = status.csrf_token;
 		// Emit login/logout events
 		if (status.logged_in) {
-			// status.err_msg = '';
+			status.err_msg = '';
 			$rootScope.$broadcast('login_success', status);
 		}
 		else {
@@ -727,35 +728,24 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 		});
 
 		$rootScope.$on('login_success', function (event, auth) {
-			login_success();
+			login_success(auth);
 		});
 
 		// Get initial auth status
 		authService.refresh()
 		.catch(logged_out);
-		// .catch(function (reason) {
-		// 	vm.password = "";
-		// 	vm.login_req = true;
-		// 	vm.login_msg = "Please log in";
-		// 	vm.login_msg = reason.error || reason.statusText || "Error getting login status";
-		// });
-		// .then(function (auth) {
-		// 	if (auth.logged_in) {
-		// 		login_success(auth);
-		// 	}
-		// 	else {
-		// 		logged_out();
-		// 	}
-		// })
 
-		function login_success () {
+		function login_success (auth) {
+			vm.username = auth.username;
 			vm.password = "";
+			vm.login_form.$setPristine();
 			vm.login_req = false;
 			vm.login_msg = "Logged in";
 		}
 
 		function logged_out () {
 			vm.password = "";
+			vm.login_form.$setPristine();
 			vm.login_req = true;
 			vm.login_msg = "Please log in";
 		}
@@ -765,11 +755,6 @@ iwsApp.controller('LoginController', ['$rootScope', 'authService',
 			vm.login_msg = "Logging in...";
 			authService.login(vm.username, vm.password)
 			.catch(logged_out);
-			// .catch(function (reason) {
-			// 	vm.password = "";
-			// 	vm.login_req = true;
-			// 	vm.login_msg = reason.error || reason.statusText || "Error logging in";
-			// });
 		}
 	}
 ]);

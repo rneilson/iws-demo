@@ -22,7 +22,7 @@
 					</div>
 					<div class="footer"></div>
 				</div>
-			<div class="error" ng-class="{hidden: (!hdcon.auth.err_msg)}">
+			<div id="autherror" class="error" ng-class="{hidden: (!hdcon.auth.err_msg)}">
 				{{hdcon.auth.err_msg}}
 			</div>
 			</div>
@@ -382,18 +382,18 @@
 				<div id="login-msg" class="header">
 					{{lgcon.login_msg}}
 				</div>
-				<div id="login-form" ng-class="{hidden: !lgcon.login_req}">
+				<div id="login-form">
 					<form name="lgcon.login_form" novalidate>
 						<div class="form-row">
 						  <label for="id_username">Username:
-						  </label><input id="id_username" maxlength="254" name="username" type="text" ng-model="lgcon.username" required/>
+						  </label><input id="id_username" name="username" type="text" ng-model="lgcon.username" ng-disabled="(!lgcon.login_req)" maxlength="30" required/>
 						</div>
 						<div class="form-row">
 						  <label for="id_password">Password:
-						  </label><input id="id_password" name="password" type="password" ng-model="lgcon.password" required/>
+						  </label><input id="id_password" name="password" type="password" ng-model="lgcon.password" ng-disabled="(!lgcon.login_req)" required/>
 						</div>
 						<div class="submit-row">
-							<input type="submit" value="Log in" ng-click="lgcon.login()"/>
+							<input type="submit" value="Log in" ng-click="lgcon.login()" ng-disabled="(!lgcon.login_req) || (!lgcon.login_form.$valid)"/>
 						</div>
 					</form>
 				</div>

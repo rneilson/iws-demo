@@ -414,6 +414,10 @@ textarea {
 #header {
 	padding: 4px 8px;
 }
+#autherror {
+	width: 284px;
+	margin: auto;
+}
 #nav {
 	/*line-height: 24px;*/
 	margin-bottom: 0px;
