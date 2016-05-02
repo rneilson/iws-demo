@@ -931,9 +931,9 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListS
 
 		$scope.$on('oreq_updated', function(event, client_id) {
 			// Update under the following conditions:
-			//   - client_id matches or is empty
+			//   - client_id matches or is _all
 			//   - tab is open, or tab is closed and open list has already been fetched
-			if (((!client_id) || (client_id == vm.client.id)) && 
+			if (((vm.client.id == client_id) || (vm.client.id == '_all')) && 
 				((vm.tab == 'open') || ((vm.tab == 'closed') && (vm.client.open_list !== null)))) {
 				reqListService.refopen();
 			}
@@ -941,7 +941,7 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListS
 
 		$scope.$on('oreq_closed', function(event, client_id) {
 			// We want to update both lists if fetched
-			if ((!client_id) || (client_id == vm.client.id)) {
+			if ((vm.client.id == client_id) || (vm.client.id == '_all')) {
 				if (vm.client.open !== null) {
 					reqListService.refopen();
 				}
