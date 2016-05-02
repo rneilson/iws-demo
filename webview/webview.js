@@ -453,11 +453,9 @@ iwsApp.factory('reqListService', ['$http', '$q', function ($http, $q) {
 	function updatereq (req) {
 		// Assumes update to request in open list
 		if (client.open_list) {
-			console.log('updatereq() called');
 			for (var i = client.open_list.length - 1; i >= 0; i--) {
 				var oreq = client.open_list[i];
 				if (oreq.req.id == req.id) {
-					console.log("Updating request " + oreq.req.title);
 					// Have to create new outer object so watching controller(s) will pick it up
 					var neworeq = angular.copy(oreq);
 					for (var j = 0; j < reqfields.length; j++) {
@@ -714,12 +712,6 @@ iwsApp.factory('reqDetailService', ['$http', '$q', function ($http, $q) {
 		return detail;
 	}
 
-	/*
-	function updateerror (reason) {
-		var msg = reason.error || "Update failed";
-		return $q.reject(msg);
-	}
-	*/
 }]);
 
 
@@ -979,8 +971,6 @@ iwsApp.controller('ReqListController', ['$scope', 'reqListService', 'clientListS
 		$scope.$on('req_updated', function(event, req) {
 			// Update if tab is open, or tab is closed and open list has already been fetched
 			if ((vm.tab == 'open') || ((vm.tab == 'closed') && (vm.client.open_list !== null))) {
-				console.log('Event req_updated received');
-				console.log(req);
 				reqListService.updatereq(req);
 			}
 		});
